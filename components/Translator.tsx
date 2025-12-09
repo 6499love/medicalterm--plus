@@ -80,7 +80,7 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
         )}
         {item.root_analysis && (
           <div className="text-xs text-slate-500 italic">
-            Root: {item.root_analysis}
+            {t('LBL_ROOT_ANALYSIS')}: {item.root_analysis}
           </div>
         )}
         {item.mistranslation && item.mistranslation.length > 0 && (
@@ -166,11 +166,7 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
       setResults(res);
 
       // Logic for "Did you mean"
-      // If we found results, but the best match is fuzzy (implying no exact match),
-      // and the fuzzy match is decent, offer it as a correction.
       if (res.length > 0 && res[0].matchType === 'fuzzy') {
-         // Check if score is low enough to be a "good" suggestion (Fuse.js score: 0 is perfect, 1 is mismatch)
-         // Using a slightly tighter threshold than generic search for suggestion confidence
          if (res[0].score !== undefined && res[0].score < 0.4) {
            setSuggestion(res[0]);
          } else {
@@ -217,8 +213,6 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
 
   const handleApplySuggestion = (term: Term) => {
     setQuery(term.chinese_term);
-    // Immediate search trigger via effect dependency on `query`
-    // We clear suggestion immediately to prevent flicker
     setSuggestion(null);
   };
 

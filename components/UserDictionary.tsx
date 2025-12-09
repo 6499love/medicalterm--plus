@@ -7,7 +7,7 @@ import { fetchSystemTerms } from '../services/search';
 import { Term } from '../types';
 
 export const UserDictionary: React.FC = () => {
-  const { userTerms, removeUserTerm, importUserTerms } = useStore();
+  const { userTerms, removeUserTerm, importUserTerms, navigatedTermId, setNavigatedTermId } = useStore();
   const [systemTerms, setSystemTerms] = useState<Term[]>([]);
   const [activeTab, setActiveTab] = useState<'system' | 'user'>('system');
   const [filter, setFilter] = useState('');
@@ -16,7 +16,7 @@ export const UserDictionary: React.FC = () => {
   // Pagination & Selection State
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
-  const pageSize = 14; // 2 columns * 7 rows
+  const pageSize = 14; 
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
@@ -25,12 +25,36 @@ export const UserDictionary: React.FC = () => {
     fetchSystemTerms().then(setSystemTerms);
   }, []);
 
+  // Handle external navigation
+  useEffect(() => {
+    if (navigatedTermId && systemTerms.length > 0) {
+      // Check system terms
+      const sysTerm = systemTerms.find(t => t.id === navigatedTermId);
+      if (sysTerm) {
+        setActiveTab('system');
+        setSelectedTerm(sysTerm);
+        setNavigatedTermId(null);
+        return;
+      }
+      
+      // Check user terms
+      const userTerm = userTerms.find(t => t.id === navigatedTermId);
+      if (userTerm) {
+        setActiveTab('user');
+        setSelectedTerm(userTerm);
+        setNavigatedTermId(null);
+        return;
+      }
+      
+      setNavigatedTermId(null);
+    }
+  }, [navigatedTermId, systemTerms, userTerms, setNavigatedTermId]);
+
   // Reset pagination when filter or tab changes
   useEffect(() => {
     setCurrentPage(1);
   }, [filter, activeTab]);
 
-  // Clear message after 3 seconds
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 3000);
@@ -45,7 +69,6 @@ export const UserDictionary: React.FC = () => {
     (t.english_term?.toLowerCase() || '').includes(filter.toLowerCase())
   );
 
-  // Pagination Logic
   const totalPages = Math.ceil(filtered.length / pageSize);
   const visibleTerms = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
@@ -89,7 +112,6 @@ export const UserDictionary: React.FC = () => {
         console.error(err);
         setMessage({ type: 'error', text: t('IMPORT_PARSE_ERROR') });
       }
-      // Reset input
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
     reader.readAsText(file);
@@ -98,7 +120,6 @@ export const UserDictionary: React.FC = () => {
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     removeUserTerm(id);
-    // Close modal if the deleted term was open
     if (selectedTerm?.id === id) {
       setSelectedTerm(null);
     }
@@ -109,7 +130,6 @@ export const UserDictionary: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 shrink-0">
         <h2 className="text-2xl font-bold text-slate-800">{t('DICT_TITLE')}</h2>
         
-        {/* Import/Export Controls (Only visible on User tab) */}
         {activeTab === 'user' && (
           <div className="flex gap-2">
              <input 
@@ -140,7 +160,6 @@ export const UserDictionary: React.FC = () => {
         )}
       </div>
 
-      {/* Status Message */}
       {message && (
         <div className={`mb-4 p-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-fade-in shrink-0 ${
           message.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
@@ -305,7 +324,7 @@ export const UserDictionary: React.FC = () => {
                 )}
                 {selectedTerm.root_analysis && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Root Analysis</label>
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{t('LBL_ROOT_ANALYSIS')}</label>
                     <div className="text-sm text-slate-700 italic">{selectedTerm.root_analysis}</div>
                   </div>
                 )}
@@ -313,7 +332,7 @@ export const UserDictionary: React.FC = () => {
 
               {selectedTerm.note && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Note</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{t('LBL_NOTE')}</label>
                   <div className="flex gap-2 text-sm text-slate-600 bg-blue-50 p-3 rounded-lg">
                     <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                     <p>{selectedTerm.note}</p>
@@ -323,7 +342,7 @@ export const UserDictionary: React.FC = () => {
 
               {selectedTerm.usage && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Usage</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{t('LBL_USAGE')}</label>
                   <div className="flex gap-2 text-sm text-slate-600 bg-green-50 p-3 rounded-lg">
                     <Book className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                     <p>{selectedTerm.usage}</p>

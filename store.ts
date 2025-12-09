@@ -10,6 +10,9 @@ interface StoreState {
   history: HistoryItem[];
   settings: AppSettings;
   auth: AuthConfig | null; // Auth state
+  
+  // Navigation State
+  navigatedTermId: string | null; // ID of term to open in dictionary
 
   // Actions
   addUserTerm: (termData: Omit<Term, 'id' | 'source' | 'addedAt'>) => void;
@@ -26,6 +29,8 @@ interface StoreState {
   
   setAuth: (config: AuthConfig) => void;
   logout: () => void;
+  
+  setNavigatedTermId: (id: string | null) => void;
 }
 
 export const useStore = create<StoreState>()(
@@ -39,8 +44,10 @@ export const useStore = create<StoreState>()(
         darkMode: false,
         searchFuzzyThreshold: 0.3,
         autoCopy: false,
+        rememberApiKey: true,
       },
       auth: null,
+      navigatedTermId: null,
 
       addUserTerm: (termData) => set((state) => ({
         userTerms: [
@@ -128,9 +135,20 @@ export const useStore = create<StoreState>()(
       setAuth: (config) => set({ auth: config }),
       
       logout: () => set({ auth: null }),
+      
+      setNavigatedTermId: (id) => set({ navigatedTermId: id }),
     }),
     {
       name: 'mediterm-storage',
+      partialize: (state) => {
+        // If rememberApiKey is false, omit 'auth' from the persisted state
+        // This ensures the key is removed from localStorage on the next save/update
+        if (!state.settings.rememberApiKey) {
+          const { auth, ...rest } = state;
+          return rest;
+        }
+        return state;
+      }
     }
   )
 );

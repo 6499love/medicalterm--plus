@@ -33,11 +33,12 @@ export interface AppSettings {
   darkMode: boolean; // Simplified for this demo
   searchFuzzyThreshold: number;
   autoCopy: boolean; // New: Auto copy best result to clipboard
+  rememberApiKey: boolean; // New: Whether to persist API key
 }
 
 export interface AuthConfig {
   userName: string;
-  provider: 'gemini' | 'openai-compatible';
+  provider: 'gemini' | 'openai-compatible' | 'glm';
   apiKey: string;
   baseUrl?: string;
   model?: string;

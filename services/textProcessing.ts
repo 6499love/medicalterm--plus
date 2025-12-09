@@ -3,9 +3,10 @@ import { Term } from '../types';
 import { getCompletion, LLMConfig } from './llm';
 
 export interface TextSegment {
-  id: string; // Unique key for React mapping
+  id: string;
   text: string;
   matchedTerm?: Term;
+  termOccurrenceIndex?: number; // Tracks which occurrence of the term this is (0, 1, 2...)
 }
 
 /**
@@ -39,21 +40,35 @@ Return ONLY the translated text. Do not include any explanations, notes, or mark
  * @param sourceLang The source language name (e.g., "English", "Chinese")
  * @param targetLang The target language name
  * @param aiConfig The LLM configuration
+ * @param glossary Optional list of terms to force in translation
  * @returns The translated text string
  */
 export const initialTranslate = async (
   text: string,
   sourceLang: string,
   targetLang: string,
-  aiConfig: LLMConfig
+  aiConfig: LLMConfig,
+  glossary?: { source: string; target: string }[]
 ): Promise<string> => {
+  
+  let glossaryInstruction = "";
+  if (glossary && glossary.length > 0) {
+      // Format glossary for the prompt
+      const glossaryList = glossary.map(g => `- "${g.source}" -> "${g.target}"`).join("\n");
+      glossaryInstruction = `
+Mandatory Glossary (You MUST use these translations for the specific terms below):
+${glossaryList}
+`;
+  }
+
   const systemPrompt = `You are an expert translator. 
 Translate the provided text from ${sourceLang} to ${targetLang}.
 
 Requirements:
 - Accuracy: Ensure the translation is faithful to the source text.
-- Terminology: Use correct, professional terminology.
-- Formatting: Return ONLY the translated text. Do NOT include explanations, summaries, notes, or any extra text before or after the translation.`;
+- Terminology: Use correct, professional terminology.${glossary && glossary.length > 0 ? " Strictly adhere to the provided mandatory glossary." : ""}
+- Formatting: Return ONLY the translated text. Do NOT include explanations, summaries, notes, or any extra text before or after the translation.
+${glossaryInstruction}`;
 
   return await getCompletion(aiConfig, text, systemPrompt);
 };
@@ -78,14 +93,15 @@ export const reflectOnTranslation = async (
   const systemPrompt = `You are an expert translation reviewer specializing in medical texts.
 Your task is to critique the translation provided below.
 
-Focus your reflection on:
-- Accuracy: Identify mistranslations, omissions, or added meaning.
-- Fluency and Grammar: Ensure the target text reads naturally.
-- Style: Ensure the tone is appropriate for medical documentation.
-- Terminology: Check for consistency and correct domain-specific terms.
+Please evaluate the translation based on the following dimensions and provide your feedback in Chinese:
+- **术语准确性** (Terminology Accuracy): Check for correctness of medical terms and consistency.
+- **语言流畅性与语法** (Fluency and Grammar): Ensure the target text reads naturally and is grammatically correct.
+- **表达风格与一致性** (Style and Consistency): Ensure the tone is appropriate for medical documentation.
 
 Output Requirements:
-- Return a list of concise, actionable suggestions.
+- Return a list of concise, actionable suggestions in Chinese.
+- Start your response with exactly: "以下为对当前译文的优化建议："
+- Use the Chinese headers provided above.
 - Each suggestion should point to a specific issue.
 - Do NOT output a revised translation.
 - Do NOT output generic praise or conversational filler.`;
@@ -143,79 +159,123 @@ Please provide the final, revised translation based on this feedback:`;
   return await getCompletion(aiConfig, userPrompt, systemPrompt);
 };
 
+// --- New Segmentation Logic ---
+
 /**
- * Scans text and breaks it into segments, identifying terms from the dictionary.
- * Prioritizes longer matches to prevent partial matching (e.g., matching "bed" inside "bed height").
- * 
- * @param text The text to scan
- * @param allTerms Dictionary of terms
- * @param language 'chinese' | 'english' | 'auto'. 
- *                 'chinese': only matches chinese_term. 
- *                 'english': only matches english_term.
- *                 'auto': matches both (legacy behavior).
+ * Normalizes text for comparison (lowercase, collapse spaces).
  */
-export const tokenizeTextWithTerms = (
-  text: string, 
-  allTerms: Term[],
-  language: 'chinese' | 'english' | 'auto' = 'auto'
+const normalizeKey = (str: string) => str.toLowerCase().replace(/\s+/g, ' ').trim();
+
+/**
+ * Escapes regex special characters.
+ */
+const escapeRegExp = (string: string) => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+/**
+ * Pure function to scan text and return segments with identified terms.
+ * 
+ * @param text The full text to scan.
+ * @param terms The dictionary of terms to match against.
+ * @param options Mode: 'source' matches chinese_term, 'translation' matches english_term.
+ */
+export const buildTermSegments = (
+  text: string,
+  terms: Term[],
+  options: { mode: 'source' | 'translation' }
 ): TextSegment[] => {
   if (!text) return [];
 
-  // 1. Prepare terms for regex
-  // We want to match fields based on the specified language
-  // We need to map the matched string back to the specific Term object
+  const { mode } = options;
   const termMap = new Map<string, Term>();
   const patterns: string[] = [];
 
-  // Helper to escape regex special characters
-  const escapeRegExp = (string: string) => {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  };
+  // 1. Prepare patterns and map
+  terms.forEach(term => {
+    const rawString = mode === 'source' ? term.chinese_term : term.english_term;
+    if (!rawString || !rawString.trim()) return;
 
-  const shouldMatchChinese = language === 'chinese' || language === 'auto';
-  const shouldMatchEnglish = language === 'english' || language === 'auto';
+    // Use normalized key for lookup
+    const key = normalizeKey(rawString);
+    
+    // Store first term found for this string (priority to system or user based on array order)
+    if (!termMap.has(key)) {
+      termMap.set(key, term);
+    }
 
-  allTerms.forEach(term => {
-    if (shouldMatchChinese && term.chinese_term) {
-      const key = term.chinese_term.toLowerCase();
-      // Store mapping (lowercase for case-insensitive lookup)
-      if (!termMap.has(key)) {
-         termMap.set(key, term);
-         patterns.push(escapeRegExp(term.chinese_term));
+    // Build Regex Pattern
+    // Escape the string for regex
+    let pattern = escapeRegExp(rawString.trim());
+    
+    // Allow flexible whitespace matches (e.g. "Backrest  elevation" matches "Backrest elevation")
+    pattern = pattern.replace(/\\ /g, '\\s+');
+
+    // Add word boundaries for English mode to prevent partial matches
+    if (mode === 'translation') {
+      // If it starts with a word char, require boundary
+      if (/^\w/.test(rawString.trim())) {
+        pattern = '\\b' + pattern;
+      }
+      // If it ends with a word char, require boundary
+      if (/\w$/.test(rawString.trim())) {
+        pattern = pattern + '\\b';
       }
     }
-    if (shouldMatchEnglish && term.english_term) {
-      const key = term.english_term.toLowerCase();
-      if (!termMap.has(key)) {
-         termMap.set(key, term);
-         patterns.push(escapeRegExp(term.english_term));
-      }
-    }
+
+    patterns.push(pattern);
   });
-
-  // 2. Sort patterns by length descending (Critical for correct matching)
-  patterns.sort((a, b) => b.length - a.length);
 
   if (patterns.length === 0) {
-    return [{ id: '0', text }];
+    return [{ id: 'seg_0', text }];
   }
 
-  // 3. Create the Master Regex
-  // Use capturing group () to include the separators (terms) in the split result
-  const regex = new RegExp(`(${patterns.join('|')})`, 'gi');
+  // 2. Sort patterns by length descending to ensure greedy matching
+  // (e.g. match "Backrest up/down" before "Backrest")
+  // We sort based on the length of the *pattern string* as a proxy for complexity/length
+  patterns.sort((a, b) => b.length - a.length);
+
+  // 3. Create Master Regex
+  // The capturing group `(...)` is essential for .split() to include the separators (matches)
+  const masterRegex = new RegExp(`(${patterns.join('|')})`, 'gi');
 
   // 4. Split and Map
-  // split() with capturing groups returns: [pre, match, post, match, ...]
-  const parts = text.split(regex);
+  const splitParts = text.split(masterRegex);
   
-  return parts.map((part, index) => {
-    const lowerPart = part.toLowerCase();
-    const matchedTerm = termMap.get(lowerPart);
+  // Track occurrences for specific term IDs to support 1-to-1 mapping
+  const termCounts = new Map<string, number>();
+
+  return splitParts.map((part, index) => {
+    // Check if this part is a term
+    // We must normalize the part from the text to match our map keys
+    const lookupKey = normalizeKey(part);
+    const matchedTerm = termMap.get(lookupKey);
     
+    let occurrenceIndex: number | undefined = undefined;
+    if (matchedTerm) {
+        const count = termCounts.get(matchedTerm.id) || 0;
+        occurrenceIndex = count;
+        termCounts.set(matchedTerm.id, count + 1);
+    }
+
     return {
-      id: `seg_${index}`,
+      id: `seg_${mode}_${index}`, // Unique ID based on index and mode
       text: part,
-      matchedTerm
+      matchedTerm: matchedTerm || undefined,
+      termOccurrenceIndex: occurrenceIndex
     };
-  });
+  }).filter(seg => seg.text !== ''); // Filter out empty strings from split
+};
+
+// Legacy export for compatibility if needed (aliased to new function for 'auto')
+export const tokenizeTextWithTerms = (
+  text: string, 
+  terms: Term[],
+  language: 'chinese' | 'english' | 'auto' = 'auto'
+): TextSegment[] => {
+  // Map legacy 'language' param to new mode
+  const mode = language === 'chinese' ? 'source' : 'translation';
+  // Note: 'auto' isn't perfectly supported in strict separation, defaulting to translation (English) check if ambiguous
+  // or checking input char types. For this app's usage, we strictly control mode now.
+  return buildTermSegments(text, terms, { mode });
 };
