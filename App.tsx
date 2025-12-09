@@ -7,7 +7,7 @@ import { UserDictionary } from './components/UserDictionary';
 import { TranslationAssistant } from './components/TranslationAssistant';
 import { PageRoute, Term } from './types';
 import { useStore } from './store';
-import { Trash2, Volume2, Save, Key, User, Globe, Cpu, LogOut, ArrowRight, ExternalLink, Info, CheckCircle } from 'lucide-react';
+import { Trash2, Volume2, Save, Key, User, Globe, Cpu, LogOut, ArrowRight, ExternalLink, Info, CheckCircle, HelpCircle } from 'lucide-react';
 import { fetchSystemTerms } from './services/search';
 import { speakText } from './services/tts';
 import { useTranslation } from './services/i18n';
@@ -187,9 +187,18 @@ const SettingsPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                {t('SET_API_KEY')}
-                <a href={getKeyUrl()} target="_blank" rel="noreferrer" className="ml-2 text-xs text-indigo-500 hover:underline inline-flex items-center gap-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center flex-wrap gap-2">
+                <span>{t('SET_API_KEY')}</span>
+                
+                <div className="group relative">
+                   <HelpCircle className="w-4 h-4 text-slate-400 hover:text-indigo-500 cursor-help" />
+                   <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none whitespace-pre-wrap font-normal leading-relaxed">
+                     {t('HELP_GET_KEY')}
+                     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                   </div>
+                </div>
+
+                <a href={getKeyUrl()} target="_blank" rel="noreferrer" className="ml-auto text-xs text-indigo-500 hover:underline inline-flex items-center gap-1">
                   {t('BTN_GET_KEY')} <ExternalLink className="w-3 h-3" />
                 </a>
               </label>
@@ -207,21 +216,6 @@ const SettingsPage = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {form.provider !== 'gemini' && (
-                <div>
-                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('SET_BASE_URL')}</label>
-                   <div className="relative">
-                      <input
-                        type="text"
-                        value={form.baseUrl}
-                        onChange={(e) => setForm({ ...form, baseUrl: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none"
-                        placeholder="https://..."
-                      />
-                      <Globe className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                   </div>
-                </div>
-              )}
               {form.provider !== 'gemini' && (
                 <div>
                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('SET_MODEL')}</label>

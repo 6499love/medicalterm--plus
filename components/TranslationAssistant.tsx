@@ -15,20 +15,19 @@ import {
   Wand2, 
   Highlighter, 
   Edit3, 
-  Type, 
-  Info, 
-  ArrowRight, 
-  Loader2, 
-  AlertCircle, 
   Settings,
   Zap,
   GraduationCap,
-  ChevronDown,
-  ChevronRight,
   Sparkles,
   HelpCircle,
-  Star
+  Loader2,
+  AlertTriangle,
+  Copy,
+  ChevronDown,
+  ChevronUp,
+  MessageSquareQuote
 } from 'lucide-react';
+import { copyToClipboard } from '../services/clipboard';
 
 const RenderedText: React.FC<{ 
   segments: TextSegment[];
@@ -39,7 +38,7 @@ const RenderedText: React.FC<{
   onTermClick: (e: React.MouseEvent, term: Term, index: number) => void;
   onTermDoubleClick: (e: React.MouseEvent, term: Term) => void;
 }> = React.memo(({ segments, activeState, selectedState, onTermEnter, onTermLeave, onTermClick, onTermDoubleClick }) => (
-  <div className="whitespace-pre-wrap leading-relaxed text-slate-700">
+  <div className="whitespace-pre-wrap leading-relaxed text-slate-800 text-base">
     {segments.map((seg) => {
       if (!seg.matchedTerm) {
         return <span key={seg.id}>{seg.text}</span>;
@@ -76,7 +75,7 @@ interface TranslationAssistantProps {
 
 export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNavigate }) => {
   const { t } = useTranslation();
-  const { userTerms, auth, favorites, toggleFavorite, setNavigatedTermId } = useStore();
+  const { userTerms, auth, setNavigatedTermId } = useStore();
   const [systemTerms, setSystemTerms] = useState<Term[]>([]);
   
   // Input State
@@ -98,7 +97,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
   // Translation Mode State
   const [transMode, setTransMode] = useState<'fast' | 'professional'>('fast');
   const [reflectionNotes, setReflectionNotes] = useState('');
-  const [isReflectionOpen, setIsReflectionOpen] = useState(false);
+  const [showReflection, setShowReflection] = useState(false);
 
   // Request tracking to handle race conditions
   const requestRef = useRef(0);
@@ -142,7 +141,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     }), 
   [inputText, allTerms, isSourceChinese]);
 
-  const outputSegments = useMemo(() => 
+  const translatedSegments = useMemo(() => 
     buildTermSegments(translatedText, allTerms, { 
       mode: isSourceChinese ? 'translation' : 'source' 
     }), 
@@ -166,8 +165,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
       setIsLoading(true);
       setError(null);
       setReflectionNotes('');
-      // We don't clear translatedText here to avoid flickering if re-translating, 
-      // but the UI will show a loader.
+      setShowReflection(false);
       
       const sourceLang = isSourceChinese ? 'Chinese' : 'English';
       const targetLang = isSourceChinese ? 'English' : 'Chinese';
@@ -217,7 +215,6 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
       } catch (err: any) {
         if (requestId === requestRef.current) {
           console.error(err);
-          // Handle standardized QUOTA_EXCEEDED error
           if (err.message === 'QUOTA_EXCEEDED') {
             setError(t('ERR_QUOTA_EXCEEDED'));
           } else {
@@ -252,7 +249,6 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
 
   const handleTermClick = useCallback((e: React.MouseEvent, term: Term, index: number) => {
     e.stopPropagation(); 
-    
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
     
@@ -289,7 +285,6 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
              </span>
            )}
 
-           {/* Translate Button - Moved here */}
            <button
              onClick={handleTranslate}
              disabled={isLoading || !inputText.trim() || !auth}
@@ -303,7 +298,6 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
              {t('BTN_TRANSLATE_NOW')}
            </button>
            
-           {/* Mode Toggle */}
            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 items-center">
              <button 
                onClick={() => setTransMode('fast')}
@@ -326,10 +320,9 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                <GraduationCap size={14} className={transMode === 'professional' ? "fill-indigo-600/20" : ""} /> {t('MODE_PRO')}
              </button>
              
-             {/* Info Tooltip for Professional Mode */}
              <div className="group relative ml-2 mr-1">
                <HelpCircle size={14} className="text-slate-400 hover:text-indigo-500 cursor-help" />
-               <div className="absolute right-0 top-full mt-2 w-64 bg-slate-800 text-white text-[10px] p-2 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+               <div className="absolute right-0 top-full mt-2 w-64 bg-slate-800 text-white text-[10px] p-2 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
                  {t('MODE_PRO_DESC')}
                  <div className="absolute top-0 right-1.5 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
                </div>
@@ -404,7 +397,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
             )}
           </div>
 
-          <div className="p-6 flex-1 overflow-auto relative">
+          <div className="p-6 flex-1 overflow-auto relative flex flex-col">
             {!auth ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
                  <button 
@@ -424,4 +417,90 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                  </button>
               </div>
             ) : error ? (
-              <div className="h-full flex flex
+              <div className="h-full flex flex-col items-center justify-center text-rose-500 p-6 text-center">
+                 <div className="bg-rose-100 p-3 rounded-full mb-3">
+                   <AlertTriangle className="w-6 h-6" />
+                 </div>
+                 <p className="font-medium mb-2">{error}</p>
+                 <p className="text-xs text-rose-400 max-w-xs">{t('ERR_TROUBLESHOOT')}: {t('ERR_CAUSES')}</p>
+                 <button 
+                   onClick={handleTranslate} 
+                   className="mt-4 px-4 py-2 bg-white border border-rose-200 rounded-lg text-sm text-rose-600 hover:bg-rose-50"
+                 >
+                   Try Again
+                 </button>
+              </div>
+            ) : translatedText ? (
+              <>
+                <RenderedText 
+                  segments={translatedSegments} 
+                  activeState={hoveredState}
+                  selectedState={tooltipState ? { termId: tooltipState.term.id, index: tooltipState.index } : null}
+                  onTermEnter={handleTermEnter}
+                  onTermLeave={handleTermLeave}
+                  onTermClick={handleTermClick}
+                  onTermDoubleClick={handleTermDoubleClick}
+                />
+                
+                {reflectionNotes && (
+                   <div className="mt-8 border-t border-indigo-200/50 pt-4">
+                     <button 
+                       onClick={() => setShowReflection(!showReflection)}
+                       className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wide hover:text-indigo-800 transition-colors"
+                     >
+                        <MessageSquareQuote className="w-4 h-4" />
+                        {t('BTN_EXPERT_SUGGESTIONS')}
+                        {showReflection ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                     </button>
+                     
+                     {showReflection && (
+                       <div className="mt-3 p-4 bg-white/60 rounded-xl border border-indigo-100 text-sm text-slate-600 leading-relaxed animate-in slide-in-from-top-2">
+                         <div className="whitespace-pre-wrap">{reflectionNotes}</div>
+                       </div>
+                     )}
+                   </div>
+                )}
+              </>
+            ) : (
+               <div className="h-full flex items-center justify-center text-slate-400/50 italic select-none">
+                 {t('AST_TARGET_PLACEHOLDER')}
+               </div>
+            )}
+          </div>
+          
+          {translatedText && !isLoading && (
+            <div className="absolute top-14 right-4 flex gap-2">
+               <button 
+                 onClick={() => copyToClipboard(translatedText, t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'))}
+                 className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-indigo-600 rounded-lg shadow-sm border border-indigo-100 transition-all backdrop-blur-sm"
+                 title={t('BTN_COPY')}
+               >
+                 <Copy className="w-4 h-4" />
+               </button>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Detail Tooltip Popup */}
+      {tooltipState && (
+        <div 
+          className="fixed z-50 bg-slate-900 text-white p-3 rounded-xl shadow-2xl max-w-xs animate-in zoom-in-95 duration-200 pointer-events-none"
+          style={{ 
+            left: tooltipState.x, 
+            top: tooltipState.y,
+            transform: 'translate(-50%, -100%)',
+            marginTop: '-8px'
+          }}
+        >
+          <div className="font-bold text-sm mb-1">{tooltipState.term.chinese_term}</div>
+          <div className="text-indigo-300 font-medium text-sm mb-2">{tooltipState.term.english_term}</div>
+          {tooltipState.term.note && (
+            <div className="text-xs text-slate-400 border-t border-slate-700 pt-2 mt-1">{tooltipState.term.note}</div>
+          )}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-slate-900"></div>
+        </div>
+      )}
+    </div>
+  );
+};
