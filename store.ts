@@ -1,0 +1,136 @@
+
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { Term, HistoryItem, AppSettings, AuthConfig } from './types';
+
+interface StoreState {
+  // Data
+  userTerms: Term[];
+  favorites: string[]; // IDs of favorite terms
+  history: HistoryItem[];
+  settings: AppSettings;
+  auth: AuthConfig | null; // Auth state
+
+  // Actions
+  addUserTerm: (termData: Omit<Term, 'id' | 'source' | 'addedAt'>) => void;
+  removeUserTerm: (id: string) => void;
+  updateUserTerm: (term: Term) => void;
+  importUserTerms: (terms: Partial<Term>[]) => number; // Returns count of added terms
+  
+  toggleFavorite: (termId: string) => void;
+  
+  addToHistory: (query: string, result?: Term) => void;
+  clearHistory: () => void;
+  
+  updateSettings: (settings: Partial<AppSettings>) => void;
+  
+  setAuth: (config: AuthConfig) => void;
+  logout: () => void;
+}
+
+export const useStore = create<StoreState>()(
+  persist(
+    (set) => ({
+      userTerms: [],
+      favorites: [],
+      history: [],
+      settings: {
+        autoPlayAudio: false,
+        darkMode: false,
+        searchFuzzyThreshold: 0.3,
+        autoCopy: false,
+      },
+      auth: null,
+
+      addUserTerm: (termData) => set((state) => ({
+        userTerms: [
+          ...state.userTerms,
+          {
+            ...termData,
+            id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            source: 'user',
+            addedAt: Date.now(),
+          },
+        ],
+      })),
+
+      removeUserTerm: (id) => set((state) => ({
+        userTerms: state.userTerms.filter((t) => t.id !== id),
+        favorites: state.favorites.filter((fid) => fid !== id), // Remove from favs if deleted
+      })),
+
+      updateUserTerm: (updatedTerm) => set((state) => ({
+        userTerms: state.userTerms.map((t) => (t.id === updatedTerm.id ? updatedTerm : t)),
+      })),
+
+      importUserTerms: (newTerms) => {
+        let addedCount = 0;
+        set((state) => {
+          // Create a map of existing terms by Chinese term for easy lookup (prevent duplicates)
+          const existingMap = new Map(state.userTerms.map(t => [t.chinese_term, t]));
+          
+          newTerms.forEach(t => {
+            if (t.chinese_term && t.english_term && !existingMap.has(t.chinese_term)) {
+              const termToAdd: Term = {
+                id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${addedCount}`,
+                chinese_term: t.chinese_term,
+                english_term: t.english_term,
+                pinyin_full: t.pinyin_full || '',
+                pinyin_first: t.pinyin_first || '',
+                category: t.category || '',
+                note: t.note || '',
+                usage: t.usage || '',
+                root_analysis: t.root_analysis || '',
+                mistranslation: t.mistranslation || [],
+                source: 'user',
+                addedAt: Date.now(),
+                tags: t.tags || []
+              };
+              existingMap.set(termToAdd.chinese_term, termToAdd);
+              addedCount++;
+            }
+          });
+          
+          return { userTerms: Array.from(existingMap.values()) };
+        });
+        return addedCount;
+      },
+
+      toggleFavorite: (termId) => set((state) => {
+        const isFav = state.favorites.includes(termId);
+        return {
+          favorites: isFav
+            ? state.favorites.filter((id) => id !== termId)
+            : [...state.favorites, termId],
+        };
+      }),
+
+      addToHistory: (query, result) => set((state) => {
+        const newItem: HistoryItem = {
+          id: `hist_${Date.now()}`,
+          query,
+          timestamp: Date.now(),
+          resultId: result?.id,
+          resultTerm: result?.chinese_term,
+        };
+        // Keep history limited to last 100 items
+        return {
+          history: [newItem, ...state.history].slice(0, 100),
+        };
+      }),
+
+      clearHistory: () => set({ history: [] }),
+
+      updateSettings: (newSettings) => set((state) => ({
+        settings: { ...state.settings, ...newSettings },
+      })),
+
+      setAuth: (config) => set({ auth: config }),
+      
+      logout: () => set({ auth: null }),
+    }),
+    {
+      name: 'mediterm-storage',
+    }
+  )
+);
