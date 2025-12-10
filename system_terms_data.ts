@@ -1,3 +1,4 @@
+
 export const systemTermsData = [
   {
     "chinese_term": "背板升降",
@@ -66,7 +67,7 @@ export const systemTermsData = [
     "mistranslation": []
   },
   {
-    "chinese_term": "反特式位",
+    "chinese_term": "反特氏位",
     "english_term": "Reverse Trendelenburg",
     "pinyin_full": "",
     "pinyin_first": "",
@@ -341,7 +342,7 @@ export const systemTermsData = [
     "mistranslation": []
   },
   {
-    "chinese_term": "反特式位倾斜角度",
+    "chinese_term": "反特氏位倾斜角度",
     "english_term": "Reverse Trendelenburg Position",
     "pinyin_full": "",
     "pinyin_first": "",

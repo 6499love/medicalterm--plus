@@ -95,6 +95,11 @@ const translations = {
     ERR_TROUBLESHOOT: '故障排除',
     ERR_CAUSES: '常见原因：API Key 无效、账户余额不足、模型名称错误或网络连接不稳定。',
     ERR_ACTION: '建议：检查设置中的 API 配置，确认 Key 有效且有可用额度。',
+    
+    // Token Estimates
+    TOKEN_ESTIMATE_SHORT: '预计本次约 {count} 个 tokens。',
+    TOKEN_ESTIMATE_MEDIUM: '预计本次约 {count} 个 tokens，翻译时间和调用成本会略有增加。',
+    TOKEN_ESTIMATE_LONG: '文本较长，预计约 {count} 个 tokens，系统将自动分段翻译，可能耗时更长。',
 
     // Batch
     BATCH_TITLE: '批量翻译',
@@ -240,6 +245,11 @@ const translations = {
     ERR_TROUBLESHOOT: 'Troubleshooting',
     ERR_CAUSES: 'Common causes: Invalid API Key, Insufficient balance, Incorrect model name, or Network issues.',
     ERR_ACTION: 'Suggestion: Check API configuration in Settings to ensure the Key is valid and has quota.',
+    
+    // Token Estimates
+    TOKEN_ESTIMATE_SHORT: 'Estimated ~{count} tokens.',
+    TOKEN_ESTIMATE_MEDIUM: 'Estimated ~{count} tokens. Translation time and cost may increase slightly.',
+    TOKEN_ESTIMATE_LONG: 'Long text (~{count} tokens). System will split segments automatically; may take longer.',
 
     // Batch
     BATCH_TITLE: 'Batch Translation',

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore } from '../store';
 import { fetchSystemTerms } from '../services/search';
 import { Term, PageRoute } from '../types';
@@ -8,8 +9,12 @@ import {
   initialTranslate, 
   reflectOnTranslation, 
   improveTranslation,
+  stripTags,
+  parseTaggedText,
+  markTerminologyInTranslation,
   TextSegment 
 } from '../services/textProcessing';
+import { getTokenCount } from '../services/translationChunkUtils';
 import { useTranslation } from '../services/i18n';
 import { 
   Wand2, 
@@ -25,7 +30,9 @@ import {
   Copy,
   ChevronDown,
   ChevronUp,
-  MessageSquareQuote
+  MessageSquareQuote,
+  Coins,
+  Clock
 } from 'lucide-react';
 import { copyToClipboard } from '../services/clipboard';
 
@@ -35,8 +42,8 @@ const RenderedText: React.FC<{
   selectedState: { termId: string; index: number } | null;
   onTermEnter: (term: Term, index: number) => void;
   onTermLeave: () => void;
-  onTermClick: (e: React.MouseEvent, term: Term, index: number) => void;
-  onTermDoubleClick: (e: React.MouseEvent, term: Term) => void;
+  onTermClick?: (e: React.MouseEvent, term: Term, index: number) => void;
+  onTermDoubleClick?: (e: React.MouseEvent, term: Term) => void;
 }> = React.memo(({ segments, activeState, selectedState, onTermEnter, onTermLeave, onTermClick, onTermDoubleClick }) => (
   <div className="whitespace-pre-wrap leading-relaxed text-slate-800 text-base">
     {segments.map((seg) => {
@@ -47,6 +54,7 @@ const RenderedText: React.FC<{
       const isHovered = activeState?.termId === seg.matchedTerm.id && activeState?.index === seg.termOccurrenceIndex;
       const isSelected = selectedState?.termId === seg.matchedTerm.id && selectedState?.index === seg.termOccurrenceIndex;
       const isActive = isHovered || isSelected;
+      const isInteractive = !!onTermClick;
       
       return (
         <span
@@ -54,9 +62,10 @@ const RenderedText: React.FC<{
           data-term-id={seg.matchedTerm.id}
           onMouseEnter={() => onTermEnter(seg.matchedTerm!, seg.termOccurrenceIndex!)}
           onMouseLeave={onTermLeave}
-          onClick={(e) => onTermClick(e, seg.matchedTerm!, seg.termOccurrenceIndex!)}
-          onDoubleClick={(e) => onTermDoubleClick(e, seg.matchedTerm!)}
-          className={`cursor-pointer transition-colors duration-200 rounded px-0.5 border-b-2 
+          onClick={(e) => isInteractive && onTermClick?.(e, seg.matchedTerm!, seg.termOccurrenceIndex!)}
+          onDoubleClick={(e) => isInteractive && onTermDoubleClick?.(e, seg.matchedTerm!)}
+          className={`transition-colors duration-200 rounded px-0.5 border-b-2 
+            ${isInteractive ? 'cursor-pointer' : 'cursor-default'}
             ${isActive 
               ? 'bg-indigo-200 border-indigo-500 text-indigo-900 font-medium' // Active / Clicked style
               : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' // Normal matched style
@@ -99,6 +108,9 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
   const [reflectionNotes, setReflectionNotes] = useState('');
   const [showReflection, setShowReflection] = useState(false);
 
+  // Token Estimate State
+  const [estTokens, setEstTokens] = useState(0);
+
   // Request tracking to handle race conditions
   const requestRef = useRef(0);
 
@@ -124,13 +136,22 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     return /[\u4e00-\u9fa5]/.test(inputText);
   }, [inputText]);
 
-  // Handle Input Clear
+  // Handle Input Clear and Token Counting
   useEffect(() => {
     if (!inputText.trim()) {
        setTranslatedText('');
        setReflectionNotes('');
        setError(null);
+       setEstTokens(0);
+       return;
     }
+
+    // Debounce token estimation
+    const timer = setTimeout(() => {
+       setEstTokens(getTokenCount(inputText));
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [inputText]);
 
   const allTerms = useMemo(() => [...userTerms, ...systemTerms], [userTerms, systemTerms]);
@@ -141,11 +162,16 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     }), 
   [inputText, allTerms, isSourceChinese]);
 
-  const translatedSegments = useMemo(() => 
-    buildTermSegments(translatedText, allTerms, { 
+  const translatedSegments = useMemo(() => {
+    // If we have tags in the translation, use the tag parser
+    if (translatedText.includes('⦗') && translatedText.includes('⦘')) {
+      return parseTaggedText(translatedText, allTerms);
+    }
+    // Fallback to regex matching for untagged text
+    return buildTermSegments(translatedText, allTerms, { 
       mode: isSourceChinese ? 'translation' : 'source' 
-    }), 
-  [translatedText, allTerms, isSourceChinese]);
+    });
+  }, [translatedText, allTerms, isSourceChinese]);
 
   const detectedCount = useMemo(() => {
     const ids = new Set<string>();
@@ -171,46 +197,65 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
       const targetLang = isSourceChinese ? 'English' : 'Chinese';
 
       // Build Glossary from identified segments
-      // We deduplicate based on source text
-      const glossaryMap = new Map<string, string>();
+      // We map source -> { target, id } for persistent mapping
+      const glossaryMap = new Map<string, { target: string, id: string }>();
       inputSegments.forEach(seg => {
         if (seg.matchedTerm) {
           const target = isSourceChinese ? seg.matchedTerm.english_term : seg.matchedTerm.chinese_term;
           if (target) {
-             glossaryMap.set(seg.text, target);
+             glossaryMap.set(seg.text, { target, id: seg.matchedTerm.id });
           }
         }
       });
-      const glossary = Array.from(glossaryMap.entries()).map(([source, target]) => ({ source, target }));
+      const glossary = Array.from(glossaryMap.entries()).map(([source, val]) => ({ 
+        source, 
+        target: val.target, 
+        id: val.id 
+      }));
 
       try {
         if (transMode === 'fast') {
+          // Fast mode: Enforce tags during generation (single step)
           setStepStatus(t('AST_STATUS_TRANSLATING')); 
           
-          const result = await initialTranslate(inputText, sourceLang, targetLang, auth, glossary);
+          const result = await initialTranslate(inputText, sourceLang, targetLang, auth, glossary, { enforceTags: true });
           
           if (requestId === requestRef.current) {
             setTranslatedText(result);
           }
         } else {
           // Professional Mode Workflow
+          // 1. Initial Draft (Clean, no tags forced)
           setStepStatus(t('AST_STATUS_DRAFTING'));
-          const draft = await initialTranslate(inputText, sourceLang, targetLang, auth, glossary);
+          const draft = await initialTranslate(inputText, sourceLang, targetLang, auth, glossary, { enforceTags: false });
           
           if (requestId !== requestRef.current) return;
+          // Show intermediate draft (likely untagged, so regex matching applies in UI fallback)
           setTranslatedText(draft);
 
+          // 2. Critique (on clean text)
           setStepStatus(t('AST_STATUS_REVIEWING'));
           const critique = await reflectOnTranslation(inputText, draft, sourceLang, targetLang, auth);
           
           if (requestId !== requestRef.current) return;
           setReflectionNotes(critique);
           
+          // 3. Polish (Clean, no tags forced)
           setStepStatus(t('AST_STATUS_POLISHING'));
-          const final = await improveTranslation(inputText, draft, critique, sourceLang, targetLang, auth);
+          const polished = await improveTranslation(inputText, draft, critique, sourceLang, targetLang, auth, glossary, { enforceTags: false });
           
           if (requestId !== requestRef.current) return;
-          setTranslatedText(final);
+          setTranslatedText(polished);
+
+          // 4. Alignment / Tagging (Post-processing)
+          // This ensures the dictionary terms are highlighted without altering the polished text structure
+          if (glossary.length > 0) {
+            // Re-using 'Polishing' status or could add 'Aligning...'
+            const tagged = await markTerminologyInTranslation(inputText, polished, sourceLang, targetLang, auth, glossary);
+            if (requestId === requestRef.current) {
+               setTranslatedText(tagged);
+            }
+          }
         }
       } catch (err: any) {
         if (requestId === requestRef.current) {
@@ -249,14 +294,15 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
 
   const handleTermClick = useCallback((e: React.MouseEvent, term: Term, index: number) => {
     e.stopPropagation(); 
-    const target = e.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
+    // Use click coordinates for tooltip to ensure it appears near the mouse
+    const x = e.clientX;
+    const y = e.clientY;
     
     setTooltipState({
       term,
       index,
-      x: rect.left + rect.width / 2,
-      y: rect.top - 8 
+      x,
+      y: y - 10 // Slightly above cursor
     });
   }, []);
 
@@ -265,6 +311,32 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     setNavigatedTermId(term.id);
     onNavigate('dictionary');
   }, [onNavigate, setNavigatedTermId]);
+
+  const getTokenHint = () => {
+    if (estTokens === 0) return null;
+    
+    if (estTokens > 2000) {
+        return {
+            text: t('TOKEN_ESTIMATE_LONG', { count: estTokens }),
+            color: 'text-amber-600 bg-amber-50 border-amber-200',
+            icon: <Clock className="w-3.5 h-3.5" />
+        };
+    }
+    if (estTokens > 800) {
+        return {
+            text: t('TOKEN_ESTIMATE_MEDIUM', { count: estTokens }),
+            color: 'text-indigo-600 bg-indigo-50 border-indigo-200',
+            icon: <Coins className="w-3.5 h-3.5" />
+        };
+    }
+    return {
+        text: t('TOKEN_ESTIMATE_SHORT', { count: estTokens }),
+        color: 'text-slate-500 bg-slate-50 border-slate-200',
+        icon: <Coins className="w-3.5 h-3.5" />
+    };
+  };
+
+  const tokenHint = getTokenHint();
 
   return (
     <div className="h-full flex flex-col">
@@ -359,28 +431,38 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
             </div>
           </div>
           
-          <div className="flex-1 relative overflow-auto">
-            {mode === 'edit' ? (
-              <textarea
-                value={inputText}
-                onChange={handleInputChange}
-                placeholder={t('AST_PLACEHOLDER')}
-                className="w-full h-full p-6 bg-transparent resize-none focus:outline-none text-slate-700 leading-relaxed text-base"
-                spellCheck={false}
-              />
-            ) : (
-              <div className="p-6 h-full w-full overflow-auto">
-                <RenderedText 
-                  segments={inputSegments} 
-                  activeState={hoveredState}
-                  selectedState={tooltipState ? { termId: tooltipState.term.id, index: tooltipState.index } : null}
-                  onTermEnter={handleTermEnter}
-                  onTermLeave={handleTermLeave}
-                  onTermClick={handleTermClick}
-                  onTermDoubleClick={handleTermDoubleClick}
+          <div className="flex-1 relative overflow-auto flex flex-col">
+            <div className="flex-1 relative">
+              {mode === 'edit' ? (
+                <textarea
+                  value={inputText}
+                  onChange={handleInputChange}
+                  placeholder={t('AST_PLACEHOLDER')}
+                  className="w-full h-full p-6 bg-transparent resize-none focus:outline-none text-slate-700 leading-relaxed text-base"
+                  spellCheck={false}
                 />
-                {inputText.length === 0 && <span className="text-slate-400 italic">{t('AST_EMPTY')}</span>}
-              </div>
+              ) : (
+                <div className="p-6 h-full w-full overflow-auto">
+                  <RenderedText 
+                    segments={inputSegments} 
+                    activeState={hoveredState}
+                    selectedState={tooltipState ? { termId: tooltipState.term.id, index: tooltipState.index } : null}
+                    onTermEnter={handleTermEnter}
+                    onTermLeave={handleTermLeave}
+                    onTermClick={handleTermClick}
+                    onTermDoubleClick={handleTermDoubleClick}
+                  />
+                  {inputText.length === 0 && <span className="text-slate-400 italic">{t('AST_EMPTY')}</span>}
+                </div>
+              )}
+            </div>
+
+            {/* Token Hint Footer */}
+            {tokenHint && (
+               <div className={`px-4 py-2 text-xs flex items-center justify-end gap-2 border-t font-medium transition-colors ${tokenHint.color}`}>
+                  {tokenHint.icon}
+                  <span>{tokenHint.text}</span>
+               </div>
             )}
           </div>
         </div>
@@ -438,8 +520,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                   selectedState={tooltipState ? { termId: tooltipState.term.id, index: tooltipState.index } : null}
                   onTermEnter={handleTermEnter}
                   onTermLeave={handleTermLeave}
-                  onTermClick={handleTermClick}
-                  onTermDoubleClick={handleTermDoubleClick}
+                  // Click handlers removed for translation panel to prevent tooltip but keep highlighting
                 />
                 
                 {reflectionNotes && (
@@ -454,7 +535,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                      </button>
                      
                      {showReflection && (
-                       <div className="mt-3 p-4 bg-white/60 rounded-xl border border-indigo-100 text-sm text-slate-600 leading-relaxed animate-in slide-in-from-top-2">
+                       <div className="mt-3 p-4 bg-white/60 rounded-xl border border-indigo-100 text-sm text-slate-600 leading-relaxed animate-in slide-in-from-top-2 max-h-60 overflow-y-auto">
                          <div className="whitespace-pre-wrap">{reflectionNotes}</div>
                        </div>
                      )}
@@ -471,7 +552,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
           {translatedText && !isLoading && (
             <div className="absolute top-14 right-4 flex gap-2">
                <button 
-                 onClick={() => copyToClipboard(translatedText, t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'))}
+                 onClick={() => copyToClipboard(stripTags(translatedText), t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'))}
                  className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-indigo-600 rounded-lg shadow-sm border border-indigo-100 transition-all backdrop-blur-sm"
                  title={t('BTN_COPY')}
                >
@@ -482,10 +563,10 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
         </div>
       </div>
       
-      {/* Detail Tooltip Popup */}
-      {tooltipState && (
+      {/* Detail Tooltip Popup - Rendered via Portal to escape stacking contexts */}
+      {tooltipState && createPortal(
         <div 
-          className="fixed z-50 bg-slate-900 text-white p-3 rounded-xl shadow-2xl max-w-xs animate-in zoom-in-95 duration-200 pointer-events-none"
+          className="fixed z-[9999] bg-slate-900 text-white p-3 rounded-xl shadow-2xl max-w-xs animate-in zoom-in-95 duration-200 pointer-events-none"
           style={{ 
             left: tooltipState.x, 
             top: tooltipState.y,
@@ -499,7 +580,8 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
             <div className="text-xs text-slate-400 border-t border-slate-700 pt-2 mt-1">{tooltipState.term.note}</div>
           )}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-slate-900"></div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
