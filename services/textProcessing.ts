@@ -10,6 +10,17 @@ export interface TextSegment {
   termOccurrenceIndex?: number; // Tracks which occurrence of the term this is (0, 1, 2...)
 }
 
+export interface TermSpan {
+  start: number;
+  end: number;
+}
+
+export interface TermAlignment {
+  termId: string;
+  sourceSpans: TermSpan[];
+  targetSpans: TermSpan[];
+}
+
 const TERMINOLOGY_GUIDANCE = `
 Terminology Guidance:
 - You are translating medical text. A term dictionary is provided below.
@@ -49,14 +60,6 @@ Return ONLY the translated text. Do not include any explanations, notes, or mark
 /**
  * Performs a high-quality initial translation using an LLM.
  * Designed to provide a clean, professional translation without extra conversational filler.
- * 
- * @param text The text to translate
- * @param sourceLang The source language name (e.g., "English", "Chinese")
- * @param targetLang The target language name
- * @param aiConfig The LLM configuration
- * @param glossary Optional list of terms to force in translation
- * @param options Configuration options
- * @returns The translated text string
  */
 export const initialTranslate = async (
   text: string,
@@ -64,26 +67,13 @@ export const initialTranslate = async (
   targetLang: string,
   aiConfig: LLMConfig,
   glossary?: { source: string; target: string; id: string }[],
-  options: { enforceTags: boolean } = { enforceTags: true }
+  options: { enforceTags?: boolean } = {} 
 ): Promise<string> => {
   
   let glossaryInstruction = "";
   if (glossary && glossary.length > 0) {
-      if (options.enforceTags) {
-        // FAST MODE: Strict tagging for immediate UI feedback
-        const glossaryList = glossary.map(g => `- "${g.source}" -> "${g.target}" (ID: ${g.id})`).join("\n");
-        glossaryInstruction = `
-Mandatory Glossary:
-${glossaryList}
-
-IMPORTANT: Whenever you use a translation from the glossary, you MUST wrap it in special brackets with its ID, like this: ⦗Translated Text|ID⦘.
-Example: If the glossary has "Heart" -> "XinZang" (ID: 123), you must write "The ⦗XinZang|123⦘ is beating."
-Do not wrap terms that are not in the glossary.
-`;
-      } else {
-        // PROFESSIONAL MODE: Strong guidance but natural flow (no tags)
-        const glossaryList = glossary.map(g => `- "${g.source}" -> "${g.target}"`).join("\n");
-        glossaryInstruction = `
+      const glossaryList = glossary.map(g => `- "${g.source}" -> "${g.target}"`).join("\n");
+      glossaryInstruction = `
 ${TERMINOLOGY_GUIDANCE}
 
 Reference Dictionary:
@@ -91,9 +81,9 @@ ${glossaryList}
 
 Instructions:
 - Use the provided glossary translations for the corresponding source terms.
-- Do NOT add any special tags or brackets in the output. Just produce natural, professional text.
+- Do NOT add any special tags, brackets, or labels in the output. 
+- Just produce natural, professional text that incorporates the terminology.
 `;
-      }
   }
 
   const systemPrompt = `You are an expert translator. 
@@ -113,13 +103,6 @@ ${glossaryInstruction}`;
 
 /**
  * Critiques a translation and provides improvement suggestions.
- * 
- * @param sourceText The original source text
- * @param translatedText The current translation to evaluate
- * @param sourceLang The source language name
- * @param targetLang The target language name
- * @param aiConfig The LLM configuration
- * @returns A string containing a list of specific suggestions
  */
 export const reflectOnTranslation = async (
   sourceText: string,
@@ -157,16 +140,6 @@ Provide your specific suggestions for improvement:`;
 
 /**
  * Improves a translation based on expert critique.
- * 
- * @param sourceText The original source text
- * @param translatedText The initial translation
- * @param reflectionNotes The critique/suggestions provided by the reviewer
- * @param sourceLang The source language name
- * @param targetLang The target language name
- * @param aiConfig The LLM configuration
- * @param glossary Optional list of terms to force in translation
- * @param options Configuration options
- * @returns The revised translation string
  */
 export const improveTranslation = async (
   sourceText: string,
@@ -176,24 +149,13 @@ export const improveTranslation = async (
   targetLang: string,
   aiConfig: LLMConfig,
   glossary?: { source: string; target: string; id: string }[],
-  options: { enforceTags: boolean } = { enforceTags: true }
+  options: { enforceTags?: boolean } = {}
 ): Promise<string> => {
   
   let glossaryInstruction = "";
   if (glossary && glossary.length > 0) {
-      if (options.enforceTags) {
-        const glossaryList = glossary.map(g => `- "${g.source}" -> "${g.target}" (ID: ${g.id})`).join("\n");
-        glossaryInstruction = `
-MANDATORY GLOSSARY ENFORCEMENT:
-${glossaryList}
-
-CRITICAL: You MUST incorporate the glossary terms into the final translation.
-Whenever you use a term from the glossary, you MUST wrap it in special brackets with its ID, like this: ⦗Translated Text|ID⦘.
-Even if you rewrite the sentence structure, the glossary terms MUST be preserved and tagged.
-`;
-      } else {
-        const glossaryList = glossary.map(g => `- "${g.source}" -> "${g.target}"`).join("\n");
-        glossaryInstruction = `
+      const glossaryList = glossary.map(g => `- "${g.source}" -> "${g.target}"`).join("\n");
+      glossaryInstruction = `
 ${TERMINOLOGY_GUIDANCE}
 
 MANDATORY GLOSSARY ENFORCEMENT:
@@ -202,7 +164,6 @@ ${glossaryList}
 CRITICAL: You MUST incorporate the glossary terms into the final translation.
 Do NOT use special brackets or tags. Just integrate the terms naturally and grammatically into the sentence.
 `;
-      }
   }
 
   const systemPrompt = `You are an expert medical translator and editor.
@@ -232,59 +193,150 @@ Please provide the final, revised translation based on this feedback:`;
   return result;
 };
 
-/**
- * Post-processing step to identify and tag terms in a final polished translation.
- * This is used when generation was done without tags to ensure high fluency,
- * but we still want UI highlighting.
- */
-export const markTerminologyInTranslation = async (
+// --- Alignment Logic ---
+
+export const alignTermsWithLLM = async (
   sourceText: string,
   translatedText: string,
-  sourceLang: string,
-  targetLang: string,
-  aiConfig: LLMConfig,
-  glossary: { source: string; target: string; id: string }[]
-): Promise<string> => {
-  if (!glossary || glossary.length === 0) return translatedText;
+  terms: Term[],
+  aiConfig: LLMConfig
+): Promise<TermAlignment[]> => {
+    if (!terms || terms.length === 0) return [];
+    if (!sourceText || !translatedText) return [];
 
-  // Provide richer context for the aligner
-  const glossaryList = glossary.map(g => `- Concept ID: ${g.id} | Source: "${g.source}" | Likely Target: "${g.target}"`).join("\n");
+    // Prepare concise dictionary for prompt
+    const termListJSON = terms.map(t => ({
+        id: t.id,
+        chinese_term: t.chinese_term,
+        english_term: t.english_term,
+        aliases: t.aliases
+    }));
 
-  const systemPrompt = `You are a text processing engine specializing in medical terminology alignment.
-Your goal is to apply ID tags to a translated text based on a provided glossary, without altering the text content.
+    const systemPrompt = `You are a medical translation alignment assistant.
 
-Input Data:
-1. Polished Translation: The text to be tagged.
-2. Glossary: A list of terms (ID, Source, Likely Target) that exist in the text.
+You will receive:
+1) Source Chinese paragraph:
+   {{sourceText}}
 
-Instructions:
-1. Read the "Polished Translation".
-2. For each term in the Glossary, locate its corresponding translated phrase in the text.
-   - Look for the "Likely Target" or a close synonym/variation used in the translation.
-3. Wrap the identified phrase in the translation with ⦗...|ID⦘.
-   - Example: If the text is "The heart rate is stable" and glossary has ID:123 for "heart", output "The ⦗heart|123⦘ rate is stable".
-4. OUTPUT THE EXACT TEXT provided, with NO changes to words, grammar, punctuation, or capitalization. ONLY add the tags.
-5. Do not output any conversational text, headers, footers, or labels like "Output:" or "Translation:".
-6. If a term is not found, do nothing for that term.`;
+2) Final English translation of that paragraph:
+   {{translatedText}}
 
-  const userPrompt = `Polished Translation:
+3) A medical term dictionary:
+   Each entry has: id, chinese_term, english_term, aliases.
+
+Task:
+- For each term, decide whether its meaning appears in the source and in the translation.
+- Even if the exact wording is not identical (e.g. minor wording changes or missing words),
+  try to find the substring that most closely expresses that term.
+- For each occurrence, return character index ranges (start, end, 0-based, end exclusive)
+  for:
+    - sourceSpans: positions in the Chinese source text
+    - targetSpans: positions in the English translation
+
+Output STRICTLY in JSON with this shape:
+[
+  {
+    "termId": "sys_123",
+    "sourceSpans": [{ "start": 10, "end": 14 }],
+    "targetSpans": [{ "start": 120, "end": 145 }]
+  },
+  ...
+]
+
+- Do NOT modify the translation text.
+- Do NOT add explanations, comments, or extra fields.
+Only output the JSON array.`;
+
+    const userPrompt = `Source Text:
+${sourceText}
+
+Translated Text:
 ${translatedText}
 
-Glossary:
-${glossaryList}
+Term Dictionary:
+${JSON.stringify(termListJSON)}
+`;
 
-Output the tagged text:`;
+    try {
+        let result = await getCompletion(aiConfig, userPrompt, systemPrompt);
+        // Clean markdown
+        result = result.replace(/^```(json)?\n/i, '').replace(/\n```$/, '').trim();
+        const parsed = JSON.parse(result);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        console.error("Alignment failed", e);
+        return [];
+    }
+};
 
-  let result = await getCompletion(aiConfig, userPrompt, systemPrompt);
-  
-  // Aggressive cleanup to remove potential Markdown wrappers or labels and extra words
-  result = result.trim();
-  // Remove wrapping markdown code blocks
-  result = result.replace(/^```(json|text|markdown)?\n/i, '').replace(/\n```$/, '');
-  // Remove common labels if the model hallucinates them
-  result = result.replace(/^(Here is the tagged text|Output|Tagged Output|Translation):/i, '').trim();
+/**
+ * Helper to convert alignment data into TextSegments for rendering.
+ */
+export const segmentsFromAlignments = (
+  text: string,
+  alignments: TermAlignment[],
+  side: 'source' | 'target',
+  allTerms: Term[]
+): TextSegment[] => {
+    // 1. Collect all spans
+    const spans: { start: number, end: number, termId: string }[] = [];
+    alignments.forEach(align => {
+        const sideSpans = side === 'source' ? align.sourceSpans : align.targetSpans;
+        if (sideSpans) {
+            sideSpans.forEach(s => {
+                spans.push({ start: s.start, end: s.end, termId: align.termId });
+            });
+        }
+    });
 
-  return result;
+    // 2. Sort by start index
+    spans.sort((a, b) => a.start - b.start);
+
+    // 3. Build segments (First win strategy for overlapping)
+    const segments: TextSegment[] = [];
+    let currentIdx = 0;
+    const termMap = new Map(allTerms.map(t => [t.id, t]));
+    const termCounts = new Map<string, number>();
+
+    for (const span of spans) {
+        if (span.start < currentIdx) continue; // Skip overlaps
+
+        // Plain text before match
+        if (span.start > currentIdx) {
+            segments.push({
+                id: `seg_${side}_plain_${currentIdx}`,
+                text: text.slice(currentIdx, span.start)
+            });
+        }
+
+        // Match
+        const term = termMap.get(span.termId);
+        let occurrenceIndex = 0;
+        if (term) {
+             const c = termCounts.get(term.id) || 0;
+             occurrenceIndex = c;
+             termCounts.set(term.id, c + 1);
+        }
+
+        segments.push({
+            id: `seg_${side}_term_${span.start}`,
+            text: text.slice(span.start, span.end),
+            matchedTerm: term,
+            termOccurrenceIndex: occurrenceIndex
+        });
+
+        currentIdx = span.end;
+    }
+
+    // Remaining text
+    if (currentIdx < text.length) {
+        segments.push({
+            id: `seg_${side}_plain_${currentIdx}`,
+            text: text.slice(currentIdx)
+        });
+    }
+
+    return segments;
 };
 
 // --- New Segmentation Logic ---
@@ -303,75 +355,15 @@ const escapeRegExp = (string: string) => {
 
 /**
  * Helper to strip the special tags from the text for display/clipboard
+ * (Legacy support, though we try to avoid generating tags now)
  */
 export const stripTags = (text: string): string => {
   return text.replace(/⦗(.*?)\|.*?⦘/g, '$1');
 };
 
 /**
- * Parses text containing ⦗Phrase|ID⦘ tags and builds TextSegments
- */
-export const parseTaggedText = (text: string, terms: Term[]): TextSegment[] => {
-  const segments: TextSegment[] = [];
-  const regex = /⦗(.*?)\|(.*?)⦘/g;
-  let lastIndex = 0;
-  let match;
-  
-  const termMap = new Map(terms.map(t => [t.id, t]));
-  const termCounts = new Map<string, number>();
-
-  while ((match = regex.exec(text)) !== null) {
-    // Text before the tag
-    if (match.index > lastIndex) {
-      segments.push({
-        id: `seg_plain_${lastIndex}`,
-        text: text.slice(lastIndex, match.index)
-      });
-    }
-    
-    // The tagged term
-    const phrase = match[1];
-    const id = match[2];
-    const term = termMap.get(id);
-    
-    let occurrenceIndex = 0;
-    if (term) {
-       occurrenceIndex = termCounts.get(id) || 0;
-       termCounts.set(id, occurrenceIndex + 1);
-    }
-    
-    segments.push({
-      id: `seg_term_${match.index}`,
-      text: phrase,
-      matchedTerm: term,
-      termOccurrenceIndex: occurrenceIndex
-    });
-    
-    lastIndex = regex.lastIndex;
-  }
-  
-  // Remaining text
-  if (lastIndex < text.length) {
-    segments.push({
-      id: `seg_plain_${lastIndex}`,
-      text: text.slice(lastIndex)
-    });
-  }
-  
-  if (segments.length === 0) {
-    return [{ id: 'seg_full', text }];
-  }
-  
-  return segments;
-};
-
-/**
  * Pure function to scan text and return segments with identified terms.
  * Implements strict "Longest Match First" strategy.
- * 
- * @param text The full text to scan.
- * @param terms The dictionary of terms to match against.
- * @param options Mode: 'source' matches chinese_term, 'translation' matches english_term.
  */
 export const buildTermSegments = (
   text: string,
@@ -383,46 +375,42 @@ export const buildTermSegments = (
   const { mode } = options;
   const termMap = new Map<string, Term>();
   
-  // Descriptors used to build the master regex
   const descriptors: { pattern: string; length: number }[] = [];
   const seenPatterns = new Set<string>();
 
-  terms.forEach(term => {
-    const rawString = mode === 'source' ? term.chinese_term : term.english_term;
-    if (!rawString || !rawString.trim()) return;
-
-    // Use normalized key for lookup
-    const key = normalizeKey(rawString);
-    // Store ONLY the first term encountered for duplicates (system vs user priority handled by array order)
-    if (!termMap.has(key)) {
-      termMap.set(key, term);
-    }
-
-    // Build Regex Pattern
-    let pattern = escapeRegExp(rawString.trim());
-    
-    // Allow flexible whitespace matches.
-    // Note: escapeRegExp does not escape spaces, so we must match literal spaces
-    pattern = pattern.replace(/\s+/g, '\\s+');
-
-    // Add word boundaries for English mode to prevent partial matches
-    if (mode === 'translation') {
-      // Check if original string starts/ends with word char
-      const isWordStart = /^\w/.test(rawString.trim());
-      const isWordEnd = /\w$/.test(rawString.trim());
+  const addPattern = (rawString: string, term: Term) => {
+      if (!rawString || !rawString.trim()) return;
       
-      if (isWordStart) pattern = '\\b' + pattern;
-      if (isWordEnd) pattern = pattern + '\\b';
-    }
+      const key = normalizeKey(rawString);
+      if (!termMap.has(key)) {
+        termMap.set(key, term);
+      }
 
-    if (!seenPatterns.has(pattern)) {
-        seenPatterns.add(pattern);
-        descriptors.push({
-            pattern,
-            // Store original text length for sorting. This is CRITICAL.
-            // Longer strings must come first in the regex OR choice.
-            length: rawString.trim().length 
-        });
+      let pattern = escapeRegExp(rawString.trim());
+      pattern = pattern.replace(/\s+/g, '\\s+');
+
+      if (mode === 'translation') {
+        const isWordStart = /^\w/.test(rawString.trim());
+        const isWordEnd = /\w$/.test(rawString.trim());
+        if (isWordStart) pattern = '\\b' + pattern;
+        if (isWordEnd) pattern = pattern + '\\b';
+      }
+
+      if (!seenPatterns.has(pattern)) {
+          seenPatterns.add(pattern);
+          descriptors.push({
+              pattern,
+              length: rawString.trim().length 
+          });
+      }
+  };
+
+  terms.forEach(term => {
+    const primary = mode === 'source' ? term.chinese_term : term.english_term;
+    addPattern(primary, term);
+
+    if (term.aliases && term.aliases.length > 0) {
+        term.aliases.forEach(alias => addPattern(alias, term));
     }
   });
 
@@ -430,26 +418,19 @@ export const buildTermSegments = (
     return [{ id: 'seg_0', text }];
   }
 
-  // 2. Sort patterns by length descending to ensure greedy matching (Longest Match First)
-  // This is the core logic fix: (Longer|Short) regex ensures Longer is matched if both start at same position.
   descriptors.sort((a, b) => {
     const lenDiff = b.length - a.length;
     if (lenDiff !== 0) return lenDiff;
-    // Tie-breaker: Alphabetical for determinism
     return a.pattern.localeCompare(b.pattern);
   });
 
-  // 3. Create Master Regex
-  // The capturing group `(...)` is essential for finding the match.
   const masterRegex = new RegExp(`(${descriptors.map(d => d.pattern).join('|')})`, 'gi');
 
-  // 4. Scan with exec loop to implement "skip and continue"
   const segments: TextSegment[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   let segIndex = 0;
   
-  // Track occurrences for specific term IDs to support 1-to-1 mapping highlights
   const termCounts = new Map<string, number>();
 
   while ((match = masterRegex.exec(text)) !== null) {
@@ -457,7 +438,6 @@ export const buildTermSegments = (
     const matchText = match[0];
     const matchEnd = matchStart + matchText.length;
 
-    // Add plain text before match
     if (matchStart > lastIndex) {
         segments.push({
             id: `seg_${mode}_${segIndex++}`,
@@ -465,7 +445,6 @@ export const buildTermSegments = (
         });
     }
 
-    // Identify Term
     const lookupKey = normalizeKey(matchText);
     const matchedTerm = termMap.get(lookupKey);
     
@@ -483,11 +462,9 @@ export const buildTermSegments = (
         termOccurrenceIndex: occurrenceIndex
     });
 
-    // Advance cursor to end of match (Skipping nested matches implicitly)
     lastIndex = matchEnd;
   }
 
-  // Add remaining text
   if (lastIndex < text.length) {
     segments.push({
         id: `seg_${mode}_${segIndex++}`,
@@ -498,30 +475,19 @@ export const buildTermSegments = (
   return segments;
 };
 
-// Legacy export for compatibility if needed (aliased to new function for 'auto')
-export const tokenizeTextWithTerms = (
-  text: string, 
-  terms: Term[],
-  language: 'chinese' | 'english' | 'auto' = 'auto'
-): TextSegment[] => {
-  // Map legacy 'language' param to new mode
-  const mode = language === 'chinese' ? 'source' : 'translation';
-  // Note: 'auto' isn't perfectly supported in strict separation, defaulting to translation (English) check if ambiguous
-  // or checking input char types. For this app's usage, we strictly control mode now.
-  return buildTermSegments(text, terms, { mode });
-};
-
 
 // --- Unified Translation API ---
 
 export interface TranslationResult {
   finalText: string;
   reflectionNotes?: string;
+  alignments?: TermAlignment[];
 }
 
 export interface TranslateOptions {
   maxTokensPerChunk?: number;
   glossary?: { source: string; target: string; id: string }[];
+  relevantTerms?: Term[];
   sourceLang?: string;
   targetLang?: string;
   onProgress?: (status: string) => void; 
@@ -529,7 +495,6 @@ export interface TranslateOptions {
 
 /**
  * Top-level orchestration function for translating text.
- * Automatically chooses between single-chunk and multi-chunk strategies based on text length.
  */
 export const translateText = async (
   sourceText: string,
@@ -539,7 +504,8 @@ export const translateText = async (
 ): Promise<TranslationResult> => {
   const { 
     maxTokensPerChunk = 1000, 
-    glossary = [], 
+    glossary = [],
+    relevantTerms = [],
     sourceLang = 'Chinese',
     targetLang = 'English',
     onProgress
@@ -552,16 +518,13 @@ export const translateText = async (
     // === Single Chunk Strategy ===
     if (onProgress) onProgress(mode === 'fast' ? 'Translating...' : 'Drafting...');
     
-    // 1. Initial Translation
-    // Fast Mode: Enforce tags immediately
-    // Pro Mode: Raw draft
+    // 1. Initial Translation (Pure Text)
     const draft = await initialTranslate(
       sourceText, 
       sourceLang, 
       targetLang, 
       aiConfig, 
-      glossary, 
-      { enforceTags: mode === 'fast' }
+      glossary
     );
     
     if (mode === 'fast') {
@@ -580,14 +543,14 @@ export const translateText = async (
       sourceLang, 
       targetLang, 
       aiConfig, 
-      glossary, 
-      { enforceTags: false } // Still clean text
+      glossary
     );
+
+    // Alignment Step
+    if (onProgress) onProgress('Aligning Terms...');
+    const alignments = await alignTermsWithLLM(sourceText, improved, relevantTerms, aiConfig);
     
-    if (onProgress) onProgress('Finalizing...');
-    const final = await markTerminologyInTranslation(sourceText, improved, sourceLang, targetLang, aiConfig, glossary);
-    
-    return { finalText: final, reflectionNotes: reflection };
+    return { finalText: improved, reflectionNotes: reflection, alignments };
 
   } else {
     // === Multi Chunk Strategy ===
@@ -596,28 +559,35 @@ export const translateText = async (
     
     const results: string[] = [];
     const reflections: string[] = [];
+    const allAlignments: TermAlignment[] = [];
+    
+    let sourceOffset = 0;
+    let targetOffset = 0;
 
     // Process chunks sequentially
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       const progressPrefix = `Part ${i + 1}/${chunks.length}`;
       
-      // Filter glossary for this chunk to optimize context
-      // Simple case-insensitive match
       const chunkLower = chunk.toLowerCase();
+      // Filter terms relevant to this chunk (using glossary logic for now)
+      // Ideally we should use relevantTerms but filtering by string match is quick heuristic
       const chunkGlossary = glossary.filter(g => chunkLower.includes(g.source.toLowerCase()));
+      // Filter relevantTerms similarly for alignment optimization (optional but good for context)
+      // Using full relevantTerms is safer for alignment context
+      
+      let chunkResult = '';
 
       if (mode === 'fast') {
         if (onProgress) onProgress(`${progressPrefix}: Translating...`);
-        const text = await initialTranslate(
+        chunkResult = await initialTranslate(
           chunk, 
           sourceLang, 
           targetLang, 
           aiConfig, 
-          chunkGlossary, 
-          { enforceTags: true }
+          chunkGlossary
         );
-        results.push(text);
+        results.push(chunkResult);
       } else {
         // Professional Mode
         if (onProgress) onProgress(`${progressPrefix}: Drafting...`);
@@ -626,8 +596,7 @@ export const translateText = async (
           sourceLang, 
           targetLang, 
           aiConfig, 
-          chunkGlossary, 
-          { enforceTags: false }
+          chunkGlossary
         );
         
         if (onProgress) onProgress(`${progressPrefix}: Reviewing...`);
@@ -642,21 +611,48 @@ export const translateText = async (
           sourceLang, 
           targetLang, 
           aiConfig, 
-          chunkGlossary, 
-          { enforceTags: false }
+          chunkGlossary
         );
         
-        if (onProgress) onProgress(`${progressPrefix}: Finalizing...`);
-        const final = await markTerminologyInTranslation(chunk, improved, sourceLang, targetLang, aiConfig, chunkGlossary);
-        results.push(final);
+        chunkResult = improved;
+        results.push(improved);
+
+        // Alignment per chunk
+        if (onProgress) onProgress(`${progressPrefix}: Aligning...`);
+        const chunkAlignments = await alignTermsWithLLM(chunk, improved, relevantTerms, aiConfig);
+        
+        // Merge and Offset Alignments
+        chunkAlignments.forEach(al => {
+           let existing = allAlignments.find(a => a.termId === al.termId);
+           if (!existing) {
+               existing = { termId: al.termId, sourceSpans: [], targetSpans: [] };
+               allAlignments.push(existing);
+           }
+           if (al.sourceSpans) {
+              al.sourceSpans.forEach(s => existing!.sourceSpans.push({ 
+                  start: s.start + sourceOffset, 
+                  end: s.end + sourceOffset 
+              }));
+           }
+           if (al.targetSpans) {
+              al.targetSpans.forEach(s => existing!.targetSpans.push({ 
+                  start: s.start + targetOffset, 
+                  end: s.end + targetOffset 
+              }));
+           }
+        });
       }
+
+      // Update offsets
+      sourceOffset += chunk.length;
+      // We assume the final join will add \n\n (2 chars)
+      targetOffset += chunkResult.length + 2; 
     }
 
-    // Join results
-    // We assume chunks roughly correspond to paragraphs or logical blocks, so joining with newline is safe
     return {
-      finalText: results.join('\n\n'), // Double newline to ensure paragraph separation
-      reflectionNotes: reflections.join('\n\n')
+      finalText: results.join('\n\n'), 
+      reflectionNotes: reflections.join('\n\n'),
+      alignments: mode === 'professional' ? allAlignments : undefined
     };
   }
 };

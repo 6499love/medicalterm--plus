@@ -89,6 +89,7 @@ export const useStore = create<StoreState>()(
                 usage: t.usage || '',
                 root_analysis: t.root_analysis || '',
                 mistranslation: t.mistranslation || [],
+                aliases: t.aliases || [],
                 source: 'user',
                 addedAt: Date.now(),
                 tags: t.tags || []

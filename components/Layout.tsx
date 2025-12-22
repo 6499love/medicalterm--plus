@@ -105,7 +105,7 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
 
         <div className="mb-6 px-2">
           <div className="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/50">
-            <span className="text-xs font-bold text-slate-500 uppercase">Language</span>
+            <span className="text-xs font-bold text-slate-500 uppercase">{t('LBL_LANGUAGE')}</span>
             <LanguageToggle />
           </div>
         </div>

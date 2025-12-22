@@ -10,6 +10,7 @@ export interface Term {
   usage?: string; // New
   root_analysis?: string; // New
   mistranslation?: string[]; // New
+  aliases?: string[]; // New: For synonyms
   source: 'system' | 'user';
   tags?: string[];
   addedAt?: number;

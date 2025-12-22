@@ -33,6 +33,7 @@ const translations = {
     NAV_SAVED: '收藏',
     NAV_HISTORY: '历史',
     NAV_SETTINGS: '设置',
+    LBL_LANGUAGE: '语言',
     FOOTER_NOTE: '100% 客户端安全。数据仅存储在浏览器中。',
     
     // Translator
@@ -51,16 +52,41 @@ const translations = {
     BTN_PRONOUNCE: '发音',
     BTN_COPY: '复制',
     
-    // Add Term Modal
+    // Add Term Modal / Form
     MODAL_TITLE: '添加新术语',
+    BTN_ADD_TERM: '添加术语',
+    BTN_SAVE_TERM: '保存术语',
     LBL_CHINESE_TERM: '中文术语',
     LBL_ENGLISH_DEF: '英文定义',
     LBL_PINYIN_FULL: '全拼',
     LBL_PINYIN_FIRST: '拼音首字母',
+    LBL_AUTO_GEN: '(自动生成)',
+    LBL_ALIASES: '别名 / 同义词',
     LBL_CATEGORY: '分类',
+    LBL_NOTE: '备注',
     LBL_NOTE_USAGE: '备注 / 用法',
+    LBL_USAGE: '用法',
+    LBL_ADDED: '添加于 {date}',
     BTN_CANCEL: '取消',
     BTN_SAVE: '保存',
+    BTN_CLOSE: '关闭',
+    MSG_TERM_ADDED: '术语添加成功！',
+    
+    // Form Placeholders
+    PH_CHINESE: '例如：感冒',
+    PH_ENGLISH: '例如：Common Cold',
+    PH_ALIASES: '以逗号分隔，例如：伤风, 上感',
+    PH_CATEGORY: '例如：内科',
+    PH_NOTE: '可选：备注或用法说明',
+
+    // Import Assistant
+    IMP_TITLE: '导入助手',
+    IMP_DESC: '使用这些提示词让 ChatGPT/Claude 帮您准备数据。',
+    IMP_STEP1_TITLE: '1. Excel/CSV 转 JSON',
+    IMP_STEP2_TITLE: '2. 补充数据 (拼音 & 别名)',
+    BTN_DONE: '完成',
+    TITLE_IMPORT_HELP: '导入帮助',
+    TOAST_PROMPT_COPIED: '提示词已复制！',
 
     // Toast
     TOAST_COPY_SUCCESS: '已复制到剪贴板',
@@ -128,10 +154,7 @@ const translations = {
     PAGE_INFO: '第 {current} / {total} 页',
     DETAIL_TITLE: '术语详情',
     LBL_ROOT_ANALYSIS: '词根分析',
-    LBL_NOTE: '备注',
-    LBL_USAGE: '用法',
-    LBL_ADDED: '添加于 {date}',
-    BTN_CLOSE: '关闭',
+    BTN_REMOVE_TERM: '删除术语',
 
     // History
     HIST_TITLE: '搜索历史',
@@ -144,7 +167,7 @@ const translations = {
     EMPTY_SAVED: '暂无收藏术语',
 
     // Settings
-    SETTINGS_TITLE: 'Settings',
+    SETTINGS_TITLE: '设置',
     SET_API_TITLE: 'API 配置',
     SET_PROVIDER: '服务提供商',
     SET_API_KEY: 'API Key',
@@ -152,12 +175,14 @@ const translations = {
     SET_BASE_URL: 'Base URL (可选)',
     SET_MODEL: '模型 (可选)',
     SET_USERNAME: '用户名 (可选)',
+    PH_USERNAME: '用户',
     HINT_GEMINI_KEY: '在 Google AI Studio 获取免费 Key',
     HINT_OPENAI_KEY: '使用 OpenRouter 或本地 LLM 的 Key',
     HINT_GLM_KEY: '使用智谱 AI (BigModel) 的 API Key',
     HINT_LOCAL_STORAGE: 'Key 仅存储在本地浏览器中，绝不会上传至服务器',
     BTN_GET_KEY: '点击获取 API Key',
     BTN_SAVE_CONFIG: '保存配置',
+    BTN_LOGOUT: '退出登录',
     STATUS_CONNECTED: '已连接',
     SET_FUZZY: '模糊搜索阈值',
     SET_FUZZY_DESC: '数值越低匹配越严格 (0.0 = 精确匹配)',
@@ -168,6 +193,9 @@ const translations = {
     SET_REMEMBER_KEY: '记住 API Key',
     SET_REMEMBER_KEY_DESC: '下次访问时自动加载 (存储在本地)',
     SET_NOTE: '注意：所有数据均存储在您的本地浏览器中。清除浏览器缓存可能会导致数据丢失。建议定期导出您的个人词典。',
+    PROVIDER_OPENAI_LOCAL: 'OpenAI / 本地',
+    PROVIDER_GEMINI: 'Google Gemini',
+    PROVIDER_GLM: '智谱 GLM',
     
     // Popup
     TOOLTIP_TRANSLATE: '翻译',
@@ -183,6 +211,7 @@ const translations = {
     NAV_SAVED: 'Saved',
     NAV_HISTORY: 'History',
     NAV_SETTINGS: 'Settings',
+    LBL_LANGUAGE: 'Language',
     FOOTER_NOTE: '100% Client-side secure. Data stored only in browser.',
 
     // Translator
@@ -201,16 +230,41 @@ const translations = {
     BTN_PRONOUNCE: 'Pronounce',
     BTN_COPY: 'Copy',
     
-    // Add Term Modal
+    // Add Term Modal / Form
     MODAL_TITLE: 'Add New Term',
+    BTN_ADD_TERM: 'Add Term',
+    BTN_SAVE_TERM: 'Save Term',
     LBL_CHINESE_TERM: 'Chinese Term',
     LBL_ENGLISH_DEF: 'English Definition',
     LBL_PINYIN_FULL: 'Full Pinyin',
     LBL_PINYIN_FIRST: 'First Letter Pinyin',
+    LBL_AUTO_GEN: '(Auto-generated)',
+    LBL_ALIASES: 'Aliases / Synonyms',
     LBL_CATEGORY: 'Category',
+    LBL_NOTE: 'Note',
     LBL_NOTE_USAGE: 'Note / Usage',
+    LBL_USAGE: 'Usage',
+    LBL_ADDED: 'Added on {date}',
     BTN_CANCEL: 'Cancel',
     BTN_SAVE: 'Save',
+    BTN_CLOSE: 'Close',
+    MSG_TERM_ADDED: 'Term added successfully!',
+
+    // Form Placeholders
+    PH_CHINESE: 'e.g. 感冒',
+    PH_ENGLISH: 'e.g. Common Cold',
+    PH_ALIASES: 'Comma separated, e.g. 伤风, 上感',
+    PH_CATEGORY: 'e.g. Internal Medicine',
+    PH_NOTE: 'Optional usage notes',
+
+    // Import Assistant
+    IMP_TITLE: 'Import Assistant',
+    IMP_DESC: 'Use these prompts with ChatGPT/Claude to prepare your data.',
+    IMP_STEP1_TITLE: '1. Convert Excel/CSV to JSON',
+    IMP_STEP2_TITLE: '2. Enrich Data (Pinyin & Aliases)',
+    BTN_DONE: 'Done',
+    TITLE_IMPORT_HELP: 'Import Help',
+    TOAST_PROMPT_COPIED: 'Prompt copied!',
 
     // Toast
     TOAST_COPY_SUCCESS: 'Copied to clipboard',
@@ -278,10 +332,7 @@ const translations = {
     PAGE_INFO: 'Page {current} of {total}',
     DETAIL_TITLE: 'Term Details',
     LBL_ROOT_ANALYSIS: 'Root Analysis',
-    LBL_NOTE: 'Note',
-    LBL_USAGE: 'Usage',
-    LBL_ADDED: 'Added on {date}',
-    BTN_CLOSE: 'Close',
+    BTN_REMOVE_TERM: 'Remove Term',
 
     // History
     HIST_TITLE: 'Search History',
@@ -302,12 +353,14 @@ const translations = {
     SET_BASE_URL: 'Base URL (Optional)',
     SET_MODEL: 'Model (Optional)',
     SET_USERNAME: 'Username (Optional)',
+    PH_USERNAME: 'User',
     HINT_GEMINI_KEY: 'Get a free key at Google AI Studio',
     HINT_OPENAI_KEY: 'Use a key from OpenRouter or local LLM',
     HINT_GLM_KEY: 'Use API Key from Zhipu AI (BigModel)',
     HINT_LOCAL_STORAGE: 'Keys are stored locally in your browser and never sent to our servers',
     BTN_GET_KEY: 'Get API Key Here',
     BTN_SAVE_CONFIG: 'Save Configuration',
+    BTN_LOGOUT: 'Log out',
     STATUS_CONNECTED: 'Connected',
     SET_FUZZY: 'Fuzzy Search Threshold',
     SET_FUZZY_DESC: 'Lower values = stricter matching (0.0 = exact)',
@@ -318,6 +371,9 @@ const translations = {
     SET_REMEMBER_KEY: 'Remember API Key',
     SET_REMEMBER_KEY_DESC: 'Auto-load Key next time (Stored locally)',
     SET_NOTE: 'Note: All data is stored locally in your browser. Clearing browser cache may lose your data.',
+    PROVIDER_OPENAI_LOCAL: 'OpenAI / Local',
+    PROVIDER_GEMINI: 'Google Gemini',
+    PROVIDER_GLM: 'Zhipu GLM',
 
     // Popup
     TOOLTIP_TRANSLATE: 'Translate',

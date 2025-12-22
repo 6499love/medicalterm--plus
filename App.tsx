@@ -180,7 +180,7 @@ const SettingsPage = () => {
                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                      }`}
                    >
-                     {p === 'gemini' ? 'Google Gemini' : p === 'glm' ? 'Zhipu GLM' : 'OpenAI / Local'}
+                     {p === 'gemini' ? t('PROVIDER_GEMINI') : p === 'glm' ? t('PROVIDER_GLM') : t('PROVIDER_OPENAI_LOCAL')}
                    </button>
                  ))}
               </div>
@@ -239,7 +239,7 @@ const SettingsPage = () => {
                         value={form.userName}
                         onChange={(e) => setForm({ ...form, userName: e.target.value })}
                         className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none"
-                        placeholder="User"
+                        placeholder={t('PH_USERNAME')}
                       />
                       <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                    </div>
@@ -286,7 +286,7 @@ const SettingsPage = () => {
               onClick={handleLogout}
               className="px-4 py-2 bg-white text-rose-500 border border-rose-100 hover:bg-rose-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
-              <LogOut className="w-4 h-4" /> Log out
+              <LogOut className="w-4 h-4" /> {t('BTN_LOGOUT')}
             </button>
           </div>
         )}

@@ -1,3 +1,4 @@
+
 import Fuse from 'fuse.js';
 import { Term, SearchResult } from '../types';
 import { systemTermsData } from '../system_terms_data';
@@ -23,7 +24,8 @@ export const fetchSystemTerms = async (): Promise<Term[]> => {
       note: t.note || '',
       usage: t.usage || '',
       root_analysis: t.root_analysis || '',
-      mistranslation: t.mistranslation || []
+      mistranslation: t.mistranslation || [],
+      aliases: t.aliases || []
     }));
     return systemTermsCache || [];
   } catch (error) {
@@ -75,7 +77,9 @@ export const searchTerms = (
 
   // 1. Exact Match (User)
   const userExact = userTerms.filter(
-    t => normalize(t.chinese_term) === normalizedQuery || normalize(t.english_term) === normalizedQuery
+    t => normalize(t.chinese_term) === normalizedQuery || 
+         normalize(t.english_term) === normalizedQuery ||
+         t.aliases?.some(a => normalize(a) === normalizedQuery)
   );
   if (userExact.length > 0) {
     return userExact.map(t => ({ ...t, matchType: 'exact-user' }));
@@ -83,7 +87,9 @@ export const searchTerms = (
 
   // 2. Exact Match (System)
   const systemExact = systemTerms.filter(
-    t => normalize(t.chinese_term) === normalizedQuery || normalize(t.english_term) === normalizedQuery
+    t => normalize(t.chinese_term) === normalizedQuery || 
+         normalize(t.english_term) === normalizedQuery ||
+         t.aliases?.some(a => normalize(a) === normalizedQuery)
   );
   if (systemExact.length > 0) {
     return systemExact.map(t => ({ ...t, matchType: 'exact-system' }));
@@ -124,6 +130,7 @@ export const searchTerms = (
     keys: [
       { name: 'chinese_term', weight: 0.5 },
       { name: 'english_term', weight: 0.3 },
+      { name: 'aliases', weight: 0.4 },
       { name: 'pinyin_full', weight: 0.2 }
     ]
   };

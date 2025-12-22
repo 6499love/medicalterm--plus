@@ -1,18 +1,15 @@
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../store';
 import { fetchSystemTerms } from '../services/search';
 import { Term, PageRoute } from '../types';
 import { 
   buildTermSegments, 
-  initialTranslate, 
-  reflectOnTranslation, 
-  improveTranslation,
-  stripTags,
-  parseTaggedText,
-  markTerminologyInTranslation,
-  TextSegment 
+  translateText, 
+  segmentsFromAlignments,
+  TextSegment, 
+  TermAlignment
 } from '../services/textProcessing';
 import { getTokenCount } from '../services/translationChunkUtils';
 import { useTranslation } from '../services/i18n';
@@ -32,7 +29,8 @@ import {
   ChevronUp,
   MessageSquareQuote,
   Coins,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import { copyToClipboard } from '../services/clipboard';
 
@@ -91,6 +89,9 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
   const [inputText, setInputText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   
+  // Alignment State
+  const [alignments, setAlignments] = useState<TermAlignment[] | null>(null);
+
   // Async State
   const [isLoading, setIsLoading] = useState(false);
   const [stepStatus, setStepStatus] = useState('');
@@ -101,7 +102,11 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
   
   // Interaction State
   const [hoveredState, setHoveredState] = useState<{termId: string, index: number} | null>(null);
-  const [tooltipState, setTooltipState] = useState<{term: Term, index: number, x: number, y: number} | null>(null);
+  
+  // Tooltip Logic State
+  const [activeTooltipTerm, setActiveTooltipTerm] = useState<Term | null>(null);
+  const [tooltipAnchor, setTooltipAnchor] = useState<HTMLElement | null>(null);
+  const [tooltipCoords, setTooltipCoords] = useState<{x: number, y: number} | null>(null);
 
   // Translation Mode State
   const [transMode, setTransMode] = useState<'fast' | 'professional'>('fast');
@@ -124,12 +129,66 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     }
   }, []);
 
-  // Click outside to close tooltip
+  // Tooltip Positioning Logic
+  useLayoutEffect(() => {
+    if (!tooltipAnchor || !activeTooltipTerm) {
+      setTooltipCoords(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      const rect = tooltipAnchor.getBoundingClientRect();
+      // Check if element is in viewport
+      if (
+        rect.top < 0 || 
+        rect.left < 0 || 
+        rect.bottom > window.innerHeight || 
+        rect.right > window.innerWidth ||
+        rect.width === 0 || 
+        rect.height === 0
+      ) {
+         setTooltipCoords(null); // Hide if scrolled out
+         return;
+      }
+
+      setTooltipCoords({
+        x: rect.left + rect.width / 2,
+        y: rect.top
+      });
+    };
+
+    updatePosition();
+
+    // Listen to global scroll/resize to update position
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [tooltipAnchor, activeTooltipTerm]);
+
+  // Click outside listener for tooltip
   useEffect(() => {
-    const handleClickOutside = () => setTooltipState(null);
+    if (!activeTooltipTerm) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+       if (tooltipAnchor && tooltipAnchor.contains(e.target as Node)) {
+         return; 
+       }
+       
+       const target = e.target as HTMLElement;
+       if (target.closest('.mtt-tooltip')) return;
+
+       setActiveTooltipTerm(null);
+       setTooltipAnchor(null);
+    };
+
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
-  }, []);
+  }, [activeTooltipTerm, tooltipAnchor]);
+
 
   // Detect language
   const isSourceChinese = useMemo(() => {
@@ -141,6 +200,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     if (!inputText.trim()) {
        setTranslatedText('');
        setReflectionNotes('');
+       setAlignments(null);
        setError(null);
        setEstTokens(0);
        return;
@@ -156,28 +216,47 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
 
   const allTerms = useMemo(() => [...userTerms, ...systemTerms], [userTerms, systemTerms]);
 
-  const inputSegments = useMemo(() => 
-    buildTermSegments(inputText, allTerms, { 
+  // Initial analysis is always regex based (fast)
+  // If we have alignments from LLM, we use those for segments.
+  const inputSegments = useMemo(() => {
+    if (alignments && alignments.length > 0) {
+      return segmentsFromAlignments(inputText, alignments, 'source', allTerms);
+    }
+    return buildTermSegments(inputText, allTerms, { 
       mode: isSourceChinese ? 'source' : 'translation' 
-    }), 
-  [inputText, allTerms, isSourceChinese]);
+    });
+  }, [inputText, allTerms, isSourceChinese, alignments]);
+
+  // Extract detected terms from source analysis to ensure target matches are consistent with source
+  const detectedTerms = useMemo(() => {
+    const unique = new Map<string, Term>();
+    // If we have alignments, use them to determine detected terms
+    if (alignments && alignments.length > 0) {
+        alignments.forEach(a => {
+            const t = allTerms.find(term => term.id === a.termId);
+            if (t) unique.set(t.id, t);
+        });
+    } else {
+        // Fallback to regex analysis result
+        inputSegments.forEach(s => {
+           if (s.matchedTerm) unique.set(s.matchedTerm.id, s.matchedTerm);
+        });
+    }
+    return Array.from(unique.values());
+  }, [inputSegments, alignments, allTerms]);
 
   const translatedSegments = useMemo(() => {
-    // If we have tags in the translation, use the tag parser
-    if (translatedText.includes('⦗') && translatedText.includes('⦘')) {
-      return parseTaggedText(translatedText, allTerms);
+    // If we have AI alignments, use them for precise mapping
+    if (alignments && alignments.length > 0) {
+        return segmentsFromAlignments(translatedText, alignments, 'target', allTerms);
     }
-    // Fallback to regex matching for untagged text
-    return buildTermSegments(translatedText, allTerms, { 
+    // Fallback: Use detected terms for regex matching on target
+    return buildTermSegments(translatedText, detectedTerms, { 
       mode: isSourceChinese ? 'translation' : 'source' 
     });
-  }, [translatedText, allTerms, isSourceChinese]);
+  }, [translatedText, detectedTerms, isSourceChinese, alignments, allTerms]);
 
-  const detectedCount = useMemo(() => {
-    const ids = new Set<string>();
-    inputSegments.forEach(s => { if(s.matchedTerm) ids.add(s.matchedTerm.id); });
-    return ids.size;
-  }, [inputSegments]);
+  const detectedCount = detectedTerms.length;
 
   const handleTranslate = async () => {
       if (!inputText.trim()) return;
@@ -186,20 +265,26 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
         return;
       }
 
+      // Always switch to analyze mode to show highlights
+      setMode('analyze');
+
       const requestId = ++requestRef.current;
       
       setIsLoading(true);
       setError(null);
       setReflectionNotes('');
+      setAlignments(null);
       setShowReflection(false);
       
       const sourceLang = isSourceChinese ? 'Chinese' : 'English';
       const targetLang = isSourceChinese ? 'English' : 'Chinese';
 
-      // Build Glossary from identified segments
-      // We map source -> { target, id } for persistent mapping
+      // Build Glossary from regex-identified segments for context
+      // Note: We use regex result initially because alignments are not yet available
       const glossaryMap = new Map<string, { target: string, id: string }>();
-      inputSegments.forEach(seg => {
+      // Use regex analysis for glossary preparation
+      const initialRegexSegments = buildTermSegments(inputText, allTerms, { mode: isSourceChinese ? 'source' : 'translation' });
+      initialRegexSegments.forEach(seg => {
         if (seg.matchedTerm) {
           const target = isSourceChinese ? seg.matchedTerm.english_term : seg.matchedTerm.chinese_term;
           if (target) {
@@ -213,50 +298,26 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
         id: val.id 
       }));
 
+      // Get detected terms to pass for alignment
+      const relevantTerms = Array.from(glossaryMap.values()).map(v => allTerms.find(t => t.id === v.id)).filter(Boolean) as Term[];
+
       try {
-        if (transMode === 'fast') {
-          // Fast mode: Enforce tags during generation (single step)
-          setStepStatus(t('AST_STATUS_TRANSLATING')); 
-          
-          const result = await initialTranslate(inputText, sourceLang, targetLang, auth, glossary, { enforceTags: true });
-          
-          if (requestId === requestRef.current) {
-            setTranslatedText(result);
-          }
-        } else {
-          // Professional Mode Workflow
-          // 1. Initial Draft (Clean, no tags forced)
-          setStepStatus(t('AST_STATUS_DRAFTING'));
-          const draft = await initialTranslate(inputText, sourceLang, targetLang, auth, glossary, { enforceTags: false });
-          
-          if (requestId !== requestRef.current) return;
-          // Show intermediate draft (likely untagged, so regex matching applies in UI fallback)
-          setTranslatedText(draft);
-
-          // 2. Critique (on clean text)
-          setStepStatus(t('AST_STATUS_REVIEWING'));
-          const critique = await reflectOnTranslation(inputText, draft, sourceLang, targetLang, auth);
-          
-          if (requestId !== requestRef.current) return;
-          setReflectionNotes(critique);
-          
-          // 3. Polish (Clean, no tags forced)
-          setStepStatus(t('AST_STATUS_POLISHING'));
-          const polished = await improveTranslation(inputText, draft, critique, sourceLang, targetLang, auth, glossary, { enforceTags: false });
-          
-          if (requestId !== requestRef.current) return;
-          setTranslatedText(polished);
-
-          // 4. Alignment / Tagging (Post-processing)
-          // This ensures the dictionary terms are highlighted without altering the polished text structure
-          if (glossary.length > 0) {
-            // Re-using 'Polishing' status or could add 'Aligning...'
-            const tagged = await markTerminologyInTranslation(inputText, polished, sourceLang, targetLang, auth, glossary);
-            if (requestId === requestRef.current) {
-               setTranslatedText(tagged);
-            }
-          }
+        const result = await translateText(inputText, transMode, auth, {
+          glossary,
+          relevantTerms,
+          sourceLang,
+          targetLang,
+          onProgress: (s) => setStepStatus(s)
+        });
+        
+        if (requestId === requestRef.current) {
+           setTranslatedText(result.finalText);
+           setReflectionNotes(result.reflectionNotes || '');
+           if (result.alignments) {
+              setAlignments(result.alignments);
+           }
         }
+
       } catch (err: any) {
         if (requestId === requestRef.current) {
           console.error(err);
@@ -277,6 +338,8 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setInputText(newText);
+    // Alignments are invalid if text changes
+    if (alignments) setAlignments(null);
     localStorage.setItem('mtt_assistant_input', newText);
   };
 
@@ -294,17 +357,17 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
 
   const handleTermClick = useCallback((e: React.MouseEvent, term: Term, index: number) => {
     e.stopPropagation(); 
-    // Use click coordinates for tooltip to ensure it appears near the mouse
-    const x = e.clientX;
-    const y = e.clientY;
     
-    setTooltipState({
-      term,
-      index,
-      x,
-      y: y - 10 // Slightly above cursor
-    });
-  }, []);
+    // Toggle: if clicking same term, close it
+    if (activeTooltipTerm?.id === term.id && tooltipAnchor === e.currentTarget) {
+       setActiveTooltipTerm(null);
+       setTooltipAnchor(null);
+       return;
+    }
+
+    setActiveTooltipTerm(term);
+    setTooltipAnchor(e.currentTarget as HTMLElement);
+  }, [activeTooltipTerm, tooltipAnchor]);
 
   const handleTermDoubleClick = useCallback((e: React.MouseEvent, term: Term) => {
     e.stopPropagation();
@@ -446,7 +509,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                   <RenderedText 
                     segments={inputSegments} 
                     activeState={hoveredState}
-                    selectedState={tooltipState ? { termId: tooltipState.term.id, index: tooltipState.index } : null}
+                    selectedState={activeTooltipTerm ? { termId: activeTooltipTerm.id, index: 0 } : null} // Only match ID for generic highlighting when selected
                     onTermEnter={handleTermEnter}
                     onTermLeave={handleTermLeave}
                     onTermClick={handleTermClick}
@@ -517,10 +580,10 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                 <RenderedText 
                   segments={translatedSegments} 
                   activeState={hoveredState}
-                  selectedState={tooltipState ? { termId: tooltipState.term.id, index: tooltipState.index } : null}
+                  selectedState={null} // Highlighting in translation is passive only
                   onTermEnter={handleTermEnter}
                   onTermLeave={handleTermLeave}
-                  // Click handlers removed for translation panel to prevent tooltip but keep highlighting
+                  // No interaction handlers for translation panel, purely for viewing highlighted terms
                 />
                 
                 {reflectionNotes && (
@@ -552,7 +615,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
           {translatedText && !isLoading && (
             <div className="absolute top-14 right-4 flex gap-2">
                <button 
-                 onClick={() => copyToClipboard(stripTags(translatedText), t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'))}
+                 onClick={() => copyToClipboard(translatedText, t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'))}
                  className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-indigo-600 rounded-lg shadow-sm border border-indigo-100 transition-all backdrop-blur-sm"
                  title={t('BTN_COPY')}
                >
@@ -564,20 +627,27 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
       </div>
       
       {/* Detail Tooltip Popup - Rendered via Portal to escape stacking contexts */}
-      {tooltipState && createPortal(
+      {tooltipCoords && activeTooltipTerm && createPortal(
         <div 
-          className="fixed z-[9999] bg-slate-900 text-white p-3 rounded-xl shadow-2xl max-w-xs animate-in zoom-in-95 duration-200 pointer-events-none"
+          className="mtt-tooltip fixed z-[9999] bg-slate-900 text-white p-3 rounded-xl shadow-2xl max-w-xs animate-in zoom-in-95 duration-200"
           style={{ 
-            left: tooltipState.x, 
-            top: tooltipState.y,
+            left: tooltipCoords.x, 
+            top: tooltipCoords.y,
             transform: 'translate(-50%, -100%)',
             marginTop: '-8px'
           }}
         >
-          <div className="font-bold text-sm mb-1">{tooltipState.term.chinese_term}</div>
-          <div className="text-indigo-300 font-medium text-sm mb-2">{tooltipState.term.english_term}</div>
-          {tooltipState.term.note && (
-            <div className="text-xs text-slate-400 border-t border-slate-700 pt-2 mt-1">{tooltipState.term.note}</div>
+          <button 
+             onClick={(e) => { e.stopPropagation(); setActiveTooltipTerm(null); setTooltipAnchor(null); }}
+             className="absolute top-2 right-2 text-slate-500 hover:text-white"
+          >
+             <X className="w-3.5 h-3.5" />
+          </button>
+
+          <div className="font-bold text-sm mb-1 pr-6">{activeTooltipTerm.chinese_term}</div>
+          <div className="text-indigo-300 font-medium text-sm mb-2">{activeTooltipTerm.english_term}</div>
+          {activeTooltipTerm.note && (
+            <div className="text-xs text-slate-400 border-t border-slate-700 pt-2 mt-1">{activeTooltipTerm.note}</div>
           )}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-slate-900"></div>
         </div>,
