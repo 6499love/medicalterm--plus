@@ -22,10 +22,10 @@ export const fetchSystemTerms = async (): Promise<Term[]> => {
       pinyin_first: t.pinyin_first || '',
       category: t.category || '',
       note: t.note || '',
-      usage: t.usage || '',
+      usage_scenario: t.usage_scenario || t.usage || '', // Fallback for old data
       root_analysis: t.root_analysis || '',
-      mistranslation: t.mistranslation || [],
-      aliases: t.aliases || []
+      mistranslation_warning: t.mistranslation_warning || t.mistranslation || [], // Fallback
+      related_terms: t.related_terms || t.aliases || [] // Fallback
     }));
     return systemTermsCache || [];
   } catch (error) {
@@ -79,7 +79,7 @@ export const searchTerms = (
   const userExact = userTerms.filter(
     t => normalize(t.chinese_term) === normalizedQuery || 
          normalize(t.english_term) === normalizedQuery ||
-         t.aliases?.some(a => normalize(a) === normalizedQuery)
+         t.related_terms?.some(a => normalize(a) === normalizedQuery)
   );
   if (userExact.length > 0) {
     return userExact.map(t => ({ ...t, matchType: 'exact-user' }));
@@ -89,7 +89,7 @@ export const searchTerms = (
   const systemExact = systemTerms.filter(
     t => normalize(t.chinese_term) === normalizedQuery || 
          normalize(t.english_term) === normalizedQuery ||
-         t.aliases?.some(a => normalize(a) === normalizedQuery)
+         t.related_terms?.some(a => normalize(a) === normalizedQuery)
   );
   if (systemExact.length > 0) {
     return systemExact.map(t => ({ ...t, matchType: 'exact-system' }));
@@ -130,7 +130,7 @@ export const searchTerms = (
     keys: [
       { name: 'chinese_term', weight: 0.5 },
       { name: 'english_term', weight: 0.3 },
-      { name: 'aliases', weight: 0.4 },
+      { name: 'related_terms', weight: 0.4 },
       { name: 'pinyin_full', weight: 0.2 }
     ]
   };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { SearchResult, Term } from '../types';
 import { searchTerms, fetchSystemTerms, normalizeInput } from '../services/search';
@@ -25,12 +24,12 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
   return (
     <div className={`relative group p-5 rounded-2xl border transition-all duration-200 
       ${isBestMatch 
-        ? 'bg-gradient-to-br from-indigo-50/80 to-white/80 border-indigo-200 shadow-md' 
+        ? 'bg-gradient-to-br from-blue-50/80 to-white/80 border-blue-200 shadow-md' 
         : 'bg-white/40 border-white/40 hover:bg-white/60'
       }`}>
       
       {isBestMatch && (
-        <span className="absolute -top-3 -right-3 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm uppercase tracking-wider">
+        <span className="absolute -top-3 -right-3 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm uppercase tracking-wider">
           {t('BEST_MATCH')}
         </span>
       )}
@@ -51,7 +50,7 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
             </span>
           </div>
           {item.pinyin_full && (
-            <p className="text-sm text-indigo-500 font-medium mt-1">{item.pinyin_full}</p>
+            <p className="text-sm text-blue-500 font-medium mt-1">{item.pinyin_full}</p>
           )}
         </div>
         <button onClick={() => toggleFavorite(item.id)} className="p-2 rounded-full hover:bg-slate-200/50 transition-colors">
@@ -72,10 +71,10 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
             <p>{item.note}</p>
           </div>
         )}
-        {item.usage && (
+        {item.usage_scenario && (
           <div className="flex gap-2 text-sm text-slate-600 bg-green-50/50 p-2 rounded-lg">
             <BookOpen className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-            <p>{item.usage}</p>
+            <p>{item.usage_scenario}</p>
           </div>
         )}
         {item.root_analysis && (
@@ -83,13 +82,13 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
             {t('LBL_ROOT_ANALYSIS')}: {item.root_analysis}
           </div>
         )}
-        {item.mistranslation && item.mistranslation.length > 0 && (
+        {item.mistranslation_warning && item.mistranslation_warning.length > 0 && (
           <div className="flex gap-2 text-sm text-slate-600 bg-red-50/50 p-2 rounded-lg border border-red-100">
             <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold text-red-700 text-xs uppercase">{t('AVOID')}:</span>
               <ul className="list-disc list-inside ml-1">
-                {item.mistranslation.map((m, i) => <li key={i}>{m}</li>)}
+                {item.mistranslation_warning.map((m, i) => <li key={i}>{m}</li>)}
               </ul>
             </div>
           </div>
@@ -97,7 +96,7 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
       </div>
 
       <div className="flex gap-3 mt-4 justify-end opacity-80 group-hover:opacity-100 transition-opacity">
-        <button onClick={() => handleSpeak(item.english_term)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 text-xs font-medium transition-colors">
+        <button onClick={() => handleSpeak(item.english_term)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-medium transition-colors">
           <Volume2 className="w-3.5 h-3.5" /> {t('BTN_PRONOUNCE')}
         </button>
         <button onClick={() => handleCopy(`${item.chinese_term} - ${item.english_term}`)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium transition-colors">
@@ -130,7 +129,7 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
     pinyin_first: '',
     category: '',
     note: '',
-    usage: ''
+    usage_scenario: ''
   });
 
   const { userTerms, settings, addToHistory, addUserTerm } = useStore();
@@ -233,13 +232,14 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
       pinyin_first: newTerm.pinyin_first || '',
       category: newTerm.category || '',
       note: newTerm.note || '',
-      usage: newTerm.usage || '',
+      usage_scenario: newTerm.usage_scenario || '',
       root_analysis: '',
-      mistranslation: []
+      mistranslation_warning: [],
+      related_terms: []
     });
     
     setShowAddModal(false);
-    setNewTerm({ chinese_term: '', english_term: '', pinyin_full: '', pinyin_first: '', category: '', note: '', usage: '' });
+    setNewTerm({ chinese_term: '', english_term: '', pinyin_full: '', pinyin_first: '', category: '', note: '', usage_scenario: '' });
     setQuery(newTerm.chinese_term || ''); 
   };
 
@@ -258,18 +258,18 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t('INPUT_PLACEHOLDER')}
-            className="w-full px-6 py-4 text-lg rounded-2xl bg-white/70 backdrop-blur border-2 border-transparent focus:border-indigo-400 focus:bg-white focus:shadow-xl outline-none transition-all duration-300 text-slate-800 placeholder:text-slate-400 shadow-inner"
+            className="w-full px-6 py-4 text-lg rounded-2xl bg-white/70 backdrop-blur border-2 border-transparent focus:border-blue-400 focus:bg-white focus:shadow-xl outline-none transition-all duration-300 text-slate-800 placeholder:text-slate-400 shadow-inner"
             autoFocus
           />
           {isSearching && (
              <div className="absolute right-4 top-1/2 -translate-y-1/2">
-               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-500"></div>
+               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
              </div>
           )}
         </div>
         <button 
           onClick={handleQuickAction}
-          className="px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-medium shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2"
+          className="px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
         >
           <Search className="w-5 h-5" />
           <span className="hidden sm:inline">{t('BTN_TRANSLATE_ACTION')}</span>
@@ -284,7 +284,7 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
             <span>{t('DID_YOU_MEAN')}</span>
             <button 
               onClick={() => handleApplySuggestion(suggestion)}
-              className="font-bold text-indigo-600 hover:text-indigo-800 hover:underline decoration-2 underline-offset-2 transition-colors"
+              className="font-bold text-blue-600 hover:text-blue-800 hover:underline decoration-2 underline-offset-2 transition-colors"
             >
               {suggestion.chinese_term}
             </button>
@@ -304,7 +304,7 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
               <p className="text-slate-500 mb-4">{t('NO_MATCH', { query })}</p>
               <button 
                 onClick={() => { setNewTerm({...newTerm, chinese_term: query}); setShowAddModal(true); }}
-                className="inline-flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20"
+                className="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20"
               >
                 <Plus className="w-4 h-4" /> {t('BTN_ADD_TO_DICT')}
               </button>
@@ -321,33 +321,33 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
             <form onSubmit={handleAddTerm} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-500 uppercase mb-1">{t('LBL_CHINESE_TERM')}</label>
-                <input required value={newTerm.chinese_term} onChange={e => setNewTerm({...newTerm, chinese_term: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none" />
+                <input required value={newTerm.chinese_term} onChange={e => setNewTerm({...newTerm, chinese_term: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-500 uppercase mb-1">{t('LBL_ENGLISH_DEF')}</label>
-                <input required value={newTerm.english_term} onChange={e => setNewTerm({...newTerm, english_term: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none" />
+                <input required value={newTerm.english_term} onChange={e => setNewTerm({...newTerm, english_term: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-medium text-slate-500 uppercase mb-1">{t('LBL_PINYIN_FULL')}</label>
-                  <input value={newTerm.pinyin_full} onChange={e => setNewTerm({...newTerm, pinyin_full: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none" />
+                  <input value={newTerm.pinyin_full} onChange={e => setNewTerm({...newTerm, pinyin_full: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none" />
                 </div>
                 <div>
                    <label className="block text-xs font-medium text-slate-500 uppercase mb-1">{t('LBL_PINYIN_FIRST')}</label>
-                   <input value={newTerm.pinyin_first} onChange={e => setNewTerm({...newTerm, pinyin_first: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none" />
+                   <input value={newTerm.pinyin_first} onChange={e => setNewTerm({...newTerm, pinyin_first: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-500 uppercase mb-1">{t('LBL_CATEGORY')}</label>
-                <input value={newTerm.category} onChange={e => setNewTerm({...newTerm, category: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none" />
+                <input value={newTerm.category} onChange={e => setNewTerm({...newTerm, category: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-500 uppercase mb-1">{t('LBL_NOTE_USAGE')}</label>
-                <textarea value={newTerm.note} onChange={e => setNewTerm({...newTerm, note: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none text-sm" rows={2} />
+                <textarea value={newTerm.note} onChange={e => setNewTerm({...newTerm, note: e.target.value})} className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none text-sm" rows={2} />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-medium">{t('BTN_CANCEL')}</button>
-                <button type="submit" className="flex-1 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-medium shadow-lg shadow-indigo-500/20">{t('BTN_SAVE')}</button>
+                <button type="submit" className="flex-1 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-medium shadow-lg shadow-blue-500/20">{t('BTN_SAVE')}</button>
               </div>
             </form>
           </div>

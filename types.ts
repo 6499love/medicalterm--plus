@@ -1,16 +1,17 @@
 
 export interface Term {
   id: string;
-  chinese_term: string; // Was term
-  english_term: string; // Was definition
-  pinyin_full: string; // Was pinyin
-  pinyin_first: string; // New
-  category?: string;
-  note?: string; // New
-  usage?: string; // New
-  root_analysis?: string; // New
-  mistranslation?: string[]; // New
-  aliases?: string[]; // New: For synonyms
+  chinese_term: string;
+  english_term: string;
+  pinyin_full: string;
+  pinyin_first: string;
+  category: string;
+  note: string;
+  usage_scenario: string; // Renamed from usage
+  root_analysis: string;
+  mistranslation_warning: string[]; // Renamed from mistranslation
+  related_terms: string[]; // Renamed from aliases
+  
   source: 'system' | 'user';
   tags?: string[];
   addedAt?: number;

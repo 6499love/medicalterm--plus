@@ -18,7 +18,7 @@ interface StoreState {
   addUserTerm: (termData: Omit<Term, 'id' | 'source' | 'addedAt'>) => void;
   removeUserTerm: (id: string) => void;
   updateUserTerm: (term: Term) => void;
-  importUserTerms: (terms: Partial<Term>[]) => number; // Returns count of added terms
+  importUserTerms: (terms: any[]) => number; // Returns count of added terms
   
   toggleFavorite: (termId: string) => void;
   
@@ -86,10 +86,12 @@ export const useStore = create<StoreState>()(
                 pinyin_first: t.pinyin_first || '',
                 category: t.category || '',
                 note: t.note || '',
-                usage: t.usage || '',
+                // Map old fields to new schema if present
+                usage_scenario: t.usage_scenario || t.usage || '',
                 root_analysis: t.root_analysis || '',
-                mistranslation: t.mistranslation || [],
-                aliases: t.aliases || [],
+                mistranslation_warning: t.mistranslation_warning || t.mistranslation || [],
+                related_terms: t.related_terms || t.aliases || [],
+                
                 source: 'user',
                 addedAt: Date.now(),
                 tags: t.tags || []

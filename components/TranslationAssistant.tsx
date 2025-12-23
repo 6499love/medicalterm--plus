@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../store';
@@ -65,8 +64,8 @@ const RenderedText: React.FC<{
           className={`transition-colors duration-200 rounded px-0.5 border-b-2 
             ${isInteractive ? 'cursor-pointer' : 'cursor-default'}
             ${isActive 
-              ? 'bg-indigo-200 border-indigo-500 text-indigo-900 font-medium' // Active / Clicked style
-              : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' // Normal matched style
+              ? 'bg-blue-200 border-blue-500 text-blue-900 font-medium' // Active / Clicked style
+              : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' // Normal matched style
             }`}
         >
           {seg.text}
@@ -388,7 +387,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     if (estTokens > 800) {
         return {
             text: t('TOKEN_ESTIMATE_MEDIUM', { count: estTokens }),
-            color: 'text-indigo-600 bg-indigo-50 border-indigo-200',
+            color: 'text-blue-600 bg-blue-50 border-blue-200',
             icon: <Coins className="w-3.5 h-3.5" />
         };
     }
@@ -407,7 +406,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
       <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-6 shrink-0 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Wand2 className="w-6 h-6 text-indigo-600" />
+            <Wand2 className="w-6 h-6 text-blue-600" />
             {t('AST_TITLE')}
           </h2>
           <p className="text-sm text-slate-500">{t('AST_SUBTITLE')}</p>
@@ -415,7 +414,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
         
         <div className="flex flex-wrap items-center gap-3">
            {detectedCount > 0 && (
-             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
+             <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100">
                {t('AST_DETECTED', { count: detectedCount })}
              </span>
            )}
@@ -426,7 +425,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
              className={`flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-sm shadow-sm transition-all
                ${isLoading || !inputText.trim() || !auth
                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                 : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-indigo-500/20 shadow-indigo-500/10'
+                 : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-500/20 shadow-blue-500/10'
                }`}
            >
              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
@@ -438,25 +437,25 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                onClick={() => setTransMode('fast')}
                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                  transMode === 'fast' 
-                   ? 'bg-white text-indigo-700 shadow-sm' 
+                   ? 'bg-white text-blue-700 shadow-sm' 
                    : 'text-slate-500 hover:text-slate-700'
                }`}
              >
-               <Zap size={14} className={transMode === 'fast' ? "fill-indigo-600/20" : ""} /> {t('MODE_FAST')}
+               <Zap size={14} className={transMode === 'fast' ? "fill-blue-600/20" : ""} /> {t('MODE_FAST')}
              </button>
              <button 
                onClick={() => setTransMode('professional')}
                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                  transMode === 'professional' 
-                   ? 'bg-white text-indigo-700 shadow-sm' 
+                   ? 'bg-white text-blue-700 shadow-sm' 
                    : 'text-slate-500 hover:text-slate-700'
                }`}
              >
-               <GraduationCap size={14} className={transMode === 'professional' ? "fill-indigo-600/20" : ""} /> {t('MODE_PRO')}
+               <GraduationCap size={14} className={transMode === 'professional' ? "fill-blue-600/20" : ""} /> {t('MODE_PRO')}
              </button>
              
              <div className="group relative ml-2 mr-1">
-               <HelpCircle size={14} className="text-slate-400 hover:text-indigo-500 cursor-help" />
+               <HelpCircle size={14} className="text-slate-400 hover:text-blue-500 cursor-help" />
                <div className="absolute right-0 top-full mt-2 w-64 bg-slate-800 text-white text-[10px] p-2 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
                  {t('MODE_PRO_DESC')}
                  <div className="absolute top-0 right-1.5 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
@@ -478,7 +477,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
               <button 
                 onClick={() => setMode('edit')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  mode === 'edit' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  mode === 'edit' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <Edit3 className="w-3.5 h-3.5" /> {t('AST_MODE_EDIT')}
@@ -486,7 +485,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
               <button 
                 onClick={() => setMode('analyze')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  mode === 'analyze' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  mode === 'analyze' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <Highlighter className="w-3.5 h-3.5" /> {t('AST_MODE_ANALYZE')}
@@ -531,11 +530,11 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
         </div>
 
         {/* RIGHT PANEL: Translation / Preview */}
-        <div className="flex flex-col bg-indigo-50/50 backdrop-blur-md rounded-2xl border border-indigo-100 shadow-sm overflow-hidden relative">
-           <div className="flex items-center justify-between p-3 border-b border-indigo-100/50 bg-indigo-50/50">
-            <span className="text-xs font-bold text-indigo-600/70 uppercase tracking-wider ml-2">{t('AST_TARGET')}</span>
+        <div className="flex flex-col bg-blue-50/50 backdrop-blur-md rounded-2xl border border-blue-100 shadow-sm overflow-hidden relative">
+           <div className="flex items-center justify-between p-3 border-b border-blue-100/50 bg-blue-50/50">
+            <span className="text-xs font-bold text-blue-600/70 uppercase tracking-wider ml-2">{t('AST_TARGET')}</span>
             {auth && (
-              <span className="text-[10px] text-indigo-400 bg-white/50 px-2 py-1 rounded border border-indigo-100 flex items-center gap-1">
+              <span className="text-[10px] text-blue-400 bg-white/50 px-2 py-1 rounded border border-blue-100 flex items-center gap-1">
                 {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                 {isLoading ? (stepStatus || 'Processing...') : (translatedText ? t('STATUS_CONNECTED') : t('AST_AUTO_PREVIEW'))}
               </span>
@@ -550,13 +549,13 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                     className="bg-white/50 p-4 rounded-full mb-4 hover:bg-white/80 hover:shadow-lg transition-all group cursor-pointer"
                     title={t('BTN_GOTO_SETTINGS')}
                  >
-                    <Settings className="w-8 h-8 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                    <Settings className="w-8 h-8 text-slate-300 group-hover:text-blue-500 transition-colors" />
                  </button>
                  <h3 className="font-bold text-slate-600 mb-1">{t('ERR_AI_DISABLED_TITLE')}</h3>
                  <p className="text-sm mb-4">{t('ERR_AI_DISABLED_MSG')}</p>
                  <button 
                    onClick={handleGoToSettings}
-                   className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                   className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline"
                  >
                    {t('BTN_GOTO_SETTINGS')}
                  </button>
@@ -587,10 +586,10 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                 />
                 
                 {reflectionNotes && (
-                   <div className="mt-8 border-t border-indigo-200/50 pt-4">
+                   <div className="mt-8 border-t border-blue-200/50 pt-4">
                      <button 
                        onClick={() => setShowReflection(!showReflection)}
-                       className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wide hover:text-indigo-800 transition-colors"
+                       className="flex items-center gap-2 text-xs font-bold text-blue-600 uppercase tracking-wide hover:text-blue-800 transition-colors"
                      >
                         <MessageSquareQuote className="w-4 h-4" />
                         {t('BTN_EXPERT_SUGGESTIONS')}
@@ -598,7 +597,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                      </button>
                      
                      {showReflection && (
-                       <div className="mt-3 p-4 bg-white/60 rounded-xl border border-indigo-100 text-sm text-slate-600 leading-relaxed animate-in slide-in-from-top-2 max-h-60 overflow-y-auto">
+                       <div className="mt-3 p-4 bg-white/60 rounded-xl border border-blue-100 text-sm text-slate-600 leading-relaxed animate-in slide-in-from-top-2 max-h-60 overflow-y-auto">
                          <div className="whitespace-pre-wrap">{reflectionNotes}</div>
                        </div>
                      )}
@@ -616,7 +615,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
             <div className="absolute top-14 right-4 flex gap-2">
                <button 
                  onClick={() => copyToClipboard(translatedText, t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'))}
-                 className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-indigo-600 rounded-lg shadow-sm border border-indigo-100 transition-all backdrop-blur-sm"
+                 className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-blue-600 rounded-lg shadow-sm border border-blue-100 transition-all backdrop-blur-sm"
                  title={t('BTN_COPY')}
                >
                  <Copy className="w-4 h-4" />
@@ -631,28 +630,4 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
         <div 
           className="mtt-tooltip fixed z-[9999] bg-slate-900 text-white p-3 rounded-xl shadow-2xl max-w-xs animate-in zoom-in-95 duration-200"
           style={{ 
-            left: tooltipCoords.x, 
-            top: tooltipCoords.y,
-            transform: 'translate(-50%, -100%)',
-            marginTop: '-8px'
-          }}
-        >
-          <button 
-             onClick={(e) => { e.stopPropagation(); setActiveTooltipTerm(null); setTooltipAnchor(null); }}
-             className="absolute top-2 right-2 text-slate-500 hover:text-white"
-          >
-             <X className="w-3.5 h-3.5" />
-          </button>
-
-          <div className="font-bold text-sm mb-1 pr-6">{activeTooltipTerm.chinese_term}</div>
-          <div className="text-indigo-300 font-medium text-sm mb-2">{activeTooltipTerm.english_term}</div>
-          {activeTooltipTerm.note && (
-            <div className="text-xs text-slate-400 border-t border-slate-700 pt-2 mt-1">{activeTooltipTerm.note}</div>
-          )}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-slate-900"></div>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-};
+            left: tooltipCoords.x

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { Trash2, Search, Book, Download, Upload, FileJson, AlertTriangle, ChevronLeft, ChevronRight, X, Info, Plus, Save, Sparkles, HelpCircle, Copy, Check } from 'lucide-react';
@@ -26,7 +25,7 @@ export const UserDictionary: React.FC = () => {
   const [newTerm, setNewTerm] = useState<{
     chinese_term: string;
     english_term: string;
-    aliases: string;
+    related_terms: string;
     category: string;
     note: string;
     pinyin_full: string;
@@ -34,7 +33,7 @@ export const UserDictionary: React.FC = () => {
   }>({
     chinese_term: '',
     english_term: '',
-    aliases: '',
+    related_terms: '',
     category: '',
     note: '',
     pinyin_full: '',
@@ -94,7 +93,7 @@ export const UserDictionary: React.FC = () => {
   const filtered = displayedTerms.filter(t => 
     (t.chinese_term?.toLowerCase() || '').includes(filter.toLowerCase()) || 
     (t.english_term?.toLowerCase() || '').includes(filter.toLowerCase()) ||
-    t.aliases?.some(a => a.toLowerCase().includes(filter.toLowerCase()))
+    t.related_terms?.some(a => a.toLowerCase().includes(filter.toLowerCase()))
   );
 
   const totalPages = Math.ceil(filtered.length / pageSize);
@@ -185,17 +184,17 @@ export const UserDictionary: React.FC = () => {
             note: newTerm.note,
             pinyin_full: newTerm.pinyin_full,
             pinyin_first: newTerm.pinyin_first,
-            aliases: newTerm.aliases.split(/[,，]/).map(s => s.trim()).filter(Boolean),
-            usage: '',
+            related_terms: newTerm.related_terms.split(/[,，]/).map(s => s.trim()).filter(Boolean),
+            usage_scenario: '',
             root_analysis: '',
-            mistranslation: []
+            mistranslation_warning: []
         });
 
         setIsSubmitting(false);
         setNewTerm({
             chinese_term: '',
             english_term: '',
-            aliases: '',
+            related_terms: '',
             category: '',
             note: '',
             pinyin_full: '',
@@ -217,13 +216,13 @@ interface Term {
   english_term: string;
   category?: string;
   note?: string;
-  aliases?: string[]; // Synonyms
+  related_terms?: string[]; // Synonyms
 }
 Return only the valid JSON.`;
 
   const prompt2 = `Take this JSON array of medical terms. For each item:
 1. Generate 'pinyin_full' (e.g. 'gan mao') and 'pinyin_first' (e.g. 'gm').
-2. Add 'aliases' if there are common synonyms.
+2. Add 'related_terms' if there are common synonyms.
 3. Keep the original fields.
 Return the enriched JSON.`;
 
@@ -238,8 +237,8 @@ Return the enriched JSON.`;
                 onClick={() => setShowAddForm(!showAddForm)}
                 className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-sm font-bold shadow-sm ${
                     showAddForm 
-                    ? 'bg-indigo-600 border-indigo-600 text-white' 
-                    : 'bg-indigo-50 border-indigo-100 text-indigo-700 hover:bg-indigo-100'
+                    ? 'bg-blue-600 border-blue-600 text-white' 
+                    : 'bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100'
                 }`}
              >
                 <Plus className="w-4 h-4" /> {t('BTN_ADD_TERM')}
@@ -257,13 +256,13 @@ Return the enriched JSON.`;
              <div className="flex items-center gap-1">
                 <button 
                 onClick={handleImportClick}
-                className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all text-sm font-medium shadow-sm"
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all text-sm font-medium shadow-sm"
                 >
                 <Upload className="w-4 h-4" /> {t('BTN_IMPORT_JSON')}
                 </button>
                 <button 
                   onClick={() => setShowImportHelp(true)}
-                  className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-2 text-slate-400 hover:text-blue-500 hover:bg-slate-100 rounded-lg transition-colors"
                   title={t('TITLE_IMPORT_HELP')}
                 >
                   <HelpCircle className="w-5 h-5" />
@@ -275,7 +274,7 @@ Return the enriched JSON.`;
                className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-sm font-medium shadow-sm ${
                  userTerms.length === 0 
                    ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed' 
-                   : 'bg-white border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200'
+                   : 'bg-white border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
                }`}
              >
                <Download className="w-4 h-4" /> {t('BTN_EXPORT_JSON')}
@@ -299,7 +298,7 @@ Return the enriched JSON.`;
           onClick={() => setActiveTab('system')}
           className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
             activeTab === 'system' 
-              ? 'bg-white text-indigo-600 shadow-sm' 
+              ? 'bg-white text-blue-600 shadow-sm' 
               : 'text-slate-500 hover:text-slate-700'
           }`}
         >
@@ -309,7 +308,7 @@ Return the enriched JSON.`;
           onClick={() => setActiveTab('user')}
           className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
             activeTab === 'user' 
-              ? 'bg-white text-indigo-600 shadow-sm' 
+              ? 'bg-white text-blue-600 shadow-sm' 
               : 'text-slate-500 hover:text-slate-700'
           }`}
         >
@@ -319,7 +318,7 @@ Return the enriched JSON.`;
 
       {/* Add Term Form Card */}
       {activeTab === 'user' && showAddForm && (
-         <div className={`mb-6 p-6 bg-white rounded-2xl border-2 border-indigo-100 shadow-lg transition-all duration-500 transform origin-top ${isSubmitting ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}>
+         <div className={`mb-6 p-6 bg-white rounded-2xl border-2 border-blue-100 shadow-lg transition-all duration-500 transform origin-top ${isSubmitting ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
                  <Sparkles className="w-5 h-5 text-amber-500" />
@@ -335,7 +334,7 @@ Return the enriched JSON.`;
                     required 
                     value={newTerm.chinese_term} 
                     onChange={handleChineseChange}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white outline-none transition-all"
                     placeholder={t('PH_CHINESE')}
                   />
                </div>
@@ -345,7 +344,7 @@ Return the enriched JSON.`;
                     required 
                     value={newTerm.english_term} 
                     onChange={e => setNewTerm({...newTerm, english_term: e.target.value})}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white outline-none transition-all"
                     placeholder={t('PH_ENGLISH')}
                   />
                </div>
@@ -354,23 +353,23 @@ Return the enriched JSON.`;
                  <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex justify-between">
                        <span>{t('LBL_PINYIN_FULL')}</span> 
-                       <span className="text-[10px] text-indigo-500 font-normal normal-case opacity-75">{t('LBL_AUTO_GEN')}</span>
+                       <span className="text-[10px] text-blue-500 font-normal normal-case opacity-75">{t('LBL_AUTO_GEN')}</span>
                     </label>
                     <input 
                       value={newTerm.pinyin_full} 
                       onChange={e => setNewTerm({...newTerm, pinyin_full: e.target.value})}
-                      className="w-full p-2 rounded-lg bg-slate-50/50 border border-slate-200 text-slate-600 focus:border-indigo-400 outline-none font-mono text-sm"
+                      className="w-full p-2 rounded-lg bg-slate-50/50 border border-slate-200 text-slate-600 focus:border-blue-400 outline-none font-mono text-sm"
                     />
                  </div>
                  <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex justify-between">
                        <span>{t('LBL_PINYIN_FIRST')}</span>
-                       <span className="text-[10px] text-indigo-500 font-normal normal-case opacity-75">{t('LBL_AUTO_GEN')}</span>
+                       <span className="text-[10px] text-blue-500 font-normal normal-case opacity-75">{t('LBL_AUTO_GEN')}</span>
                     </label>
                     <input 
                       value={newTerm.pinyin_first} 
                       onChange={e => setNewTerm({...newTerm, pinyin_first: e.target.value})}
-                      className="w-full p-2 rounded-lg bg-slate-50/50 border border-slate-200 text-slate-600 focus:border-indigo-400 outline-none font-mono text-sm"
+                      className="w-full p-2 rounded-lg bg-slate-50/50 border border-slate-200 text-slate-600 focus:border-blue-400 outline-none font-mono text-sm"
                     />
                  </div>
                </div>
@@ -378,9 +377,9 @@ Return the enriched JSON.`;
                <div className="md:col-span-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('LBL_ALIASES')}</label>
                   <input 
-                    value={newTerm.aliases} 
-                    onChange={e => setNewTerm({...newTerm, aliases: e.target.value})}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                    value={newTerm.related_terms} 
+                    onChange={e => setNewTerm({...newTerm, related_terms: e.target.value})}
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white outline-none transition-all"
                     placeholder={t('PH_ALIASES')}
                   />
                </div>
@@ -390,7 +389,7 @@ Return the enriched JSON.`;
                   <input 
                     value={newTerm.category} 
                     onChange={e => setNewTerm({...newTerm, category: e.target.value})}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none"
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none"
                     placeholder={t('PH_CATEGORY')}
                   />
                </div>
@@ -399,7 +398,7 @@ Return the enriched JSON.`;
                   <input 
                     value={newTerm.note} 
                     onChange={e => setNewTerm({...newTerm, note: e.target.value})}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none"
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none"
                     placeholder={t('PH_NOTE')}
                   />
                </div>
@@ -415,7 +414,7 @@ Return the enriched JSON.`;
                   <button 
                     type="submit" 
                     disabled={isSubmitting}
-                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 flex items-center gap-2"
                   >
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     {t('BTN_SAVE_TERM')}
@@ -432,7 +431,7 @@ Return the enriched JSON.`;
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder={t('FILTER_PLACEHOLDER')}
-          className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/50 border border-slate-200 focus:outline-none focus:border-indigo-400 focus:bg-white transition-all"
+          className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/50 border border-slate-200 focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">
           {t('DICT_COUNT', { count: filtered.length })}
@@ -452,13 +451,13 @@ Return the enriched JSON.`;
               <div 
                 key={term.id || index} 
                 onClick={() => setSelectedTerm(term)}
-                className="relative flex flex-col p-5 bg-white/60 rounded-xl border border-white/50 hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer group"
+                className="relative flex flex-col p-5 bg-white/60 rounded-xl border border-white/50 hover:shadow-md hover:border-blue-200 transition-all duration-200 cursor-pointer group"
               >
                 <div className="flex justify-between items-start mb-1">
                    <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
                      <h4 className="font-bold text-lg text-slate-800 truncate">{term.chinese_term}</h4>
                      {term.pinyin_full && (
-                       <span className="text-xs font-mono text-indigo-400/80 shrink-0">{term.pinyin_full}</span>
+                       <span className="text-xs font-mono text-blue-400/80 shrink-0">{term.pinyin_full}</span>
                      )}
                    </div>
                    
@@ -473,13 +472,13 @@ Return the enriched JSON.`;
                    )}
                 </div>
                 
-                <p className="text-indigo-700 font-medium leading-relaxed line-clamp-2 mb-2 flex-1" title={term.english_term}>
+                <p className="text-blue-700 font-medium leading-relaxed line-clamp-2 mb-2 flex-1" title={term.english_term}>
                    {term.english_term}
                 </p>
 
-                {term.aliases && term.aliases.length > 0 && (
+                {term.related_terms && term.related_terms.length > 0 && (
                    <div className="mb-2 text-xs text-slate-500 flex gap-1 items-center">
-                      <span className="opacity-50">aka:</span> {term.aliases.join(', ')}
+                      <span className="opacity-50">aka:</span> {term.related_terms.join(', ')}
                    </div>
                 )}
                 
@@ -489,9 +488,9 @@ Return the enriched JSON.`;
                        {term.category}
                      </span>
                    )}
-                   {term.usage && (
+                   {term.usage_scenario && (
                       <div className="flex gap-1 items-center text-xs text-slate-500 bg-green-50/30 px-2 py-0.5 rounded-lg truncate max-w-[150px]">
-                        <Book className="w-3 h-3 opacity-70 shrink-0"/> <span className="truncate">{term.usage}</span>
+                        <Book className="w-3 h-3 opacity-70 shrink-0"/> <span className="truncate">{term.usage_scenario}</span>
                       </div>
                    )}
                 </div>
@@ -542,7 +541,7 @@ Return the enriched JSON.`;
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{t('LBL_CHINESE_TERM')}</label>
                 <div className="text-2xl font-bold text-slate-800">{selectedTerm.chinese_term}</div>
                 {selectedTerm.pinyin_full && (
-                  <div className="text-sm text-indigo-500 font-mono mt-1">{selectedTerm.pinyin_full}</div>
+                  <div className="text-sm text-blue-500 font-mono mt-1">{selectedTerm.pinyin_full}</div>
                 )}
               </div>
 
@@ -553,11 +552,11 @@ Return the enriched JSON.`;
                 </div>
               </div>
 
-              {selectedTerm.aliases && selectedTerm.aliases.length > 0 && (
+              {selectedTerm.related_terms && selectedTerm.related_terms.length > 0 && (
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{t('LBL_ALIASES')}</label>
                   <div className="flex flex-wrap gap-2">
-                    {selectedTerm.aliases.map((alias, i) => (
+                    {selectedTerm.related_terms.map((alias, i) => (
                       <span key={i} className="px-2 py-1 bg-slate-100 text-slate-600 text-sm rounded-md border border-slate-200">
                         {alias}
                       </span>
@@ -591,22 +590,22 @@ Return the enriched JSON.`;
                 </div>
               )}
 
-              {selectedTerm.usage && (
+              {selectedTerm.usage_scenario && (
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{t('LBL_USAGE')}</label>
                   <div className="flex gap-2 text-sm text-slate-600 bg-green-50 p-3 rounded-lg">
                     <Book className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                    <p>{selectedTerm.usage}</p>
+                    <p>{selectedTerm.usage_scenario}</p>
                   </div>
                 </div>
               )}
 
-              {selectedTerm.mistranslation && selectedTerm.mistranslation.length > 0 && (
+              {selectedTerm.mistranslation_warning && selectedTerm.mistranslation_warning.length > 0 && (
                 <div>
                   <label className="block text-xs font-bold text-red-400 uppercase mb-1">{t('AVOID')}</label>
                   <div className="bg-red-50 border border-red-100 rounded-lg p-3">
                     <ul className="list-disc list-inside text-sm text-red-700">
-                      {selectedTerm.mistranslation.map((m, i) => <li key={i}>{m}</li>)}
+                      {selectedTerm.mistranslation_warning.map((m, i) => <li key={i}>{m}</li>)}
                     </ul>
                   </div>
                 </div>
@@ -644,36 +643,36 @@ Return the enriched JSON.`;
               </div>
 
               <div className="space-y-6">
-                 <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                    <h4 className="font-bold text-indigo-900 text-sm mb-2 flex items-center gap-2">
-                       <span className="w-5 h-5 bg-indigo-200 text-indigo-700 rounded-full flex items-center justify-center text-xs">1</span>
+                 <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <h4 className="font-bold text-blue-900 text-sm mb-2 flex items-center gap-2">
+                       <span className="w-5 h-5 bg-blue-200 text-blue-700 rounded-full flex items-center justify-center text-xs">1</span>
                        {t('IMP_STEP1_TITLE')}
                     </h4>
                     <div className="relative group">
-                       <pre className="text-xs bg-white p-3 rounded-lg text-slate-600 whitespace-pre-wrap font-mono border border-indigo-100 leading-relaxed">
+                       <pre className="text-xs bg-white p-3 rounded-lg text-slate-600 whitespace-pre-wrap font-mono border border-blue-100 leading-relaxed">
                           {prompt1}
                        </pre>
                        <button 
                          onClick={() => copyPrompt(1, prompt1)}
-                         className="absolute top-2 right-2 p-1.5 bg-slate-100 hover:bg-indigo-600 hover:text-white rounded-md transition-colors text-slate-500"
+                         className="absolute top-2 right-2 p-1.5 bg-slate-100 hover:bg-blue-600 hover:text-white rounded-md transition-colors text-slate-500"
                        >
                          {helpCopied === 1 ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                        </button>
                     </div>
                  </div>
 
-                 <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
-                    <h4 className="font-bold text-purple-900 text-sm mb-2 flex items-center gap-2">
-                       <span className="w-5 h-5 bg-purple-200 text-purple-700 rounded-full flex items-center justify-center text-xs">2</span>
+                 <div className="p-4 bg-cyan-50 rounded-xl border border-cyan-100">
+                    <h4 className="font-bold text-cyan-900 text-sm mb-2 flex items-center gap-2">
+                       <span className="w-5 h-5 bg-cyan-200 text-cyan-700 rounded-full flex items-center justify-center text-xs">2</span>
                        {t('IMP_STEP2_TITLE')}
                     </h4>
                     <div className="relative group">
-                       <pre className="text-xs bg-white p-3 rounded-lg text-slate-600 whitespace-pre-wrap font-mono border border-purple-100 leading-relaxed">
+                       <pre className="text-xs bg-white p-3 rounded-lg text-slate-600 whitespace-pre-wrap font-mono border border-cyan-100 leading-relaxed">
                           {prompt2}
                        </pre>
                        <button 
                          onClick={() => copyPrompt(2, prompt2)}
-                         className="absolute top-2 right-2 p-1.5 bg-slate-100 hover:bg-purple-600 hover:text-white rounded-md transition-colors text-slate-500"
+                         className="absolute top-2 right-2 p-1.5 bg-slate-100 hover:bg-cyan-600 hover:text-white rounded-md transition-colors text-slate-500"
                        >
                          {helpCopied === 2 ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                        </button>

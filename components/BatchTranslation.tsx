@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { fetchSystemTerms, searchTerms } from '../services/search';
@@ -54,12 +53,12 @@ export const BatchTranslation: React.FC = () => {
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="flex-1 w-full p-4 rounded-2xl bg-white/50 border border-white/60 focus:border-indigo-300 outline-none resize-none text-slate-700"
+            className="flex-1 w-full p-4 rounded-2xl bg-white/50 border border-white/60 focus:border-blue-300 outline-none resize-none text-slate-700"
             placeholder={t('PLACEHOLDER_INPUT')}
           />
           <button 
             onClick={handleProcess}
-            className="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium shadow-lg shadow-indigo-500/20 transition-all"
+            className="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20 transition-all"
           >
             {t('BTN_TRANSLATE_ALL')}
           </button>
@@ -69,7 +68,7 @@ export const BatchTranslation: React.FC = () => {
           <div className="flex justify-between items-center mb-2">
             <label className="text-sm font-medium text-slate-500">{t('LBL_RESULTS')}</label>
             {processed.length > 0 && (
-              <button onClick={handleExport} className="flex items-center gap-1 text-indigo-600 text-xs font-bold hover:underline">
+              <button onClick={handleExport} className="flex items-center gap-1 text-blue-600 text-xs font-bold hover:underline">
                 <Download className="w-3 h-3" /> {t('BTN_EXPORT')}
               </button>
             )}
@@ -85,7 +84,7 @@ export const BatchTranslation: React.FC = () => {
                   <div key={idx} className="flex items-center justify-between p-2 border-b border-slate-100 last:border-0">
                     <span className="font-medium text-slate-700">{item.original}</span>
                     <ArrowRight className="w-4 h-4 text-slate-300" />
-                    <span className={`${item.found ? 'text-indigo-600' : 'text-red-400 italic'}`}>
+                    <span className={`${item.found ? 'text-blue-600' : 'text-red-400 italic'}`}>
                       {item.result}
                     </span>
                   </div>

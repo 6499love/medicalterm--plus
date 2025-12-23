@@ -209,7 +209,7 @@ export const alignTermsWithLLM = async (
         id: t.id,
         chinese_term: t.chinese_term,
         english_term: t.english_term,
-        aliases: t.aliases
+        related_terms: t.related_terms
     }));
 
     const systemPrompt = `You are a medical translation alignment assistant.
@@ -222,7 +222,7 @@ You will receive:
    {{translatedText}}
 
 3) A medical term dictionary:
-   Each entry has: id, chinese_term, english_term, aliases.
+   Each entry has: id, chinese_term, english_term, related_terms.
 
 Task:
 - For each term, decide whether its meaning appears in the source and in the translation.
@@ -409,8 +409,8 @@ export const buildTermSegments = (
     const primary = mode === 'source' ? term.chinese_term : term.english_term;
     addPattern(primary, term);
 
-    if (term.aliases && term.aliases.length > 0) {
-        term.aliases.forEach(alias => addPattern(alias, term));
+    if (term.related_terms && term.related_terms.length > 0) {
+        term.related_terms.forEach(alias => addPattern(alias, term));
     }
   });
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Search, Book, Star, History as HistoryIcon, Settings as SettingsIcon, Layers, CheckCircle, AlertCircle, Wand2 } from 'lucide-react';
 import { PageRoute } from '../types';
@@ -40,12 +39,12 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
   ];
 
   const LanguageToggle = () => (
-    <div className="flex items-center bg-indigo-100/50 p-1 rounded-lg border border-indigo-100">
+    <div className="flex items-center bg-blue-100/50 p-1 rounded-lg border border-blue-100">
       <button
         onClick={() => setLanguage('zh-CN')}
         className={`px-2 py-1 text-xs font-bold rounded-md transition-all ${
           language === 'zh-CN' 
-            ? 'bg-white text-indigo-700 shadow-sm' 
+            ? 'bg-white text-blue-700 shadow-sm' 
             : 'text-slate-400 hover:text-slate-600'
         }`}
       >
@@ -55,7 +54,7 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
         onClick={() => setLanguage('en-US')}
         className={`px-2 py-1 text-xs font-bold rounded-md transition-all ${
           language === 'en-US' 
-            ? 'bg-white text-indigo-700 shadow-sm' 
+            ? 'bg-white text-blue-700 shadow-sm' 
             : 'text-slate-400 hover:text-slate-600'
         }`}
       >
@@ -76,7 +75,7 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
             onClick={() => onNavigate(item.id)}
             className={`p-3 rounded-xl transition-all duration-200 whitespace-nowrap ${
               activePage === item.id
-                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
                 : 'text-slate-500 hover:bg-white/50'
             }`}
           >
@@ -96,7 +95,7 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
       <aside className="hidden md:flex flex-col w-64 shrink-0">
         <div className="mb-8 pl-2 flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
+            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600">
               {t('APP_TITLE')}
             </h1>
             <p className="text-xs text-slate-500 font-medium tracking-wide uppercase mt-1">{t('APP_SUBTITLE')}</p>
@@ -117,11 +116,11 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
               onClick={() => onNavigate(item.id)}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
                 activePage === item.id
-                  ? 'bg-white/70 shadow-lg border border-white/50 text-indigo-700 backdrop-blur-md'
+                  ? 'bg-white/70 shadow-lg border border-white/50 text-blue-700 backdrop-blur-md'
                   : 'text-slate-600 hover:bg-white/30 hover:text-slate-900'
               }`}
             >
-              <span className={`${activePage === item.id ? 'text-indigo-600' : 'text-slate-400'}`}>
+              <span className={`${activePage === item.id ? 'text-blue-600' : 'text-slate-400'}`}>
                 {item.icon}
               </span>
               {item.label}
@@ -129,8 +128,8 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
           ))}
         </nav>
 
-        <div className="mt-auto p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
-          <p className="text-xs text-indigo-900/60 leading-relaxed">
+        <div className="mt-auto p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+          <p className="text-xs text-blue-900/60 leading-relaxed">
             {t('FOOTER_NOTE')}
           </p>
         </div>

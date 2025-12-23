@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { Translator } from './components/Translator';
@@ -32,7 +31,7 @@ const HistoryPage = () => {
           <div key={h.id} className="flex justify-between items-center p-3 bg-white/40 rounded-lg border border-white/40">
             <div>
               <p className="font-medium text-slate-700">{h.query}</p>
-              <p className="text-xs text-indigo-500">{h.resultTerm || t('NO_MATCH_TEXT')}</p>
+              <p className="text-xs text-blue-500">{h.resultTerm || t('NO_MATCH_TEXT')}</p>
             </div>
             <span className="text-[10px] text-slate-400">{new Date(h.timestamp).toLocaleTimeString()}</span>
           </div>
@@ -65,17 +64,17 @@ const FavoritesPage: React.FC<{ onNavigate: (page: PageRoute) => void }> = ({ on
           <div 
             key={term.id} 
             onClick={() => handleTermClick(term.id)}
-            className="p-4 bg-white/70 rounded-xl border border-indigo-100 shadow-sm relative group cursor-pointer hover:bg-white transition-all"
+            className="p-4 bg-white/70 rounded-xl border border-blue-100 shadow-sm relative group cursor-pointer hover:bg-white transition-all"
           >
              <div className="flex justify-between items-start">
                <div>
-                 <h4 className="font-bold text-lg text-slate-800 group-hover:text-indigo-700 transition-colors">{term.chinese_term}</h4>
-                 <p className="text-indigo-600 font-medium">{term.english_term}</p>
+                 <h4 className="font-bold text-lg text-slate-800 group-hover:text-blue-700 transition-colors">{term.chinese_term}</h4>
+                 <p className="text-blue-600 font-medium">{term.english_term}</p>
                </div>
                <div className="flex gap-1">
                  <button 
                   onClick={(e) => { e.stopPropagation(); speakText(term.english_term); }} 
-                  className="p-1.5 text-slate-400 hover:text-indigo-600 z-10"
+                  className="p-1.5 text-slate-400 hover:text-blue-600 z-10"
                  >
                    <Volume2 className="w-4 h-4" />
                  </button>
@@ -89,7 +88,7 @@ const FavoritesPage: React.FC<{ onNavigate: (page: PageRoute) => void }> = ({ on
              </div>
              {term.pinyin_full && <p className="text-xs text-slate-400 mt-2 font-mono">{term.pinyin_full}</p>}
              
-             <ArrowRight className="w-4 h-4 text-indigo-300 absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+             <ArrowRight className="w-4 h-4 text-blue-300 absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         ))}
       </div>
@@ -161,7 +160,7 @@ const SettingsPage = () => {
 
       <div className="bg-white/60 p-6 rounded-2xl border border-white/60 shadow-sm">
         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <Key className="w-5 h-5 text-indigo-500" />
+          <Key className="w-5 h-5 text-blue-500" />
           {t('SET_API_TITLE')}
         </h3>
 
@@ -176,7 +175,7 @@ const SettingsPage = () => {
                      onClick={() => setForm({ ...form, provider: p as any })}
                      className={`py-2 rounded-lg text-sm font-medium border transition-all ${
                        form.provider === p 
-                       ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm' 
+                       ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                      }`}
                    >
@@ -191,14 +190,14 @@ const SettingsPage = () => {
                 <span>{t('SET_API_KEY')}</span>
                 
                 <div className="group relative">
-                   <HelpCircle className="w-4 h-4 text-slate-400 hover:text-indigo-500 cursor-help" />
+                   <HelpCircle className="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help" />
                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none whitespace-pre-wrap font-normal leading-relaxed">
                      {t('HELP_GET_KEY')}
                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
                    </div>
                 </div>
 
-                <a href={getKeyUrl()} target="_blank" rel="noreferrer" className="ml-auto text-xs text-indigo-500 hover:underline inline-flex items-center gap-1">
+                <a href={getKeyUrl()} target="_blank" rel="noreferrer" className="ml-auto text-xs text-blue-500 hover:underline inline-flex items-center gap-1">
                   {t('BTN_GET_KEY')} <ExternalLink className="w-3 h-3" />
                 </a>
               </label>
@@ -207,7 +206,7 @@ const SettingsPage = () => {
                   type="password"
                   value={form.apiKey}
                   onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none transition-all"
                   placeholder="sk-..."
                 />
                 <Key className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -224,7 +223,7 @@ const SettingsPage = () => {
                         type="text"
                         value={form.model}
                         onChange={(e) => setForm({ ...form, model: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none"
+                        className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none"
                         placeholder="gpt-4, claude-3, etc."
                       />
                       <Cpu className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -238,7 +237,7 @@ const SettingsPage = () => {
                         type="text"
                         value={form.userName}
                         onChange={(e) => setForm({ ...form, userName: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none"
+                        className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none"
                         placeholder={t('PH_USERNAME')}
                       />
                       <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -252,7 +251,7 @@ const SettingsPage = () => {
                 id="rememberKey"
                 checked={settings.rememberApiKey}
                 onChange={(e) => updateSettings({ rememberApiKey: e.target.checked })}
-                className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
               <label htmlFor="rememberKey" className="flex-1 cursor-pointer">
                 <div className="text-sm font-medium text-slate-700">{t('SET_REMEMBER_KEY')}</div>
@@ -263,7 +262,7 @@ const SettingsPage = () => {
             <button 
               onClick={handleAuthSave}
               disabled={!form.apiKey}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex justify-center items-center gap-2"
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex justify-center items-center gap-2"
             >
               <Save className="w-4 h-4" /> {t('BTN_SAVE_CONFIG')}
             </button>
