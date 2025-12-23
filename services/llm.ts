@@ -34,13 +34,10 @@ export const getCompletion = async (
 ): Promise<string> => {
   let apiKey = config.apiKey;
 
-  // Safe check for process.env.API_KEY to avoid ReferenceError in environments where process is undefined
-  try {
-    if (config.provider === 'gemini' && typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      apiKey = process.env.API_KEY;
-    }
-  } catch (e) {
-    // Ignore error if process is not defined
+  // Only use process.env.API_KEY if the provider is Gemini.
+  // This prevents the environment's Gemini key from overriding user-provided keys for other services.
+  if (config.provider === 'gemini' && process.env.API_KEY) {
+    apiKey = process.env.API_KEY;
   }
 
   if (!apiKey) {
