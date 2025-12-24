@@ -15,11 +15,11 @@ const ToastContainer = () => {
   if (!message) return null;
   
   return (
-    <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce duration-300 ${
+    <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce duration-300 w-[90%] max-w-sm justify-center ${
       type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
     }`}>
-      {type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-      <span className="font-medium text-sm">{message}</span>
+      {type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
+      <span className="font-medium text-sm truncate">{message}</span>
     </div>
   );
 };
@@ -39,7 +39,7 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
   ];
 
   const LanguageToggle = () => (
-    <div className="flex items-center bg-blue-100/50 p-1 rounded-lg border border-blue-100">
+    <div className="flex items-center bg-blue-100/50 p-1 rounded-lg border border-blue-100 shrink-0">
       <button
         onClick={() => setLanguage('zh-CN')}
         className={`px-2 py-1 text-xs font-bold rounded-md transition-all ${
@@ -64,16 +64,16 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
   );
 
   return (
-    <div className="min-h-screen p-4 md:p-8 flex flex-col md:flex-row gap-6 max-w-7xl mx-auto relative">
+    <div className="min-h-screen p-3 md:p-8 flex flex-col md:flex-row gap-4 md:gap-6 max-w-7xl mx-auto relative">
       <ToastContainer />
       
       {/* Mobile Nav */}
-      <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-white/80 backdrop-blur-lg border border-white/40 shadow-2xl rounded-2xl p-2 z-50 flex justify-between items-center overflow-x-auto">
+      <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-lg border border-white/40 shadow-2xl rounded-2xl p-2 z-50 flex justify-between items-center overflow-x-auto no-scrollbar">
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
-            className={`p-3 rounded-xl transition-all duration-200 whitespace-nowrap ${
+            className={`p-3 rounded-xl transition-all duration-200 whitespace-nowrap shrink-0 ${
               activePage === item.id
                 ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
                 : 'text-slate-500 hover:bg-white/50'
@@ -85,7 +85,7 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
       </nav>
       
       {/* Mobile Language Toggle (Absolute Top Right) */}
-      <div className="md:hidden fixed top-4 right-4 z-50">
+      <div className="md:hidden fixed top-3 right-3 z-50">
         <div className="bg-white/80 backdrop-blur-md p-1 rounded-xl shadow-lg border border-white/40">
            <LanguageToggle />
         </div>
@@ -136,8 +136,8 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-h-[80vh] pb-24 md:pb-0 pt-14 md:pt-0">
-         <div className="bg-white/40 backdrop-blur-xl border border-white/50 shadow-xl rounded-3xl p-6 md:p-10 h-full overflow-auto flex flex-col">
+      <main className="flex-1 flex flex-col min-h-[calc(100vh-6rem)] md:min-h-[80vh] pb-24 md:pb-0 pt-12 md:pt-0">
+         <div className="bg-white/40 backdrop-blur-xl border border-white/50 shadow-xl rounded-2xl md:rounded-3xl p-4 md:p-10 h-full overflow-auto flex flex-col">
            {children}
          </div>
       </main>

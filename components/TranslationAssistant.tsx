@@ -403,18 +403,18 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-6 shrink-0 gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 lg:mb-6 shrink-0 gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Wand2 className="w-6 h-6 text-blue-600" />
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <Wand2 className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
             {t('AST_TITLE')}
           </h2>
-          <p className="text-sm text-slate-500">{t('AST_SUBTITLE')}</p>
+          <p className="text-xs md:text-sm text-slate-500">{t('AST_SUBTITLE')}</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
            {detectedCount > 0 && (
-             <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100">
+             <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-blue-100">
                {t('AST_DETECTED', { count: detectedCount })}
              </span>
            )}
@@ -422,7 +422,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
            <button
              onClick={handleTranslate}
              disabled={isLoading || !inputText.trim() || !auth}
-             className={`flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-sm shadow-sm transition-all
+             className={`flex items-center gap-2 px-4 py-2 md:px-5 md:py-2 rounded-xl font-bold text-sm shadow-sm transition-all
                ${isLoading || !inputText.trim() || !auth
                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                  : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-500/20 shadow-blue-500/10'
@@ -435,26 +435,26 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 items-center">
              <button 
                onClick={() => setTransMode('fast')}
-               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+               className={`flex items-center gap-1.5 px-2 py-1.5 md:px-3 md:py-1.5 rounded-lg text-xs font-bold transition-all ${
                  transMode === 'fast' 
                    ? 'bg-white text-blue-700 shadow-sm' 
                    : 'text-slate-500 hover:text-slate-700'
                }`}
              >
-               <Zap size={14} className={transMode === 'fast' ? "fill-blue-600/20" : ""} /> {t('MODE_FAST')}
+               <Zap size={14} className={transMode === 'fast' ? "fill-blue-600/20" : ""} /> <span className="hidden sm:inline">{t('MODE_FAST')}</span>
              </button>
              <button 
                onClick={() => setTransMode('professional')}
-               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+               className={`flex items-center gap-1.5 px-2 py-1.5 md:px-3 md:py-1.5 rounded-lg text-xs font-bold transition-all ${
                  transMode === 'professional' 
                    ? 'bg-white text-blue-700 shadow-sm' 
                    : 'text-slate-500 hover:text-slate-700'
                }`}
              >
-               <GraduationCap size={14} className={transMode === 'professional' ? "fill-blue-600/20" : ""} /> {t('MODE_PRO')}
+               <GraduationCap size={14} className={transMode === 'professional' ? "fill-blue-600/20" : ""} /> <span className="hidden sm:inline">{t('MODE_PRO')}</span>
              </button>
              
-             <div className="group relative ml-2 mr-1">
+             <div className="group relative ml-2 mr-1 hidden sm:block">
                <HelpCircle size={14} className="text-slate-400 hover:text-blue-500 cursor-help" />
                <div className="absolute right-0 top-full mt-2 w-64 bg-slate-800 text-white text-[10px] p-2 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
                  {t('MODE_PRO_DESC')}
@@ -466,10 +466,10 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
       </div>
 
       {/* Main Content - Split View */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
+      <div className="flex-1 flex flex-col lg:grid lg:grid-cols-2 gap-6 min-h-0">
         
         {/* LEFT PANEL: Source */}
-        <div className="flex flex-col bg-white/60 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm overflow-hidden">
+        <div className="flex flex-col bg-white/60 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm overflow-hidden min-h-[300px] lg:min-h-0">
           <div className="flex items-center justify-between p-3 border-b border-slate-100 bg-white/40">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-2">{t('AST_SOURCE')}</span>
             
@@ -530,7 +530,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
         </div>
 
         {/* RIGHT PANEL: Translation / Preview */}
-        <div className="flex flex-col bg-blue-50/50 backdrop-blur-md rounded-2xl border border-blue-100 shadow-sm overflow-hidden relative">
+        <div className="flex flex-col bg-blue-50/50 backdrop-blur-md rounded-2xl border border-blue-100 shadow-sm overflow-hidden relative min-h-[300px] lg:min-h-0">
            <div className="flex items-center justify-between p-3 border-b border-blue-100/50 bg-blue-50/50">
             <span className="text-xs font-bold text-blue-600/70 uppercase tracking-wider ml-2">{t('AST_TARGET')}</span>
             {auth && (
@@ -630,4 +630,27 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
         <div 
           className="mtt-tooltip fixed z-[9999] bg-slate-900 text-white p-3 rounded-xl shadow-2xl max-w-xs animate-in zoom-in-95 duration-200"
           style={{ 
-            left: tooltipCoords.x
+            left: tooltipCoords.x,
+            top: tooltipCoords.y + 24, // Offset slightly below
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <div className="flex justify-between items-start mb-1">
+             <div className="text-sm font-bold text-blue-300">{activeTooltipTerm.chinese_term}</div>
+             <div className="text-[10px] text-slate-400 bg-slate-800 px-1.5 rounded border border-slate-700 uppercase tracking-wider">{activeTooltipTerm.source}</div>
+          </div>
+          <div className="text-sm font-serif mb-2 leading-snug">{activeTooltipTerm.english_term}</div>
+          
+          {(activeTooltipTerm.note || activeTooltipTerm.category) && (
+             <div className="pt-2 border-t border-slate-700 text-xs text-slate-400 flex flex-col gap-1">
+               {activeTooltipTerm.category && <span>{activeTooltipTerm.category}</span>}
+               {activeTooltipTerm.note && <span>{activeTooltipTerm.note}</span>}
+             </div>
+          )}
+          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};

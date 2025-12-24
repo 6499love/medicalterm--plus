@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store';
-import { Trash2, Search, Book, Download, Upload, FileJson, AlertTriangle, ChevronLeft, ChevronRight, X, Info, Plus, Save, Sparkles, HelpCircle, Copy, Check } from 'lucide-react';
+import { Trash2, Search, Book, Download, Upload, FileJson, AlertTriangle, ChevronLeft, ChevronRight, X, Info, Plus, Save, Sparkles, HelpCircle, Copy, Check, Loader2 } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import { fetchSystemTerms } from '../services/search';
 import { Term } from '../types';
@@ -232,7 +232,7 @@ Return the enriched JSON.`;
         <h2 className="text-2xl font-bold text-slate-800">{t('DICT_TITLE')}</h2>
         
         {activeTab === 'user' && (
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center">
              <button 
                 onClick={() => setShowAddForm(!showAddForm)}
                 className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-sm font-bold shadow-sm ${
@@ -244,7 +244,7 @@ Return the enriched JSON.`;
                 <Plus className="w-4 h-4" /> {t('BTN_ADD_TERM')}
              </button>
 
-             <div className="h-6 w-px bg-slate-200 mx-1"></div>
+             <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block"></div>
 
              <input 
                type="file" 
@@ -318,7 +318,7 @@ Return the enriched JSON.`;
 
       {/* Add Term Form Card */}
       {activeTab === 'user' && showAddForm && (
-         <div className={`mb-6 p-6 bg-white rounded-2xl border-2 border-blue-100 shadow-lg transition-all duration-500 transform origin-top ${isSubmitting ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}>
+         <div className={`mb-6 p-4 md:p-6 bg-white rounded-2xl border-2 border-blue-100 shadow-lg transition-all duration-500 transform origin-top ${isSubmitting ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
                  <Sparkles className="w-5 h-5 text-amber-500" />
@@ -327,7 +327,7 @@ Return the enriched JSON.`;
               <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
             
-            <form onSubmit={handleSubmitTerm} className="grid md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmitTerm} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('LBL_CHINESE_TERM')} *</label>
                   <input 
@@ -455,7 +455,7 @@ Return the enriched JSON.`;
               >
                 <div className="flex justify-between items-start mb-1">
                    <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
-                     <h4 className="font-bold text-lg text-slate-800 truncate">{term.chinese_term}</h4>
+                     <h4 className="font-bold text-lg text-slate-800 truncate max-w-full">{term.chinese_term}</h4>
                      {term.pinyin_full && (
                        <span className="text-xs font-mono text-blue-400/80 shrink-0">{term.pinyin_full}</span>
                      )}
@@ -464,7 +464,7 @@ Return the enriched JSON.`;
                    {activeTab === 'user' && (
                      <button 
                        onClick={(e) => handleDelete(e, term.id)}
-                       className="p-1.5 -mt-1 -mr-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                       className="p-1.5 -mt-1 -mr-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
                        title={t('BTN_REMOVE_TERM')}
                      >
                        <Trash2 className="w-4 h-4" />
@@ -689,8 +689,3 @@ Return the enriched JSON.`;
     </div>
   );
 };
-
-// Simple loader component
-const Loader2 = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-);

@@ -22,7 +22,7 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
   };
 
   return (
-    <div className={`relative group p-5 rounded-2xl border transition-all duration-200 
+    <div className={`relative group p-4 md:p-5 rounded-2xl border transition-all duration-200 
       ${isBestMatch 
         ? 'bg-gradient-to-br from-blue-50/80 to-white/80 border-blue-200 shadow-md' 
         : 'bg-white/40 border-white/40 hover:bg-white/60'
@@ -35,10 +35,10 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
       )}
       
       <div className="flex justify-between items-start mb-2">
-        <div>
+        <div className="flex-1 min-w-0 pr-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-2xl font-bold text-slate-800">{item.chinese_term}</h3>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+            <h3 className="text-xl md:text-2xl font-bold text-slate-800 break-words">{item.chinese_term}</h3>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 ${
               item.source === 'user' 
                 ? 'bg-amber-50 text-amber-700 border-amber-200' 
                 : 'bg-slate-50 text-slate-500 border-slate-200'
@@ -53,13 +53,13 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
             <p className="text-sm text-blue-500 font-medium mt-1">{item.pinyin_full}</p>
           )}
         </div>
-        <button onClick={() => toggleFavorite(item.id)} className="p-2 rounded-full hover:bg-slate-200/50 transition-colors">
+        <button onClick={() => toggleFavorite(item.id)} className="p-2 rounded-full hover:bg-slate-200/50 transition-colors shrink-0">
            <Star className={`w-5 h-5 ${isFav ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}`} />
         </button>
       </div>
 
-      <div className="mt-3 pt-3 border-t border-slate-200/50">
-         <p className="text-xl text-slate-700 font-serif font-medium">{item.english_term}</p>
+      <div className="mt-2 pt-2 md:mt-3 md:pt-3 border-t border-slate-200/50">
+         <p className="text-lg md:text-xl text-slate-700 font-serif font-medium">{item.english_term}</p>
          {item.category && <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">{item.category}</p>}
       </div>
 
@@ -95,7 +95,7 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
         )}
       </div>
 
-      <div className="flex gap-3 mt-4 justify-end opacity-80 group-hover:opacity-100 transition-opacity">
+      <div className="flex gap-3 mt-4 justify-end md:opacity-80 md:group-hover:opacity-100 transition-opacity">
         <button onClick={() => handleSpeak(item.english_term)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs font-medium transition-colors">
           <Volume2 className="w-3.5 h-3.5" /> {t('BTN_PRONOUNCE')}
         </button>
@@ -245,12 +245,12 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
 
   return (
     <div className="max-w-3xl mx-auto w-full">
-      <header className="mb-8 text-center">
-        <h2 className="text-3xl font-bold text-slate-800 mb-2">{t('HEADER_TITLE')}</h2>
-        <p className="text-slate-500">{t('HEADER_SUBTITLE', { count: systemTerms.length + userTerms.length })}</p>
+      <header className="mb-6 md:mb-8 text-center">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">{t('HEADER_TITLE')}</h2>
+        <p className="text-sm md:text-base text-slate-500">{t('HEADER_SUBTITLE', { count: systemTerms.length + userTerms.length })}</p>
       </header>
 
-      <div className="flex gap-3 mb-2">
+      <div className="flex gap-2 md:gap-3 mb-2">
         <div className="relative flex-1">
           <input
             type="text"
@@ -258,18 +258,18 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t('INPUT_PLACEHOLDER')}
-            className="w-full px-6 py-4 text-lg rounded-2xl bg-white/70 backdrop-blur border-2 border-transparent focus:border-blue-400 focus:bg-white focus:shadow-xl outline-none transition-all duration-300 text-slate-800 placeholder:text-slate-400 shadow-inner"
+            className="w-full px-4 py-3 md:px-6 md:py-4 text-base md:text-lg rounded-xl md:rounded-2xl bg-white/70 backdrop-blur border-2 border-transparent focus:border-blue-400 focus:bg-white focus:shadow-xl outline-none transition-all duration-300 text-slate-800 placeholder:text-slate-400 shadow-inner"
             autoFocus
           />
           {isSearching && (
              <div className="absolute right-4 top-1/2 -translate-y-1/2">
-               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+               <div className="animate-spin rounded-full h-4 w-4 md:h-5 md:w-5 border-b-2 border-blue-500"></div>
              </div>
           )}
         </div>
         <button 
           onClick={handleQuickAction}
-          className="px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
+          className="px-4 py-3 md:px-6 md:py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl md:rounded-2xl font-medium shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 shrink-0"
         >
           <Search className="w-5 h-5" />
           <span className="hidden sm:inline">{t('BTN_TRANSLATE_ACTION')}</span>
@@ -284,11 +284,11 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
             <span>{t('DID_YOU_MEAN')}</span>
             <button 
               onClick={() => handleApplySuggestion(suggestion)}
-              className="font-bold text-blue-600 hover:text-blue-800 hover:underline decoration-2 underline-offset-2 transition-colors"
+              className="font-bold text-blue-600 hover:text-blue-800 hover:underline decoration-2 underline-offset-2 transition-colors truncate max-w-[150px]"
             >
               {suggestion.chinese_term}
             </button>
-            <span className="text-slate-400">({suggestion.english_term})</span>
+            <span className="text-slate-400 hidden sm:inline">({suggestion.english_term})</span>
           </div>
         )}
       </div>
@@ -315,8 +315,8 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
 
       {/* Add Term Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-white/50 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 md:p-6 border border-white/50 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-slate-800 mb-4">{t('MODAL_TITLE')}</h3>
             <form onSubmit={handleAddTerm} className="space-y-3">
               <div>

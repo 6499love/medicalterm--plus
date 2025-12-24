@@ -59,7 +59,7 @@ const FavoritesPage: React.FC<{ onNavigate: (page: PageRoute) => void }> = ({ on
   return (
     <div>
       <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('SAVED_TITLE')}</h2>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
         {favTerms.length === 0 ? <p className="text-slate-400 col-span-2 text-center py-10">{t('EMPTY_SAVED')}</p> : favTerms.map(term => (
           <div 
             key={term.id} 
@@ -158,7 +158,7 @@ const SettingsPage = () => {
         </p>
       </div>
 
-      <div className="bg-white/60 p-6 rounded-2xl border border-white/60 shadow-sm">
+      <div className="bg-white/60 p-4 md:p-6 rounded-2xl border border-white/60 shadow-sm">
         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
           <Key className="w-5 h-5 text-blue-500" />
           {t('SET_API_TITLE')}
@@ -168,7 +168,7 @@ const SettingsPage = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">{t('SET_PROVIDER')}</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                  {['gemini', 'openai-compatible', 'glm'].map((p) => (
                    <button 
                      key={p}
@@ -189,7 +189,7 @@ const SettingsPage = () => {
               <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center flex-wrap gap-2">
                 <span>{t('SET_API_KEY')}</span>
                 
-                <div className="group relative">
+                <div className="group relative hidden md:block">
                    <HelpCircle className="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help" />
                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none whitespace-pre-wrap font-normal leading-relaxed">
                      {t('HELP_GET_KEY')}
