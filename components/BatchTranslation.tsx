@@ -5,6 +5,7 @@ import { Term } from '../types';
 import { ArrowRight, Download, Loader2, Sparkles, Book, AlertCircle } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import { getCompletion } from '../services/llm';
+import * as XLSX from 'xlsx';
 
 interface BatchResult {
   original: string;
@@ -114,17 +115,32 @@ ${missingTerms.join('\n')}`;
   };
 
   const handleExport = () => {
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + "Original,Translation,Source\n"
-      + processed.map(e => `${e.original},"${e.result}",${e.source}`).join("\n");
+    if (processed.length === 0) return;
+
+    // Prepare data for Excel
+    const data = processed.map(item => ({
+      [t('AST_SOURCE')]: item.original,     // "原文" / "Source"
+      [t('AST_TARGET')]: item.result,       // "译文" / "Translation"
+      [t('LBL_CATEGORY')]: item.source === 'dict' ? t('BATCH_SOURCE_DICT') : (item.source === 'ai' ? t('BATCH_SOURCE_AI') : '') // "来源" / "Source Type"
+    }));
+
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
     
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "medical_batch_translations.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Auto-adjust column width (heuristic)
+    const maxWidth = processed.reduce((w, r) => Math.max(w, r.original.length, r.result.length), 10);
+    const colWidth = Math.min(maxWidth + 5, 50); // Cap at 50 chars
+    worksheet['!cols'] = [{ wch: colWidth }, { wch: colWidth }, { wch: 15 }];
+
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Translations");
+
+    // Generate filename
+    const filename = `medical_batch_translations_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    // Write file
+    XLSX.writeFile(workbook, filename);
   };
 
   return (
@@ -165,7 +181,7 @@ ${missingTerms.join('\n')}`;
           <div className="flex justify-between items-center mb-2">
             <label className="text-sm font-medium text-slate-500">{t('LBL_RESULTS')}</label>
             {processed.length > 0 && (
-              <button onClick={handleExport} className="flex items-center gap-1 text-blue-600 text-xs font-bold hover:underline">
+              <button onClick={handleExport} className="flex items-center gap-1 text-green-600 text-xs font-bold hover:underline">
                 <Download className="w-3 h-3" /> {t('BTN_EXPORT')}
               </button>
             )}

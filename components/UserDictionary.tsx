@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '../store';
-import { Trash2, Search, Book, Download, Upload, FileJson, AlertTriangle, ChevronLeft, ChevronRight, X, Info, Plus, Save, Sparkles, HelpCircle, Copy, Check, Loader2 } from 'lucide-react';
+import { Trash2, Search, Book, Download, Upload, FileJson, AlertTriangle, ChevronLeft, ChevronRight, X, Info, Plus, Save, Sparkles, HelpCircle, Copy, Check, Loader2, ArrowUpDown, ChevronDown } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import { fetchSystemTerms } from '../services/search';
 import { Term } from '../types';
@@ -11,13 +11,16 @@ export const UserDictionary: React.FC = () => {
   const { userTerms, addUserTerm, removeUserTerm, importUserTerms, navigatedTermId, setNavigatedTermId } = useStore();
   const [systemTerms, setSystemTerms] = useState<Term[]>([]);
   const [activeTab, setActiveTab] = useState<'system' | 'user'>('system');
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState(''); // Text filter for User tab
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
+  // System Tab Specific State
+  const [sortBy, setSortBy] = useState<'zh_asc' | 'zh_desc' | 'en_asc' | 'en_desc'>('en_asc');
+
   // Pagination & Selection State
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
-  const pageSize = 14; 
+  const pageSize = 10; 
 
   // Add Term Form State
   const [showAddForm, setShowAddForm] = useState(false);
@@ -76,10 +79,10 @@ export const UserDictionary: React.FC = () => {
     }
   }, [navigatedTermId, systemTerms, userTerms, setNavigatedTermId]);
 
-  // Reset pagination when filter or tab changes
+  // Reset pagination when filter/tab/sort changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, activeTab]);
+  }, [filter, activeTab, sortBy]);
 
   useEffect(() => {
     if (message) {
@@ -88,16 +91,34 @@ export const UserDictionary: React.FC = () => {
     }
   }, [message]);
 
-  const displayedTerms = activeTab === 'system' ? systemTerms : userTerms;
+  // Processing Data (Filter & Sort)
+  const displayedTerms = useMemo(() => {
+    if (activeTab === 'user') {
+        // User Tab: Filter by text
+        return userTerms.filter(t => 
+            (t.chinese_term?.toLowerCase() || '').includes(filter.toLowerCase()) || 
+            (t.english_term?.toLowerCase() || '').includes(filter.toLowerCase()) ||
+            t.related_terms?.some(a => a.toLowerCase().includes(filter.toLowerCase()))
+        ).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0)); // Default User sort: Newest first
+    } else {
+        // System Tab: Sort Only
+        let data = [...systemTerms];
 
-  const filtered = displayedTerms.filter(t => 
-    (t.chinese_term?.toLowerCase() || '').includes(filter.toLowerCase()) || 
-    (t.english_term?.toLowerCase() || '').includes(filter.toLowerCase()) ||
-    t.related_terms?.some(a => a.toLowerCase().includes(filter.toLowerCase()))
-  );
+        // Sort
+        data.sort((a, b) => {
+            if (sortBy === 'zh_asc') return a.chinese_term.localeCompare(b.chinese_term, 'zh-CN');
+            if (sortBy === 'zh_desc') return b.chinese_term.localeCompare(a.chinese_term, 'zh-CN');
+            if (sortBy === 'en_asc') return a.english_term.localeCompare(b.english_term);
+            if (sortBy === 'en_desc') return b.english_term.localeCompare(a.english_term);
+            return 0;
+        });
 
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const visibleTerms = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+        return data;
+    }
+  }, [activeTab, userTerms, systemTerms, filter, sortBy]);
+
+  const totalPages = Math.ceil(displayedTerms.length / pageSize);
+  const visibleTerms = displayedTerms.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleExport = () => {
     const dataStr = JSON.stringify(userTerms, null, 2);
@@ -228,11 +249,18 @@ Return the enriched JSON.`;
 
   return (
     <div className="flex flex-col h-full relative">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 shrink-0">
+      <div className="flex flex-row items-center justify-between mb-2 shrink-0">
         <h2 className="text-2xl font-bold text-slate-800">{t('DICT_TITLE')}</h2>
         
+        {/* Subtle Large Counter (Top Right) */}
+        <div className="absolute right-0 top-0 pointer-events-none select-none z-0">
+            <span className="text-5xl font-black text-slate-200/60 tracking-tighter leading-none font-sans">
+              {displayedTerms.length}
+            </span>
+        </div>
+        
         {activeTab === 'user' && (
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center z-10">
              <button 
                 onClick={() => setShowAddForm(!showAddForm)}
                 className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-sm font-bold shadow-sm ${
@@ -284,7 +312,7 @@ Return the enriched JSON.`;
       </div>
 
       {message && (
-        <div className={`mb-4 p-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-fade-in shrink-0 ${
+        <div className={`mb-4 p-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-fade-in shrink-0 z-10 ${
           message.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
         }`}>
           {message.type === 'error' && <AlertTriangle className="w-4 h-4" />}
@@ -293,7 +321,7 @@ Return the enriched JSON.`;
       )}
 
       {/* Tabs */}
-      <div className="flex p-1 bg-slate-100/80 rounded-xl mb-6 w-full md:w-fit shrink-0">
+      <div className="flex p-1 bg-slate-100/80 rounded-xl mb-6 w-full md:w-fit shrink-0 z-10">
         <button
           onClick={() => setActiveTab('system')}
           className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -318,7 +346,7 @@ Return the enriched JSON.`;
 
       {/* Add Term Form Card */}
       {activeTab === 'user' && showAddForm && (
-         <div className={`mb-6 p-4 md:p-6 bg-white rounded-2xl border-2 border-blue-100 shadow-lg transition-all duration-500 transform origin-top ${isSubmitting ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}>
+         <div className={`mb-6 p-4 md:p-6 bg-white rounded-2xl border-2 border-blue-100 shadow-lg transition-all duration-500 transform origin-top z-20 relative ${isSubmitting ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
                  <Sparkles className="w-5 h-5 text-amber-500" />
@@ -424,39 +452,63 @@ Return the enriched JSON.`;
          </div>
       )}
 
-      {/* Search Bar */}
-      <div className="relative mb-4 shrink-0">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input 
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder={t('FILTER_PLACEHOLDER')}
-          className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/50 border border-slate-200 focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
-        />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">
-          {t('DICT_COUNT', { count: filtered.length })}
-        </div>
+      {/* Controls Bar */}
+      <div className="relative mb-4 shrink-0 z-10">
+        {activeTab === 'user' ? (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input 
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder={t('FILTER_PLACEHOLDER')}
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/50 border border-slate-200 focus:outline-none focus:border-blue-400 focus:bg-white transition-all shadow-sm"
+            />
+          </div>
+        ) : (
+          <div className="bg-white/50 p-2 rounded-2xl border border-white/50 shadow-sm backdrop-blur-sm">
+             {/* Sort Control */}
+             <div className="relative">
+               <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 flex items-center gap-1.5">
+                  <ArrowUpDown className="w-4 h-4" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 hidden sm:inline">Sort</span>
+               </div>
+               <select 
+                 value={sortBy}
+                 onChange={(e) => setSortBy(e.target.value as any)}
+                 className="w-full pl-8 sm:pl-20 pr-8 py-2.5 rounded-xl bg-white/70 border border-slate-200 focus:outline-none focus:border-blue-400 focus:bg-white transition-all appearance-none cursor-pointer text-slate-700 text-sm font-medium hover:bg-white"
+               >
+                 <option value="en_asc">English (A-Z)</option>
+                 <option value="en_desc">English (Z-A)</option>
+                 <option value="zh_asc">中文拼音 (A-Z)</option>
+                 <option value="zh_desc">中文拼音 (Z-A)</option>
+               </select>
+               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <ChevronDown className="w-4 h-4" />
+               </div>
+             </div>
+          </div>
+        )}
       </div>
 
       {/* Grid List */}
-      <div className="flex-1 min-h-0 overflow-auto pb-4">
-        {filtered.length === 0 ? (
+      <div className="flex-1 min-h-0 overflow-auto pb-4 z-10">
+        {displayedTerms.length === 0 ? (
           <div className="text-center py-12 flex flex-col items-center text-slate-400 h-full justify-center">
             <FileJson className="w-12 h-12 mb-3 opacity-50" />
             <p>{activeTab === 'user' ? t('EMPTY_USER_DICT') : t('EMPTY_DICT')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {visibleTerms.map((term, index) => (
               <div 
                 key={term.id || index} 
                 onClick={() => setSelectedTerm(term)}
-                className="relative flex flex-col p-5 bg-white/60 rounded-xl border border-white/50 hover:shadow-md hover:border-blue-200 transition-all duration-200 cursor-pointer group"
+                className="relative flex flex-col p-3 bg-white/60 rounded-xl border border-white/50 hover:shadow-md hover:border-blue-200 transition-all duration-200 cursor-pointer group"
               >
                 <div className="flex justify-between items-start mb-1">
-                   <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
-                     <h4 className="font-bold text-lg text-slate-800 truncate max-w-full">{term.chinese_term}</h4>
-                     {term.pinyin_full && (
+                   <div className="flex items-baseline gap-2 min-w-0 flex-1">
+                     <h4 className="font-bold text-lg text-slate-800 truncate" title={term.chinese_term}>{term.chinese_term}</h4>
+                     {term.pinyin_full && term.source !== 'system' && (
                        <span className="text-xs font-mono text-blue-400/80 shrink-0">{term.pinyin_full}</span>
                      )}
                    </div>
@@ -464,7 +516,7 @@ Return the enriched JSON.`;
                    {activeTab === 'user' && (
                      <button 
                        onClick={(e) => handleDelete(e, term.id)}
-                       className="p-1.5 -mt-1 -mr-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                       className="p-1.5 -mt-1 -mr-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0"
                        title={t('BTN_REMOVE_TERM')}
                      >
                        <Trash2 className="w-4 h-4" />
@@ -472,24 +524,25 @@ Return the enriched JSON.`;
                    )}
                 </div>
                 
-                <p className="text-blue-700 font-medium leading-relaxed line-clamp-2 mb-2 flex-1" title={term.english_term}>
+                <p className="text-blue-700 font-medium leading-snug line-clamp-2 mb-2 text-sm" title={term.english_term}>
                    {term.english_term}
                 </p>
 
                 {term.related_terms && term.related_terms.length > 0 && (
-                   <div className="mb-2 text-xs text-slate-500 flex gap-1 items-center">
-                      <span className="opacity-50">aka:</span> {term.related_terms.join(', ')}
+                   <div className="mb-2 text-xs text-slate-500 flex gap-1 items-center overflow-hidden">
+                      <span className="opacity-50 shrink-0">aka:</span> 
+                      <span className="truncate">{term.related_terms.join(', ')}</span>
                    </div>
                 )}
                 
-                <div className="flex flex-wrap gap-y-1 gap-x-2 mt-auto pt-2 border-t border-slate-100">
+                <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-100 h-7 overflow-hidden">
                    {term.category && (
-                     <span className="text-[10px] text-slate-500 bg-blue-50/50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wide truncate max-w-[120px]">
+                     <span className="text-[10px] text-slate-500 bg-blue-50/50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wide truncate max-w-[40%]">
                        {term.category}
                      </span>
                    )}
                    {term.usage_scenario && (
-                      <div className="flex gap-1 items-center text-xs text-slate-500 bg-green-50/30 px-2 py-0.5 rounded-lg truncate max-w-[150px]">
+                      <div className="flex gap-1 items-center text-xs text-slate-500 bg-green-50/30 px-2 py-0.5 rounded-lg truncate max-w-[50%]">
                         <Book className="w-3 h-3 opacity-70 shrink-0"/> <span className="truncate">{term.usage_scenario}</span>
                       </div>
                    )}
@@ -501,8 +554,8 @@ Return the enriched JSON.`;
       </div>
 
       {/* Pagination Controls */}
-      {filtered.length > 0 && (
-        <div className="shrink-0 flex justify-center items-center gap-4 py-4 border-t border-slate-200/50 mt-2">
+      {displayedTerms.length > 0 && (
+        <div className="shrink-0 flex justify-center items-center gap-4 py-4 border-t border-slate-200/50 mt-2 z-10">
           <button 
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}

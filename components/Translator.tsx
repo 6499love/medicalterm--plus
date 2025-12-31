@@ -49,7 +49,7 @@ const ResultCard: React.FC<{ item: SearchResult; index: number }> = ({ item, ind
               {item.matchType}
             </span>
           </div>
-          {item.pinyin_full && (
+          {item.pinyin_full && item.source !== 'system' && (
             <p className="text-sm text-blue-500 font-medium mt-1">{item.pinyin_full}</p>
           )}
         </div>

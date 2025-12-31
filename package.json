@@ -15,7 +15,8 @@
     "react": "^19.2.0",
     "fuse.js": "^7.1.0",
     "@google/genai": "latest",
-    "pinyin-pro": "3.18.3"
+    "pinyin-pro": "3.18.3",
+    "xlsx": "0.18.5"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
