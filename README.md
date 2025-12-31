@@ -1,20 +1,79 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <img width="1200" height="475" alt="MedicalTerm-Plus Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# MedicalTerm-Plus
 
-This contains everything you need to run your app locally.
+**MedicalTerm-Plus** 是一个面向医疗行业的医学术语翻译与检索单页应用（SPA），采用 **100% 客户端运行架构**，无需任何后端服务即可使用。
 
-View your app in AI Studio: https://ai.studio/apps/drive/1XxKm60jSqnIynOATmbRibT04fdw_ATLu
+该项目基于 **Google Gemini AI Studio 官方模板** 构建，并在此基础上进行了深度功能扩展，集成了本地医学词库、AI 辅助翻译、模糊搜索、用户自定义词典及浏览器本地存储等能力，适用于医学文献翻译、医疗器械出海资料整理、销售与市场团队的日常使用场景。
 
-## Run Locally
+---
 
-**Prerequisites:**  Node.js
+## ✨ 核心特性
 
+- **医学术语智能翻译**
+  - 支持 Gemini API
+  - 兼容 OpenAI 风格 API（可替换模型）
+- **本地 JSON 医学词典**
+  - 支持中文 / 英文术语
+  - 支持术语别名与扩展字段
+- **高性能模糊搜索**
+  - 基于 Fuse.js
+  - 支持拼音 / 关键词模糊匹配
+- **用户自定义词典**
+  - 词条本地新增、编辑、删除
+  - 与系统词库并行生效
+- **批量翻译与导出**
+  - 支持多条术语批量处理
+  - 支持 Excel 导出
+- **纯前端数据持久化**
+  - 基于浏览器 `localStorage`
+  - 数据不出本地，保障隐私安全
+- **语音能力**
+  - 基于 Web Speech API
+  - 支持术语朗读与辅助学习
+- **专业模式 / 反射能力**
+  - 面向医疗专业用户的增强交互体验
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+---
+
+## 🧠 应用架构说明
+
+- **完全客户端运行**
+  - 无后端
+  - 无数据库
+  - 无账号系统
+- **本地词库优先**
+  - 医学术语优先命中本地 JSON
+  - 未命中内容再由 AI 补全翻译
+- **隐私友好**
+  - 所有用户数据仅存储在浏览器本地
+  - 不上传、不留存、不共享
+
+---
+
+## 🛠 技术栈
+
+| 技术 | 用途 |
+|----|----|
+| React + TypeScript | 前端核心框架 |
+| Vite | 构建与开发工具 |
+| Fuse.js | 模糊搜索引擎 |
+| Web Speech API | 语音朗读 |
+| localStorage | 本地数据持久化 |
+
+**代码构成比例**
+- TypeScript：99.1%
+- HTML：0.9%
+
+---
+
+## 🚀 本地运行
+
+### 环境要求
+- Node.js 18+（推荐）
+
+### 安装依赖
+```bash
+npm install
