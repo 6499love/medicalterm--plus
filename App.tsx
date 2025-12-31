@@ -101,7 +101,7 @@ const SettingsPage = () => {
   const { t } = useTranslation();
 
   const [form, setForm] = useState({
-    provider: auth?.provider || 'gemini',
+    provider: auth?.provider || 'glm',
     apiKey: auth?.apiKey || '',
     baseUrl: auth?.baseUrl || '',
     model: auth?.model || '',
@@ -133,7 +133,7 @@ const SettingsPage = () => {
 
   const handleLogout = () => {
     logout();
-    setForm({ provider: 'gemini', apiKey: '', baseUrl: '', model: '', userName: '' });
+    setForm({ provider: 'glm', apiKey: '', baseUrl: '', model: '', userName: '' });
   };
   
   const getHintText = () => {
@@ -169,7 +169,7 @@ const SettingsPage = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">{t('SET_PROVIDER')}</label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                 {['gemini', 'openai-compatible', 'glm'].map((p) => (
+                 {['glm', 'gemini', 'openai-compatible'].map((p) => (
                    <button 
                      key={p}
                      onClick={() => setForm({ ...form, provider: p as any })}
@@ -340,7 +340,7 @@ const SettingsPage = () => {
 };
 
 export default function App() {
-  const [activePage, setActivePage] = useState<PageRoute>('translate');
+  const [activePage, setActivePage] = useState<PageRoute>('assistant');
   const [popupQuery, setPopupQuery] = useState<string | null>(null);
 
   const handleSelectionTranslate = (text: string) => {

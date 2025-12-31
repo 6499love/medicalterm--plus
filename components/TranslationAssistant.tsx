@@ -551,11 +551,11 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                  >
                     <Settings className="w-8 h-8 text-slate-300 group-hover:text-blue-500 transition-colors" />
                  </button>
-                 <h3 className="font-bold text-slate-600 mb-1">{t('ERR_AI_DISABLED_TITLE')}</h3>
-                 <p className="text-sm mb-4">{t('ERR_AI_DISABLED_MSG')}</p>
+                 <h3 className="font-bold text-slate-600 mb-2 text-lg">{t('ERR_AI_DISABLED_TITLE')}</h3>
+                 <p className="text-lg font-bold text-slate-800 mb-6 max-w-xs mx-auto leading-snug">{t('ERR_AI_DISABLED_MSG')}</p>
                  <button 
                    onClick={handleGoToSettings}
-                   className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline"
+                   className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all"
                  >
                    {t('BTN_GOTO_SETTINGS')}
                  </button>

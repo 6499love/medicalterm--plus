@@ -1,5 +1,6 @@
 
 import Fuse from 'fuse.js';
+import { pinyin } from 'pinyin-pro';
 import { Term, SearchResult } from '../types';
 import { systemTermsData } from '../system_terms_data';
 
@@ -11,22 +12,42 @@ export const fetchSystemTerms = async (): Promise<Term[]> => {
   try {
     // Hydrate with source and IDs since they might be missing in JSON
     // We map the imported JSON data directly
-    systemTermsCache = (systemTermsData as any[]).map((t: any, index: number) => ({
-      ...t,
-      id: `sys_${index}`,
-      source: 'system',
-      // Ensure fields exist even if JSON is partial
-      chinese_term: t.chinese_term || '',
-      english_term: t.english_term || '',
-      pinyin_full: t.pinyin_full || '',
-      pinyin_first: t.pinyin_first || '',
-      category: t.category || '',
-      note: t.note || '',
-      usage_scenario: t.usage_scenario || t.usage || '', // Fallback for old data
-      root_analysis: t.root_analysis || '',
-      mistranslation_warning: t.mistranslation_warning || t.mistranslation || [], // Fallback
-      related_terms: t.related_terms || t.aliases || [] // Fallback
-    }));
+    systemTermsCache = (systemTermsData as any[]).map((t: any, index: number) => {
+      const chinese = t.chinese_term || '';
+      let pFull = t.pinyin_full || '';
+      let pFirst = t.pinyin_first || '';
+
+      // Auto-generate Pinyin if missing
+      if (chinese && (!pFull || !pFirst)) {
+        try {
+           if (!pFull) {
+             pFull = pinyin(chinese, { toneType: 'none', nonZh: 'consecutive', v: true });
+           }
+           if (!pFirst) {
+             pFirst = pinyin(chinese, { pattern: 'first', toneType: 'none', nonZh: 'consecutive', v: true }).replace(/\s+/g, '');
+           }
+        } catch (e) {
+           console.warn('Failed to generate pinyin for', chinese);
+        }
+      }
+
+      return {
+        ...t,
+        id: `sys_${index}`,
+        source: 'system',
+        // Ensure fields exist even if JSON is partial
+        chinese_term: chinese,
+        english_term: t.english_term || '',
+        pinyin_full: pFull,
+        pinyin_first: pFirst,
+        category: t.category || '',
+        note: t.note || '',
+        usage_scenario: t.usage_scenario || t.usage || '', // Fallback for old data
+        root_analysis: t.root_analysis || '',
+        mistranslation_warning: t.mistranslation_warning || t.mistranslation || [], // Fallback
+        related_terms: t.related_terms || t.aliases || [] // Fallback
+      };
+    });
     return systemTermsCache || [];
   } catch (error) {
     console.error('Failed to load system terms:', error);
@@ -99,6 +120,7 @@ export const searchTerms = (
   // Check against both user and system terms
   const allTerms = [...userTerms, ...systemTerms];
   const pinyinMatches: SearchResult[] = [];
+  const addedIds = new Set<string>(); // Prevent duplicates from multiple pinyin matches
 
   allTerms.forEach(term => {
     // If pinyin fields are empty in JSON, this check will just skip or fail safely
@@ -107,15 +129,22 @@ export const searchTerms = (
     const normPinyinFull = normalize(term.pinyin_full || '');
     const normPinyinFirst = normalize(term.pinyin_first || '');
 
-    // Full Pinyin Match
+    // Full Pinyin Match (Includes)
     if (normPinyinFull && normPinyinFull.includes(normalizedQuery)) {
-      pinyinMatches.push({ ...term, matchType: 'pinyin-full' });
-      return; 
+      if (!addedIds.has(term.id)) {
+        pinyinMatches.push({ ...term, matchType: 'pinyin-full' });
+        addedIds.add(term.id);
+        return; 
+      }
     }
     
-    // Initials/First-Letter Match
-    if (normPinyinFirst && normPinyinFirst === normalizedQuery) {
-      pinyinMatches.push({ ...term, matchType: 'pinyin-initial' });
+    // Initials/First-Letter Match (StartsWith)
+    // Allows searching "gm" for "gan mao"
+    if (normPinyinFirst && normPinyinFirst.startsWith(normalizedQuery)) {
+      if (!addedIds.has(term.id)) {
+        pinyinMatches.push({ ...term, matchType: 'pinyin-initial' });
+        addedIds.add(term.id);
+      }
     }
   });
 

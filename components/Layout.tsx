@@ -29,8 +29,8 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
   const { language, setLanguage } = useLanguageStore();
 
   const navItems: { id: PageRoute; label: string; icon: React.ReactNode }[] = [
-    { id: 'translate', label: t('NAV_TRANSLATE'), icon: <Search className="w-5 h-5" /> },
     { id: 'assistant', label: t('NAV_ASSISTANT'), icon: <Wand2 className="w-5 h-5" /> },
+    { id: 'translate', label: t('NAV_TRANSLATE'), icon: <Search className="w-5 h-5" /> },
     { id: 'dictionary', label: t('NAV_DICTIONARY'), icon: <Book className="w-5 h-5" /> },
     { id: 'batch', label: t('NAV_BATCH'), icon: <Layers className="w-5 h-5" /> },
     { id: 'favorites', label: t('NAV_SAVED'), icon: <Star className="w-5 h-5" /> },
