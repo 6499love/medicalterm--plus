@@ -272,7 +272,6 @@ export const Translator: React.FC<TranslatorProps> = ({ initialQuery, onQueryCon
           className="px-4 py-3 md:px-6 md:py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl md:rounded-2xl font-medium shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 shrink-0"
         >
           <Search className="w-5 h-5" />
-          <span className="hidden sm:inline">{t('BTN_TRANSLATE_ACTION')}</span>
         </button>
       </div>
 

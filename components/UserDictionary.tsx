@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '../store';
-import { Trash2, Search, Book, Download, Upload, FileJson, AlertTriangle, ChevronLeft, ChevronRight, X, Info, Plus, Save, Sparkles, HelpCircle, Copy, Check, Loader2, ArrowUpDown, ChevronDown } from 'lucide-react';
+import { Trash2, Search, Book, Download, Upload, FileJson, AlertTriangle, ChevronLeft, ChevronRight, X, Info, Plus, Save, Sparkles, HelpCircle, Copy, Check, Loader2, ArrowUpDown, ChevronDown, Edit } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import { fetchSystemTerms } from '../services/search';
 import { Term } from '../types';
@@ -8,7 +8,7 @@ import { pinyin } from 'pinyin-pro';
 import { copyToClipboard } from '../services/clipboard';
 
 export const UserDictionary: React.FC = () => {
-  const { userTerms, addUserTerm, removeUserTerm, importUserTerms, navigatedTermId, setNavigatedTermId } = useStore();
+  const { userTerms, addUserTerm, removeUserTerm, updateUserTerm, importUserTerms, navigatedTermId, setNavigatedTermId } = useStore();
   const [systemTerms, setSystemTerms] = useState<Term[]>([]);
   const [activeTab, setActiveTab] = useState<'system' | 'user'>('system');
   const [filter, setFilter] = useState(''); // Text filter for User tab
@@ -22,8 +22,9 @@ export const UserDictionary: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
   const pageSize = 10; 
 
-  // Add Term Form State
+  // Add/Edit Term Form State
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newTerm, setNewTerm] = useState<{
     chinese_term: string;
@@ -48,7 +49,7 @@ export const UserDictionary: React.FC = () => {
   const [helpCopied, setHelpCopied] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   useEffect(() => {
     fetchSystemTerms().then(setSystemTerms);
@@ -173,15 +174,33 @@ export const UserDictionary: React.FC = () => {
     }
   };
 
+  const handleEdit = (e: React.MouseEvent, term: Term) => {
+    e.stopPropagation();
+    setNewTerm({
+        chinese_term: term.chinese_term,
+        english_term: term.english_term,
+        related_terms: term.related_terms ? term.related_terms.join(', ') : '',
+        category: term.category || '',
+        note: term.note || '',
+        pinyin_full: term.pinyin_full || '',
+        pinyin_first: term.pinyin_first || ''
+    });
+    setEditingId(term.id);
+    setShowAddForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleChineseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setNewTerm(prev => {
        const next = { ...prev, chinese_term: val };
-       // Auto generate pinyin
+       // Auto generate pinyin only if not editing or empty
        if (val && /[\u4e00-\u9fa5]/.test(val)) {
            try {
-             next.pinyin_full = pinyin(val, { toneType: 'none', nonZh: 'consecutive' });
-             next.pinyin_first = pinyin(val, { pattern: 'first', toneType: 'none', nonZh: 'consecutive' }).replace(/\s/g, '');
+             if (!editingId) {
+                next.pinyin_full = pinyin(val, { toneType: 'none', nonZh: 'consecutive' });
+                next.pinyin_first = pinyin(val, { pattern: 'first', toneType: 'none', nonZh: 'consecutive' }).replace(/\s/g, '');
+             }
            } catch (e) {
              console.debug('Pinyin generation failed', e);
            }
@@ -196,9 +215,8 @@ export const UserDictionary: React.FC = () => {
 
     setIsSubmitting(true);
 
-    // Simulate animation wait
     setTimeout(() => {
-        addUserTerm({
+        const commonData = {
             chinese_term: newTerm.chinese_term,
             english_term: newTerm.english_term,
             category: newTerm.category,
@@ -206,23 +224,58 @@ export const UserDictionary: React.FC = () => {
             pinyin_full: newTerm.pinyin_full,
             pinyin_first: newTerm.pinyin_first,
             related_terms: newTerm.related_terms.split(/[,，]/).map(s => s.trim()).filter(Boolean),
-            usage_scenario: '',
-            root_analysis: '',
-            mistranslation_warning: []
-        });
+        };
+
+        if (editingId) {
+             const original = userTerms.find(t => t.id === editingId);
+             if (original) {
+                 updateUserTerm({
+                     ...original,
+                     ...commonData,
+                     usage_scenario: original.usage_scenario,
+                     root_analysis: original.root_analysis,
+                     mistranslation_warning: original.mistranslation_warning
+                 });
+                 setMessage({ type: 'success', text: language === 'zh-CN' ? '术语已更新' : 'Term updated' });
+             }
+             setEditingId(null);
+             setShowAddForm(false);
+        } else {
+            addUserTerm({
+                ...commonData,
+                usage_scenario: '',
+                root_analysis: '',
+                mistranslation_warning: []
+            });
+            setMessage({ type: 'success', text: t('MSG_TERM_ADDED') });
+            // Clear form for next entry
+            setNewTerm({
+                chinese_term: '',
+                english_term: '',
+                related_terms: '',
+                category: '',
+                note: '',
+                pinyin_full: '',
+                pinyin_first: ''
+            });
+        }
 
         setIsSubmitting(false);
-        setNewTerm({
-            chinese_term: '',
-            english_term: '',
-            related_terms: '',
-            category: '',
-            note: '',
-            pinyin_full: '',
-            pinyin_first: ''
-        });
-        setMessage({ type: 'success', text: t('MSG_TERM_ADDED') });
     }, 600);
+  };
+
+  const handleCancelForm = () => {
+    setShowAddForm(false);
+    setEditingId(null);
+    setNewTerm({
+        chinese_term: '',
+        english_term: '',
+        related_terms: '',
+        category: '',
+        note: '',
+        pinyin_full: '',
+        pinyin_first: ''
+    });
   };
 
   const copyPrompt = (idx: number, text: string) => {
@@ -262,9 +315,21 @@ Return the enriched JSON.`;
         {activeTab === 'user' && (
           <div className="flex flex-wrap gap-2 items-center z-10">
              <button 
-                onClick={() => setShowAddForm(!showAddForm)}
+                onClick={() => {
+                   setEditingId(null);
+                   setNewTerm({
+                        chinese_term: '',
+                        english_term: '',
+                        related_terms: '',
+                        category: '',
+                        note: '',
+                        pinyin_full: '',
+                        pinyin_first: ''
+                   });
+                   setShowAddForm(true);
+                }}
                 className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-sm font-bold shadow-sm ${
-                    showAddForm 
+                    showAddForm && !editingId
                     ? 'bg-blue-600 border-blue-600 text-white' 
                     : 'bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100'
                 }`}
@@ -344,15 +409,15 @@ Return the enriched JSON.`;
         </button>
       </div>
 
-      {/* Add Term Form Card */}
+      {/* Add/Edit Term Form Card */}
       {activeTab === 'user' && showAddForm && (
          <div className={`mb-6 p-4 md:p-6 bg-white rounded-2xl border-2 border-blue-100 shadow-lg transition-all duration-500 transform origin-top z-20 relative ${isSubmitting ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
                  <Sparkles className="w-5 h-5 text-amber-500" />
-                 {t('MODAL_TITLE')}
+                 {editingId ? (language === 'zh-CN' ? '编辑术语' : 'Edit Term') : t('MODAL_TITLE')}
               </h3>
-              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+              <button onClick={handleCancelForm} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
             
             <form onSubmit={handleSubmitTerm} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -434,7 +499,7 @@ Return the enriched JSON.`;
                <div className="md:col-span-2 flex justify-end gap-3 mt-2">
                   <button 
                     type="button" 
-                    onClick={() => setShowAddForm(false)} 
+                    onClick={handleCancelForm} 
                     className="px-4 py-2 text-slate-500 hover:bg-slate-50 rounded-lg font-medium"
                   >
                     {t('BTN_CANCEL')}
@@ -514,13 +579,22 @@ Return the enriched JSON.`;
                    </div>
                    
                    {activeTab === 'user' && (
-                     <button 
-                       onClick={(e) => handleDelete(e, term.id)}
-                       className="p-1.5 -mt-1 -mr-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0"
-                       title={t('BTN_REMOVE_TERM')}
-                     >
-                       <Trash2 className="w-4 h-4" />
-                     </button>
+                     <div className="flex gap-1 -mt-1 -mr-1">
+                       <button 
+                         onClick={(e) => handleEdit(e, term)}
+                         className="p-1.5 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0"
+                         title={language === 'zh-CN' ? "编辑" : "Edit"}
+                       >
+                         <Edit className="w-4 h-4" />
+                       </button>
+                       <button 
+                         onClick={(e) => handleDelete(e, term.id)}
+                         className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0"
+                         title={t('BTN_REMOVE_TERM')}
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                     </div>
                    )}
                 </div>
                 
