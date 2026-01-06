@@ -1,1 +1,584 @@
-
+[
+  {
+    "chinese_term": "开机",
+    "english_term": "Power On",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "关机",
+    "english_term": "Power Off",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "X光片盒",
+    "english_term": "X-ray Cassette",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "手动CPR",
+    "english_term": "CPR Control",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "转运使用",
+    "english_term": "Transport the Patient",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "床体延伸",
+    "english_term": "Bed Length Adjustment",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "中控制动系统",
+    "english_term": "Brake and Steer Controls",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "护栏控制器",
+    "english_term": "Caregiver/Patient SideRail Control",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "腿板升降",
+    "english_term": "Thighrest(Calfrest) Up/Down",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "背板升降",
+    "english_term": "Backrest Up/Down",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "整体升降",
+    "english_term": "Bed Up/Down",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "控制器开关",
+    "english_term": "Siderail On/Off Button",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "控制器指示灯",
+    "english_term": "Siderail Indicator Light",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "无该功能",
+    "english_term": "Not Available",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "病人呼叫开关",
+    "english_term": "Nurse Call",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "中央控制器",
+    "english_term": "Central Controller",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "背腿联动",
+    "english_term": "Backrest/Thighrest/Calfrest Up/Down",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "后倾（头低脚高）",
+    "english_term": "Trendelenburg",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "前倾（头高脚低）",
+    "english_term": "Antitrendelenburg",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "交流电通电指示灯",
+    "english_term": "Ac Power on Indicator",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "重症设计",
+    "english_term": "One-Button Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键CPR位",
+    "english_term": "One-Button CPR Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键检查位",
+    "english_term": "One-Button Examination Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键心脏椅位",
+    "english_term": "One-Button Cardiac chair Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键FOWLER位",
+    "english_term": "One-Button FOWLER's Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键特氏位",
+    "english_term": "One-Button Trendelenburg Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "护栏板升降",
+    "english_term": "Siderail Adjustment",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "脚踏控制器",
+    "english_term": "Foot Controller",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "夜灯开关",
+    "english_term": "Night Light Switch",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "信息帮助",
+    "english_term": "Help",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "大腿板升降",
+    "english_term": "Thighrest Up/Down",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "小腿板升降",
+    "english_term": "Calfrest UP/Down",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "电量提示",
+    "english_term": "Battery Level",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "重量清零",
+    "english_term": "Zeroing",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "体重测量",
+    "english_term": "Weighing",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "增减物品",
+    "english_term": "Hold Mode",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "新病人",
+    "english_term": "New Patient",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "称量精度",
+    "english_term": "Weighing Precision",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "趋势图",
+    "english_term": "Weight Tracker",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "药物计算器",
+    "english_term": "Calculating",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "HOB 关",
+    "english_term": "HOB ON/OFF",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "躁动提醒关",
+    "english_term": "Agitation Alert ON/OFF",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "离床提醒关",
+    "english_term": "Bed Exit Alert ON/OFF",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "特氏位",
+    "english_term": "Trendelenburg",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "反特式位",
+    "english_term": "Reverse Trendelenburg",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键PLR位",
+    "english_term": "One-button standard PLR position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键半卧位",
+    "english_term": "One-button 30°/45° backrest angle pause",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "四个防撞轮",
+    "english_term": "4 Corner safety bumpers",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "称重功能",
+    "english_term": "Weighing system: accuracy up to 0.01kg.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "延长床架",
+    "english_term": "Bed extension",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "静态防压疮床垫",
+    "english_term": "Gel Matress",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "尺寸",
+    "english_term": "Size",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "组成材料",
+    "english_term": "Material",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "总体参数",
+    "english_term": "Bed Specification",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "背板角度",
+    "english_term": "Head Section Inclination",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "腿板角度",
+    "english_term": "Thigh Section Inclination",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "整体高度",
+    "english_term": "Bed Height",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "产品型号",
+    "english_term": "Type",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "技术规格",
+    "english_term": "Main specification",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "绿色光波",
+    "english_term": "Green light wave",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "蓝色光波",
+    "english_term": "Blue light wave",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "红细胞流速",
+    "english_term": "RBCv（Red Blood Cells velocity）",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "糖萼",
+    "english_term": "PBR（Perfused Boundary Region）",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "选配",
+    "english_term": "Options",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "产品名称",
+    "english_term": "Product Name",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "重症医学解决方案",
+    "english_term": "Critical care solutions",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "重症微循环",
+    "english_term": "Critical care microcirculation",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "舌下微循环成像系统",
+    "english_term": "Sublingual microcirculation imaging system",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "重症护理",
+    "english_term": "Intensive care",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "重症智能病床",
+    "english_term": "Intelligent intensive care bed",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "静态凝胶防褥疮床垫",
+    "english_term": "Static gel anti-bedsores mattress",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "血气过滤器",
+    "english_term": "Blood gas filter",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "重症呼吸",
+    "english_term": "Critical respiratory distress",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "呼吸湿化治疗仪",
+    "english_term": "Respiratory humidifer",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "医用呼吸湿化器",
+    "english_term": "Medical humidifier",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "医用空气压缩机",
+    "english_term": "Medical air compressor",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "呼吸机专用台车",
+    "english_term": "Ventilator specialized trolley",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "重症信息",
+    "english_term": "Critical care information",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "血气云平台",
+    "english_term": "Blood gas cloud platform",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "视微",
+    "english_term": "MicroSee",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "健康组",
+    "english_term": "Health group",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "毛细血管密度丰富",
+    "english_term": "Rich capillary density",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "Sepsis组",
+    "english_term": "Sepsis group",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "毛细血管密度低",
+    "english_term": "Low capillary density",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "成人款电动病床",
+    "english_term": "Electric beds for adults",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "高精密称重系统",
+    "english_term": "High-precision weighing system",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "床旁拍片",
+    "english_term": "Bedside X-ray imaging support",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "双重CPR",
+    "english_term": "One CPR control on each side",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "立柱式结构",
+    "english_term": "Columnar structure",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "主要功能",
+    "english_term": "Main functions",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "结构方式",
+    "english_term": "Structure",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "称重系统",
+    "english_term": "Weighing system",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "标准PLR体位",
+    "english_term": "Standard PLR position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "重症多功能设计",
+    "english_term": "Critical care multifunctional design",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "卓越湿化",
+    "english_term": "Excellent humidification",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "双流量模式",
+    "english_term": "Dual-flow mode",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "IP54防尘防水",
+    "english_term": "IP54 dustproof and waterproof",
+    "category": "",
+    "note": ""
+  }
+]
