@@ -6,8 +6,20 @@
     "note": ""
   },
   {
+    "chinese_term": "连接交流电源，按照急停开关红色按钮上的箭头指示方向旋转按钮，急停开关弹出，病床可进行操作。",
+    "english_term": "Plug the bed into the power supply. Turn the red central stop switch in the direction indicated by the arrow. Once the button pops out, the bed is ready for operation.",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "关机",
     "english_term": "Power Off",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "按下急停开关红色按钮，病床的电源切断，停止床体所有动作。",
+    "english_term": "Press the red central stop switch to cut off the power supply. All bed functions will be disabled.",
     "category": "",
     "note": ""
   },
@@ -18,8 +30,20 @@
     "note": ""
   },
   {
+    "chinese_term": "取下床头板或抬起背板，握住图示把手上提解锁片盒，拉出X光片盒，放入X光片对准位置，推入片盒自动锁定即可完成拍片。",
+    "english_term": "Remove the headboard or raise the back section, grasp the handle, pull up to unlock the cassette, pull out the X-ray cassette, place the X-ray in the correct position, and push the cassette back in to lock it and complete the X-ray operation.",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "手动CPR",
     "english_term": "CPR Control",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "向外拉动CPR扣手，可迅速将背板放置水平位置（确保床体下方没有障碍物，防止夹伤事件）。",
+    "english_term": "Pull and hold the CPR handle until the bed head sections are flat. (Ensure that there are no body parts between any movable parts of the bed)",
     "category": "",
     "note": ""
   },
@@ -30,8 +54,20 @@
     "note": ""
   },
   {
+    "chinese_term": "床体内置电源，直接拔出电源插头，无需操作急停开关，可在转运期间正常使用。",
+    "english_term": "The bed has an automatic battery backup feature. When AC power is not supplied to the bed and there is sufficient battery power, the battery allows the bed's functions to continue.",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "床体延伸",
     "english_term": "Bed Length Adjustment",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "反手握住床尾下方的把手，如图所示，直接上提拉出即可完成床体延伸。",
+    "english_term": "Hold the handle under the foot of the bed, as shown in the picture, and lift it upward to extend the bed.",
     "category": "",
     "note": ""
   },
@@ -42,8 +78,20 @@
     "note": ""
   },
   {
+    "chinese_term": "可控制床体刹车、万向、直行。",
+    "english_term": "There are three positions:Brake,Neutral,Steer.",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "护栏控制器",
     "english_term": "Caregiver/Patient SideRail Control",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "按下控制开关，控制指示灯亮起，即可操作各功能。",
+    "english_term": "Press the control button. When the control indicator lights up, all functions can be operated.",
     "category": "",
     "note": ""
   },
@@ -120,8 +168,32 @@
     "note": ""
   },
   {
+    "chinese_term": "（灯亮即已通电）",
+    "english_term": "The power is on when the light comes on.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "控制器指示灯",
+    "english_term": "Controller Indicator",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "控制器开关",
+    "english_term": "Controller On/Off",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "重症设计",
     "english_term": "One-Button Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键体位功能",
+    "english_term": "",
     "category": "",
     "note": ""
   },
@@ -156,8 +228,32 @@
     "note": ""
   },
   {
+    "chinese_term": "护栏控制器锁定指示灯",
+    "english_term": "Siderail Controller Lock Indicator",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "点击按键，指示灯熄灭，可将其上方对应的护栏控制器功能锁定，防止病人误操作",
+    "english_term": "Press the button and the applicable indicator light turns off to let you know that the function is locked out.",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "护栏板升降",
     "english_term": "Siderail Adjustment",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "升起：握住侧护栏板向上拉，拉到最大高度后向内轻推，当听到"咔嗒"声时，代表锁定完毕。可向外拉动护栏，确认是否锁定牢固。",
+    "english_term": "To Raise the Siderail:Hold the siderail and pull it upward.Push inward after reaching the maximum height. A \"click\" sound indicates it is locked. Pull the rail outward to confirm it is securely locked.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "降下：握住侧护栏板扶手位向内轻推，同时将把手往外轻拉，铰链解锁后轻提护栏。",
+    "english_term": "To Lower the Siderail:Grasp the release handle and push up,Lower the siderail.",
     "category": "",
     "note": ""
   },
@@ -168,8 +264,56 @@
     "note": ""
   },
   {
+    "chinese_term": "持续踩踏，长提持续执行对应功能，松开即停止。",
+    "english_term": "Continuously step on and lift to execute the corresponding function, release to stop.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "备注：若同时踩下同侧两个按键，按以下优先级执行：整体下降＞特氏位＞整体上升",
+    "english_term": "Note: If both buttons on the same side are pressed at the same time, the following priority should be followed: Bed down>Trendelenburg position>Bed up",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "夜灯开关",
     "english_term": "Night Light Switch",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "中央控制器（可选配液晶控制器）",
+    "english_term": "Central Controller (optional: LCD controller)",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "电控操作方法－体位调节界面",
+    "english_term": "Electric Control Operation Interface : Bed Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "电控操作方法－一键体位调节界面",
+    "english_term": "Electric Control Operation Interface: One -Button Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "电控操作方法-称重调节界面",
+    "english_term": "Electric Control Operation Interface: Scale",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "电控操作方法－监测提示",
+    "english_term": "Electric Control Operation Interface: Alert",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "电控操作方法-PLR体位调节页面（实现被动抬腿功能）",
+    "english_term": "Electric Control Operation Interface: PLR Position",
     "category": "",
     "note": ""
   },
@@ -198,8 +342,44 @@
     "note": ""
   },
   {
+    "chinese_term": "中央控制器开关",
+    "english_term": "Central Controller On/Off",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "侧护栏控制器开关",
+    "english_term": "Caregiver/Patient SideRail Control On/Off",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "信息帮助",
+    "english_term": "Information",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "帮助",
+    "english_term": "Help",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "序号、按键图示、动作、按键说明",
+    "english_term": "No.\\ Button Diagram \\ Motion \\ Instruction",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "重量清零",
     "english_term": "Zeroing",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "清除历史的体重数据，不同患者使用前需进行历史数据清除",
+    "english_term": "Clear historical weight data, different patients need to clear historical data before use.",
     "category": "",
     "note": ""
   },
@@ -210,8 +390,20 @@
     "note": ""
   },
   {
+    "chinese_term": "点击进行称重",
+    "english_term": "Click to weigh",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "增减物品",
     "english_term": "Hold Mode",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "按下"添减物品"按键，此时可在床上添减物品，不影响患者差重，添减完毕后点击"结束添减物品"",
+    "english_term": "Hold Mode must be used only when the weights are stabilized. It allows attaching or removing bed accessories without changing the weight.",
     "category": "",
     "note": ""
   },
@@ -222,8 +414,20 @@
     "note": ""
   },
   {
+    "chinese_term": "清除上一名患者的体重数据，新患者卧床前需进行清除，一边记录患者体重变化",
+    "english_term": "Clear the weight data of the previous patient before the use for new patient.",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "称量精度",
     "english_term": "Weighing Precision",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "点击图标按键可切换10g/100g精度，显示为蓝色时即为当时精度",
+    "english_term": "Click the icon button to switch between 10g/100g precision, and the current precision is displayed in blue",
     "category": "",
     "note": ""
   },
@@ -234,8 +438,56 @@
     "note": ""
   },
   {
+    "chinese_term": "可查看当前患者的体重趋势图",
+    "english_term": "Weight Tracker can be viewed",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "药物计算器",
     "english_term": "Calculating",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "输入药物用量系数，得到此次患者给药剂量",
+    "english_term": "Enter the drug dosage coefficient to obtain the dosage for this patient's medication",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "体重指数计算器",
+    "english_term": "Enter the dosage coefficient to obtain the dosage for this patient's medication",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "输入患者身高，得到此时患者的体重指数（BMI）",
+    "english_term": "Enter the patient's height to obtain their body mass index (BMI) at this time",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "背板、腿板放平",
+    "english_term": "Adjust the bed surface to a flat position and set the height to an appropriate level. Record the duration of time spent at STEP 0",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "背板抬起至45°形成半卧位",
+    "english_term": "Adjust the bed surface to a flat position and set the height to an appropriate level, then raise the backrest to 45°. Record the duration of time spent at STEP 1",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "背板退回水平位并且腿板上抬至45°，过程中背板与腿板保持135°夹角",
+    "english_term": "Maintain the appropriate height with the backrest and thighrest/calfrest at a 135° angle. After raising the thighrest/calfrest to 45° and flattening the backrest, record the duration of time spent at STEP 2",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "按下输入图标，弹出数字键盘弹窗，在数字键盘中输入心输出量",
+    "english_term": "Press the input button to bring up a numeric keypad pop-up window, and enter the cardiac output on the numeric keypad",
     "category": "",
     "note": ""
   },
@@ -258,6 +510,54 @@
     "note": ""
   },
   {
+    "chinese_term": "HOB背板抬高语音提示开关：打开①后语音提示当前角度是否处于30-45°之间",
+    "english_term": "HOB: The backrest angle can be set to be checked every X hours to monitor if the angle is between 30° and 45°",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "患者躁动提示开关：打开②后当患者处于躁动状态，将进行蜂鸣声报警",
+    "english_term": "Agitation alert: The bed detects the patient's movement status. If the patient shows signs of agagitation, the system will alert the caregiver.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "患者离床提示开关：打开③后当患者离床/坠床，将进行蜂鸣声报警",
+    "english_term": "Bed Exit Alert: The bed monitors the patient's exit status. If the patient is attempting to exit the bed, the system will alert the caregiver.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "背板升降",
+    "english_term": "Backrest up/down",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "背腿联动",
+    "english_term": "Backrest&Knee up/down",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "膝部升降",
+    "english_term": "Knee up/down",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "小腿升降",
+    "english_term": "Foot up/down",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "整体升降",
+    "english_term": "Bed up/down",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "特氏位",
     "english_term": "Trendelenburg",
     "category": "",
@@ -270,14 +570,56 @@
     "note": ""
   },
   {
+    "chinese_term": "一键体位：",
+    "english_term": "One-button positions",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "一键PLR位",
     "english_term": "One-button standard PLR position",
     "category": "",
     "note": ""
   },
   {
+    "chinese_term": "一键心脏椅位",
+    "english_term": "One-button cardiac chair position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键特氏位",
+    "english_term": "One-button Trendelenburg position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键反特氏位",
+    "english_term": "One-button Reverse trendelenburg position",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "一键半卧位",
     "english_term": "One-button 30°/45° backrest angle pause",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键FOWLER位",
+    "english_term": "One-button FOWLER's position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键检查位",
+    "english_term": "One-button Examination position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键CPR位",
+    "english_term": "One-button CPR position",
     "category": "",
     "note": ""
   },
@@ -294,8 +636,26 @@
     "note": ""
   },
   {
+    "chinese_term": "手动CPR",
+    "english_term": "Dual sided CPR levers",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "X光片盒",
+    "english_term": "With X-ray cassette sleeves",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "延长床架",
     "english_term": "Bed extension",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "脚踏控制器",
+    "english_term": "Foot control",
     "category": "",
     "note": ""
   },
@@ -324,6 +684,12 @@
     "note": ""
   },
   {
+    "chinese_term": "长×宽×高",
+    "english_term": "Overall Size（L×W×H）",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "背板角度",
     "english_term": "Head Section Inclination",
     "category": "",
@@ -342,8 +708,92 @@
     "note": ""
   },
   {
+    "chinese_term": "特氏位倾斜角度",
+    "english_term": "Trendelenburg Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "反特式位倾斜角度",
+    "english_term": "Reverse Trendelenburg Position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "延长床架",
+    "english_term": "Bed extension length",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "脚踏控制器",
+    "english_term": "Foot Control",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "五个电机",
+    "english_term": "5 medical actuator",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一个电控盒",
+    "english_term": "1 control box",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一个中央控制器（电动CPR）",
+    "english_term": "1 caregiver control panel（With CPR button)",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "中央控制系统，四个中控锁脚轮",
+    "english_term": "Linked braking / steering system with four braking castors",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一对塑料床头板/床尾板",
+    "english_term": "Removable head and foot panels",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一对塑料护栏带有嵌入式控制器",
+    "english_term": "Split safety sides",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "14个引流挂钩12个约束装置",
+    "english_term": "14 drainage bag hooks12 restraint rings",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "1根输液杆，四个输液杆插孔",
+    "english_term": "1 pc S.S I.V pole，4 pcs I.V holes",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "置物篮",
+    "english_term": "basket",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "产品型号",
     "english_term": "Type",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "四个电机",
+    "english_term": "4 medical actuator",
     "category": "",
     "note": ""
   },
@@ -356,6 +806,54 @@
   {
     "chinese_term": "绿色光波",
     "english_term": "Green light wave",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "光学分辨率≥300LP/mm",
+    "english_term": "Optical resolution：≥300LP/mm",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "图像分辨率≥150万像素",
+    "english_term": "Iamge resolution：≥1.50 Megapixel",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "光学放大倍率x4",
+    "english_term": "Magnification factor：x 4",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "视野面积≥1mm²",
+    "english_term": "Image area：≥1mm²",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "录像帧率:60帧/秒",
+    "english_term": "Image recording rate：60fps",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "频闪时间≤1ms",
+    "english_term": "Pulse time：≤1ms",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "防护级别：IP54",
+    "english_term": "Protection degree：IP54",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "视野面积≥1.5mm²",
+    "english_term": "Image area：≥1.5mm²",
     "category": "",
     "note": ""
   },
@@ -384,6 +882,12 @@
     "note": ""
   },
   {
+    "chinese_term": "无线附加存储",
+    "english_term": "NAS（Network Attached Storage）",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "产品名称",
     "english_term": "Product Name",
     "category": "",
@@ -392,6 +896,12 @@
   {
     "chinese_term": "重症医学解决方案",
     "english_term": "Critical care solutions",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "致力于提供专业的重症医学解决方案和服务体系，帮助医务人员挽救病人生命",
+    "english_term": "We endeavor to help medical specialists save the patients' life by providing the professional solution & service that are focused on critical care.",
     "category": "",
     "note": ""
   },
@@ -474,8 +984,26 @@
     "note": ""
   },
   {
+    "chinese_term": "呼吸机信息监护平台",
+    "english_term": "Ventilator information monitoring platform",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "血气分析仪信息管理系统",
+    "english_term": "Blood gas analyzer information management system",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "视微",
     "english_term": "MicroSee",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "看见微循环",
+    "english_term": "See microcirculation",
     "category": "",
     "note": ""
   },
@@ -492,6 +1020,18 @@
     "note": ""
   },
   {
+    "chinese_term": "红细胞流动稳定均一",
+    "english_term": "Stable and homogeneous red blood cells flow",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "无明显异质性",
+    "english_term": "No significant heterogeneity",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "Sepsis组",
     "english_term": "Sepsis group",
     "category": "",
@@ -504,14 +1044,182 @@
     "note": ""
   },
   {
+    "chinese_term": "红细胞流动缓慢或高动力",
+    "english_term": "Slow-flowing or hyperdynamic red blood cells",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "常见明显异质性",
+    "english_term": "Commonly evident heterogeneity",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "国际领先的舌下微循环——V200/V210/V260舌下微循环成像系统",
+    "english_term": "World-leading sublingual microcirculation——V200 sublingual microcirculation imaging system",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "挑战舌下微循环新高度",
+    "english_term": "Challenge the new heights of sublingual microcirculation",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "领先的光学分辨率",
+    "english_term": "Leading optical resolution",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "让红细胞、细胞间隙清晰可见",
+    "english_term": "Make red blood cells and cell gaps clearly visible",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "在保持纤细的外径情况下，达到业界领先的光学分辨率。红细胞直径6-8um，V200/V210光学分辨率小于1.1um，结合高分辨率相机，整体光学分辨率超过400线对(实际测量)",
+    "english_term": "Achieve industry-leading resolution while maintaining a slim outer diameter.With a red blood cell diameter of 6-8 um, the V200 has an optical resolution of less than 1.1 um, which in combination with the high-resolution camera results in an overall optical resolution of more than 400 line pairs (actual measurement).",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "极限运动捕捉",
+    "english_term": "Extreme motion capture",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "消除红细胞运动伪影，即使面对高动力状态的红细胞运动速度也毫无过压力。",
+    "english_term": "Eliminate red blood cells motion artifacts without any problem, even in the face of movement speed of hyperdynamic red blood cells",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "视场环绕十颗LED光源，并以特定入射角度频闪照明，保证成像亮度充分均匀。频闪时间小于1毫秒，配合60帧/秒的极限录制帧率，消除红细胞运动伪影",
+    "english_term": "The field of view surrounds ten LED light sources and is illuminated by stroboscopic lighting at a specific angle of incidence to ensure that the imaging brightness is sufficiently uniform. The freshing time is less than 1 ms, and with the extreme recording frame rate of 60 fps, red blood cells motion artifacts are eliminated.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "超大视野面积",
+    "english_term": "Extra large observation area",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "降低观察视野的异质性，对更多的微循环进行观察与分析",
+    "english_term": "Reduce the heterogeneity of the observation field and enable observation and analysis of more microcirculation.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "极高的光学分辨率结合4倍光学放大，获得超大的实际观察面积。",
+    "english_term": "Extremely high optical resolution combined with 4x optical magnification for a large practical observation area.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "IP54防尘防水",
+    "english_term": "IP54 dustproof and waterproof",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "IP54防尘防水保护内部光学元器件，利于闫境的感控要求。",
+    "english_term": "Protect internal optical components and facilitate meeting infection control requirements in medical environment.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "手柄外壳IP54级防尘防水设计，消毒擦拭丝毫不影响内部元器件。",
+    "english_term": "The handle shell IP54 level dustproof and waterproof design, sterilization cleaning does not affect the internal components in the slightest.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "血流动力学一微循环观察工具",
+    "english_term": "Hemodynamics——Microcirculation observation tool",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "大循环与微循环偶联的判断",
+    "english_term": "Assessment of the coupling between macrocirculation and microcirculation.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "作为脓毒症和休克治疗的靶点",
+    "english_term": "Therapeutic targets for sepsis and shock",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "识别高乳酸与灌注流量的相关性",
+    "english_term": "Identify the correlation between high lactate and perfusion flow.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "助力临床科研",
+    "english_term": "Assist in clinical research",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "医软智能iBed让重症护理更轻松",
+    "english_term": "MedSoft's iBed makes intensive care easier",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "成人款电动病床",
     "english_term": "Electric beds for adults",
     "category": "",
     "note": ""
   },
   {
+    "chinese_term": "22秒一键实现标准PLR体位，轻松完成容量反应性评估",
+    "english_term": "One-button standard PLR position achieved in 22 seconds， Easily complete fluid responsive assessments",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "实用连杆式",
+    "english_term": "Practical connecting rod type",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "高精密称重系统",
     "english_term": "High-precision weighing system",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "称重精度可达10g",
+    "english_term": "Weighing accuracy up to 10g (0.01kg)",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "具有药量计算器",
+    "english_term": "With a drug dosages calculator",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "具有BMI计算器",
+    "english_term": "With a BMI calculator",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "高端立柱式",
+    "english_term": "Advanced column-based type",
     "category": "",
     "note": ""
   },
@@ -534,6 +1242,72 @@
     "note": ""
   },
   {
+    "chinese_term": "特氏位与反特氏位",
+    "english_term": "Trendelenburg position and reverse trendelenburg position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "iBed -专业重症智能病床",
+    "english_term": "iBed—professional intelligent intensive care bed",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "更有效的预防与治疗",
+    "english_term": "More effective prevention and treatment",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "多种专业一键体位:一键心脏椅位、一键FOWLER位、一键特氏位、一键检查位",
+    "english_term": "Multiple professional one-button positions: one-button cardiac chair position, one-button fowler's position, one-button trendelenburg position, one-button examination position",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "双回退床面设计:增加盘骨和腰部空间，减少组织和器官的受压及床面剪切力，预防褥疮发生",
+    "english_term": "Dual-regress function design: increase pelvic and lumbar space, reduce pressure on tissues and organs as well as shear forces of bed surface, and prevent bedsores",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "更全面的检查方案",
+    "english_term": "More comprehensive examination protocols",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "床旁拍片支持：满足重症患者床旁DR胸片拍摄、C型臂X光拍摄，减轻护理者工作强度",
+    "english_term": "/Bedside X-ray imaging support: satisfy the needs of critically ill patients for bedside DR chest X-ray imaging and C-arm X-ray imaging, reduce the work intensity of caregivers",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "实时称重系统：对患者体重变化进行监测，称重精度高达10g，便于及时调整治疗方案",
+    "english_term": "Real-time weighing system: monitor changes in patients' weight with an weighing accuracy of 10g (0.01kg), facilitate timely adjustment of treatment protocols.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "高效面对紧急情况",
+    "english_term": "Efficiently deal with emergencies",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "双重CPR:电动一键式与紧急手动式CPR，为重症实施抢救提供双重保障",
+    "english_term": "One CPR control on each side: electric one-button CPR and emergency manual CPR, provide double guarantees for rescuing critically ill patients.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "快卸式床头/尾板:上提式快卸结构，为人工气道建立、支气管镜操作等提供绿色通道",
+    "english_term": "Quick-release headboards and footboards: the lift-up quick-release structure provides a convenient channel for procedures such as establishment of artificial airways and bronchoscopy operation.",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "主要功能",
     "english_term": "Main functions",
     "category": "",
@@ -546,8 +1320,56 @@
     "note": ""
   },
   {
+    "chinese_term": "重症病床基础5功能",
+    "english_term": "5 basic functions of intensive care beds",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "重症一键体位",
+    "english_term": "One-button positions",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "X光背板与片盒",
+    "english_term": "X-ray cassette sleeves",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "称重系统",
     "english_term": "Weighing system",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "iBed PLR 1被动抬腿功能重症电动病床",
+    "english_term": "iBed PLR 1 Electric intensive care bed with passive leg raising function",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "22秒",
+    "english_term": "22 seconds",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "PLR血流动力学效应在1min内达到峰值，此后迅速减弱，特别是在患有严重脓毒症和毛细血管渗漏的患者，快速实现抬腿，有效保证测试结果能被监测",
+    "english_term": "The hemodynamic response of PLR reaches its peak within 1 minute and then rapidly diminishes, especially in patients suffering from severe sepsis and capillary leak syndrome, and the rapid achievement of leg raising effectively ensures that test results can be monitored.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "一键实现",
+    "english_term": "One-button operation",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "机器人多电机跟随实时联动技术一键操作，无需反复确认病床角度，精确控制病床相对于传统拾腿方式减少人力投入，科室运转更高效",
+    "english_term": "Complete multi-motor tracking and real-time linkage by a button for precise control of the bed without repeated angle confirmation. Reduced labor input compared to traditional leg raising methods, and the departments run more efficiently.",
     "category": "",
     "note": ""
   },
@@ -558,8 +1380,98 @@
     "note": ""
   },
   {
+    "chinese_term": "病床实现半卧位到被动拾腿体位改变，期间小腿板联动，保证病人躯干与下肢夹角135°,有效减少髋关节刺激，并实现液体最大转移，同时排除人手抬腿触发交感神经兴奋而导致的假阳性",
+    "english_term": "The bed achieves a semi-recumbent to passive leg raising position change, during which the calf board is linked to ensure that the angle between the patient's torso and lower limbs is 135°, effectively reducing hip joint stimulation and maximizing fluid transfer. It also eliminates false positives due to sympathoexcitation triggered by manual leg raising.",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "重症多功能设计",
     "english_term": "Critical care multifunctional design",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "预防VAP发生：一键半卧位、HOB(Head of Bed)功能语音播报提醒",
+    "english_term": "/Prevention of VAP: one-button semi-recumbent position, HOB(Head of Bed) voice announcement function",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "预防跌落与坠床：铰链强度升级、护栏解锁防护",
+    "english_term": "/Falls prevention: enhancement of hinges strength, locking side rails to prevent unintended movement",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "全面约束方案:病床双侧设有约束架共12个，约束牢固，操作简单",
+    "english_term": "Comprehensive restraint solutions: the bed is equipped with a total of 12 restraint rings on both sides of the bed, which are used to immobilize and restrain the patients it's easy to operate",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "全面引流方案：病床双侧设有引流挂钩共14个，用于科室日常液体引流",
+    "english_term": "Comprehensive drainage solutions: the bed is equipped with totally 14 drainage bag hooks on both sides of the bed for daily fluids drainage of patients in the departments.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "简洁方便的控制器：液晶触摸面板，实时显示体位角度",
+    "english_term": "Simple and convenient controller: LCD touch panel, real-time display of body position angle.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "iBed 3W称重重症电动病床",
+    "english_term": "iBed 3W intensive care bed with weighing system",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "精密称重，指导精确的给药剂量和重症营养摄入，精细管理患者液体",
+    "english_term": "Precise weighing system, guides for accurate drug dosages and nutritional intake as well as precise management of patient's fuilds",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "更早发现患者体重变化",
+    "english_term": "Earlier detection of patient's weight changes",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "称重系统进行升级优化，精度可达10g，称重误差更小，极高的称重精度实现精细管理患者液体出入量",
+    "english_term": "The weighing system has been upgraded and optimized, with an accuracy of 10g (0.01kg) and smaller weighing error, and extremely high weighing accuracy achieves precise management of patient's fluids intake and output",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "iBed 3W称重不随体位变化影响，对于久卧患者，可方便监测体重变化状态。",
+    "english_term": "iBed 3W weighing is not affected by changes in body position, making it convenient for monitoring weight fluctuations in long-term bedridden patients",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "可记录患者多日体重，形成趋势图，反映患者体重变化趋势(iBed3WPro配备)",
+    "english_term": "Patient's weight can be recorded for multiple days, forming a trend graph to reflect the trend of patient's weight change (iBed 3W pro is equipped with this feature)",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "指导给药剂量和营养摄入、方便液体出入量管理",
+    "english_term": "Guide for drug dosages and nutritional intake, facilitate managements of fluid intake and output",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "独有药物计算器，输入药物系数即可算出此时患者应使用剂量",
+    "english_term": "Unique drug calculator, enter the drug coefficients to calculate the dosage the patient should use at this point in time",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "VH系列医用呼吸湿化器",
+    "english_term": "VH-series medical humidifiers",
     "category": "",
     "note": ""
   },
@@ -570,14 +1482,242 @@
     "note": ""
   },
   {
+    "chinese_term": "多点温度监测及反馈调节",
+    "english_term": "Multi-point temperature monitoring and feedback regulation",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "高达每秒一次的多点温度采样",
+    "english_term": "Multi-point temperature sampling up to once per second",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "加热盘低热阻设计",
+    "english_term": "Low thermal resistance design of heating plates",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "加热盘耐磨、耐刮设计",
+    "english_term": "Durable and scratch-resistant design of heating plates",
+    "category": "",
+    "note": ""
+  },
+  {
     "chinese_term": "双流量模式",
     "english_term": "Dual-flow mode",
     "category": "",
     "note": ""
   },
   {
-    "chinese_term": "IP54防尘防水",
-    "english_term": "IP54 dustproof and waterproof",
+    "chinese_term": "简单操作、方便观察",
+    "english_term": "Easy to operate and observe",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "自动切换工作模式",
+    "english_term": "Automatic switching of operating modes",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "匹配各类湿化罐",
+    "english_term": "Match various types of humidification tanks",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "大屏数字显示显示界面",
+    "english_term": "Large screen digital display",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "倾斜15°设计",
+    "english_term": "Display interface tilted 15°design",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "无线模块(选配)",
+    "english_term": "Wireless module(Optional feature)",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "多重保护、安全可靠",
+    "english_term": "Multiple protection, safe and reliable",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "隔离变压器电源设计",
+    "english_term": "/Isolation transformer power supply design",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "加热盘具有绝缘特性",
+    "english_term": "/Heating plates with insulating properties",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "脱罐不加热功能",
+    "english_term": "/No heating after removing the humidification tank",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "双重高温报警及保护切断功能",
+    "english_term": "/Dual high-temperature alarm and cut-off protection function",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "湿化罐水位过低报警功能",
+    "english_term": "/Low water level alarm function for the humidification tank",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "显示屏尺寸：≥0.8英寸",
+    "english_term": "Display size: ≥0.8 inches.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "模式：低流量模式（5-40L/min）、高流量模式（≥40L/min）",
+    "english_term": "Modes: Low Flow Mode (5-40 L/min), High Flow Mode (≥40 L/min).",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "流量范围：5L/min-50L/min",
+    "english_term": "Flow range: 5 L/min to 50 L/min.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "预热时间：＜60 min",
+    "english_term": "Preheating time: <60 min.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "温度档位：5档",
+    "english_term": "Temperature levels: 5 .",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "四点温度监测功能：环境温度、加热盘温度、湿化罐出口温度、Y型口温度",
+    "english_term": "Four-Point temperature monitoring function: Ambient temperature, Heating plate temperature, Humidification chamber outlet temperature, and Y-piece temperature.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "输出湿度：在 5-50L/min 流速范围内,湿化输出应有不少于 10mg/L",
+    "english_term": "Output Humidity: Within the flow range of 5-50 L/min, the humidification output should be no less than 10 mg/L.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "具有8种报警提示功能",
+    "english_term": "Equipped with 8 alarm notification functions.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "具有温度探头",
+    "english_term": "Equipped with a temperature probe.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "输出湿度：在 5-50L/min 流速范围内,可满足以下湿化水平：≥15mg/L、≥20mg/L、≥25mg/L、≥28mg/L、≥33mg/L",
+    "english_term": "Output Humidity: Within the flow rate range of 5-50 L/min, the following levels of humidity can be achieved: ≥15 mg/L, ≥20 mg/L, ≥25 mg/L, ≥28 mg/L, and ≥33 mg/L",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "最大功率：660W",
+    "english_term": "Maximum power: 660 W.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "额定压力：400 kPa",
+    "english_term": "Rated pressure: 400 kPa.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "自我保护压力：480 kPa",
+    "english_term": "Self-Protection Pressure: 480 kPa.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "持续流量（@350kPa）：≥40L/min",
+    "english_term": "Continuous flow (@350 kPa): ≥40 L/min.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "峰值流量：>250L/min",
+    "english_term": "Peak flow: >250 L/min.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "工作噪音:≤60 dB",
+    "english_term": "Operating noise: ≤60 dB",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "储气罐容积：4.5 L",
+    "english_term": "Storage tank volume: 4.5 L.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "过滤颗粒：5 μm",
+    "english_term": "Filter particle size: 5 μm",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "输出接口：自锁快速接头",
+    "english_term": "Output interface: Self-locking quick coupling.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "输入接口：NIST制式",
+    "english_term": "Input Interface: NIST standard.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "干燥方式：冷冻式",
+    "english_term": "Drying Method: Freeze-Drying.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "显示功能：压力、输出气体温度、累计运行时间，运行状态",
+    "english_term": "Display Functions: Pressure, Output gas temperature, Accumulated operating time, and Operational status.",
+    "category": "",
+    "note": ""
+  },
+  {
+    "chinese_term": "具有中央空气切换功能",
+    "english_term": "Equipped with central air switching function",
     "category": "",
     "note": ""
   }
