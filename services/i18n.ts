@@ -51,6 +51,8 @@ const translations = {
     AVOID: '避免混淆',
     BTN_PRONOUNCE: '发音',
     BTN_COPY: '复制',
+    BTN_FAVORITE: '收藏翻译',
+    BTN_ADD_TO_DICT_SHORT: '加入词库',
     
     // Add Term Modal / Form
     MODAL_TITLE: '添加新术语',
@@ -71,6 +73,7 @@ const translations = {
     BTN_SAVE: '保存',
     BTN_CLOSE: '关闭',
     MSG_TERM_ADDED: '术语添加成功！',
+    MSG_TERM_EXISTS: '术语已存在于词库中',
     
     // Form Placeholders
     PH_CHINESE: '例如：感冒',
@@ -91,6 +94,8 @@ const translations = {
     // Toast
     TOAST_COPY_SUCCESS: '已复制到剪贴板',
     TOAST_COPY_FAIL: '复制失败',
+    TOAST_FAV_ADDED: '已添加到收藏',
+    TOAST_FAV_REMOVED: '已取消收藏',
 
     // Assistant
     AST_TITLE: '翻译助手',
@@ -136,6 +141,7 @@ const translations = {
     BTN_EXPORT: '导出 Excel',
     EMPTY_RESULTS: '暂无结果',
     NOT_FOUND: '未找到',
+    WAITING_FOR_AI: '未找到，正在用AI帮你翻译',
     BATCH_PROCESSING: '正在处理中 (混合模式: 词库 + AI)...',
     BATCH_SOURCE_DICT: '词库匹配',
     BATCH_SOURCE_AI: 'AI 翻译',
@@ -233,6 +239,8 @@ const translations = {
     AVOID: 'Avoid',
     BTN_PRONOUNCE: 'Pronounce',
     BTN_COPY: 'Copy',
+    BTN_FAVORITE: 'Save Translation',
+    BTN_ADD_TO_DICT_SHORT: 'Add to Dict',
     
     // Add Term Modal / Form
     MODAL_TITLE: 'Add New Term',
@@ -253,6 +261,7 @@ const translations = {
     BTN_SAVE: 'Save',
     BTN_CLOSE: 'Close',
     MSG_TERM_ADDED: 'Term added successfully!',
+    MSG_TERM_EXISTS: 'Term already exists in dictionary',
 
     // Form Placeholders
     PH_CHINESE: 'e.g. 感冒',
@@ -273,6 +282,8 @@ const translations = {
     // Toast
     TOAST_COPY_SUCCESS: 'Copied to clipboard',
     TOAST_COPY_FAIL: 'Failed to copy',
+    TOAST_FAV_ADDED: 'Added to Favorites',
+    TOAST_FAV_REMOVED: 'Removed from Favorites',
 
     // Assistant
     AST_TITLE: 'Translation Assistant',
@@ -318,6 +329,7 @@ const translations = {
     BTN_EXPORT: 'Export Excel',
     EMPTY_RESULTS: 'No results yet',
     NOT_FOUND: 'Not Found',
+    WAITING_FOR_AI: 'Not found, translating with AI...',
     BATCH_PROCESSING: 'Processing (Mixed Mode: Dict + AI)...',
     BATCH_SOURCE_DICT: 'Dictionary',
     BATCH_SOURCE_AI: 'AI Translate',

@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { fetchSystemTerms, searchTerms } from '../services/search';
 import { Term } from '../types';
-import { ArrowRight, Download, Loader2, Sparkles, Book, AlertCircle } from 'lucide-react';
+import { ArrowRight, Download, Loader2, Sparkles, Book, AlertCircle, X, Copy } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import { getCompletion } from '../services/llm';
+import { copyToClipboard } from '../services/clipboard';
 import * as XLSX from 'xlsx';
 
 interface BatchResult {
@@ -20,6 +22,7 @@ export const BatchTranslation: React.FC = () => {
   const [systemTerms, setSystemTerms] = useState<Term[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
+  const [selectedResult, setSelectedResult] = useState<BatchResult | null>(null);
   
   const { userTerms, settings, auth } = useStore();
   const { t } = useTranslation();
@@ -56,10 +59,10 @@ export const BatchTranslation: React.FC = () => {
          };
       } else {
          missingIndices.push(idx);
-         // Placeholder
+         // Placeholder - If API Key exists, tell user AI is coming. If not, just "Not Found"
          tempResults[idx] = {
            original: line,
-           result: t('NOT_FOUND'),
+           result: auth?.apiKey ? t('WAITING_FOR_AI') : t('NOT_FOUND'),
            found: false,
            source: 'none'
          };
@@ -106,7 +109,14 @@ ${missingTerms.join('\n')}`;
          setProcessed([...tempResults]);
        } catch (err) {
          console.error("AI Batch Error", err);
-         // Fallback is already set to "Not Found" / "none"
+         // Fallback is already set to "Not Found" / "none" or waiting status
+         // We might want to revert the waiting status to error or not found if it failed
+         missingIndices.forEach((originalIndex) => {
+             if (tempResults[originalIndex].source === 'none' && tempResults[originalIndex].result === t('WAITING_FOR_AI')) {
+                 tempResults[originalIndex].result = t('NOT_FOUND');
+             }
+         });
+         setProcessed([...tempResults]);
        }
     }
 
@@ -144,7 +154,7 @@ ${missingTerms.join('\n')}`;
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
       <h2 className="text-2xl font-bold text-slate-800 mb-4">{t('BATCH_TITLE')}</h2>
       
       <div className="grid md:grid-cols-2 gap-6 flex-1 h-full min-h-[400px]">
@@ -194,11 +204,15 @@ ${missingTerms.join('\n')}`;
             ) : (
               <div className="space-y-2">
                 {processed.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-white/50 hover:border-blue-200 transition-colors">
+                  <div 
+                    key={idx} 
+                    onClick={() => setSelectedResult(item)}
+                    className="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-white/50 hover:border-blue-200 hover:shadow-sm cursor-pointer transition-all active:scale-[0.99]"
+                  >
                     <div className="flex-1 min-w-0 grid grid-cols-[1fr,auto,1fr] gap-2 items-center">
                        <span className="font-medium text-slate-700 truncate" title={item.original}>{item.original}</span>
                        <ArrowRight className="w-4 h-4 text-slate-300 shrink-0" />
-                       <span className={`truncate font-medium ${item.found ? 'text-blue-700' : 'text-red-400 italic'}`} title={item.result}>
+                       <span className={`truncate font-medium ${item.found ? 'text-blue-700' : 'text-slate-400 italic'}`} title={item.result}>
                          {item.result}
                        </span>
                     </div>
@@ -215,6 +229,61 @@ ${missingTerms.join('\n')}`;
           </div>
         </div>
       </div>
+
+      {/* Detail Modal */}
+      {selectedResult && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4" onClick={() => setSelectedResult(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-white/50 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-5 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                {t('DETAIL_TITLE')}
+                {selectedResult.source === 'dict' && <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide border border-emerald-200">Dictionary</span>}
+                {selectedResult.source === 'ai' && <span className="bg-violet-100 text-violet-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide border border-violet-200">AI Translate</span>}
+              </h3>
+              <button onClick={() => setSelectedResult(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">{t('AST_SOURCE')}</label>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-slate-800 font-medium leading-relaxed break-words">
+                  {selectedResult.original}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                   <label className="block text-xs font-bold text-slate-400 uppercase">{t('AST_TARGET')}</label>
+                   <button 
+                     onClick={() => copyToClipboard(selectedResult.result, t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'))}
+                     className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 font-medium"
+                   >
+                     <Copy className="w-3 h-3" /> {t('BTN_COPY')}
+                   </button>
+                </div>
+                <div className={`p-4 rounded-xl border leading-relaxed break-words ${
+                  selectedResult.found 
+                    ? 'bg-blue-50/50 border-blue-100 text-blue-900 font-serif text-lg' 
+                    : 'bg-slate-50 border-slate-100 text-slate-400 italic'
+                }`}>
+                  {selectedResult.result}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 flex justify-end bg-slate-50/50 rounded-b-2xl">
+              <button 
+                onClick={() => setSelectedResult(null)}
+                className="px-6 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                {t('BTN_CLOSE')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

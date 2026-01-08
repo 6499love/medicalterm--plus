@@ -15,6 +15,9 @@ export interface Term {
   source: 'system' | 'user';
   tags?: string[];
   addedAt?: number;
+  
+  // New flag: if false, term is hidden from "My Dictionary" list (used for Favorites-only items)
+  inDictionary?: boolean; 
 }
 
 export interface SearchResult extends Term {

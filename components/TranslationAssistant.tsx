@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../store';
@@ -12,6 +13,7 @@ import {
 } from '../services/textProcessing';
 import { getTokenCount } from '../services/translationChunkUtils';
 import { useTranslation } from '../services/i18n';
+import { useToastStore } from '../services/toast';
 import { 
   Wand2, 
   Highlighter, 
@@ -29,7 +31,9 @@ import {
   MessageSquareQuote,
   Coins,
   Clock,
-  X
+  X,
+  Star,
+  BookPlus
 } from 'lucide-react';
 import { copyToClipboard } from '../services/clipboard';
 
@@ -81,7 +85,8 @@ interface TranslationAssistantProps {
 
 export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNavigate }) => {
   const { t } = useTranslation();
-  const { userTerms, auth, setNavigatedTermId } = useStore();
+  const { userTerms, auth, setNavigatedTermId, addUserTerm, toggleFavorite, favorites, updateUserTerm } = useStore();
+  const { showToast } = useToastStore();
   const [systemTerms, setSystemTerms] = useState<Term[]>([]);
   
   // Input State
@@ -400,6 +405,92 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
 
   const tokenHint = getTokenHint();
 
+  // Favorite / Save Translation Logic
+  const getCurrentTranslationAsTerm = useMemo(() => {
+    if (!inputText || !translatedText) return null;
+    return {
+      chinese: isSourceChinese ? inputText : translatedText,
+      english: isSourceChinese ? translatedText : inputText
+    };
+  }, [inputText, translatedText, isSourceChinese]);
+
+  const existingSavedTerm = useMemo(() => {
+    if (!getCurrentTranslationAsTerm) return null;
+    const { chinese, english } = getCurrentTranslationAsTerm;
+    // Normalize logic could be better, but simple exact match for now
+    return userTerms.find(t => 
+      t.chinese_term.trim() === chinese.trim() && 
+      t.english_term.trim() === english.trim()
+    );
+  }, [getCurrentTranslationAsTerm, userTerms]);
+
+  const isCurrentTranslationFavorited = useMemo(() => {
+    return existingSavedTerm && favorites.includes(existingSavedTerm.id);
+  }, [existingSavedTerm, favorites]);
+
+  const handleFavoriteTranslation = () => {
+    if (!getCurrentTranslationAsTerm) return;
+    const { chinese, english } = getCurrentTranslationAsTerm;
+
+    if (existingSavedTerm) {
+      // Toggle favorite status
+      toggleFavorite(existingSavedTerm.id);
+      if (favorites.includes(existingSavedTerm.id)) {
+        showToast(t('TOAST_FAV_REMOVED'), 'success'); // Was fav, now removed
+      } else {
+        showToast(t('TOAST_FAV_ADDED'), 'success');
+      }
+    } else {
+      // Create new user term but mark as HIDDEN from dictionary (Favorites Only)
+      const newId = addUserTerm({
+        chinese_term: chinese,
+        english_term: english,
+        category: 'Translation',
+        note: 'Saved from Translation Assistant',
+        pinyin_full: '',
+        pinyin_first: '',
+        usage_scenario: '',
+        root_analysis: '',
+        mistranslation_warning: [],
+        related_terms: [],
+        inDictionary: false // Hidden from dictionary
+      });
+      toggleFavorite(newId);
+      showToast(t('TOAST_FAV_ADDED'), 'success');
+    }
+  };
+
+  const handleAddToDictionary = () => {
+    if (!getCurrentTranslationAsTerm) return;
+    const { chinese, english } = getCurrentTranslationAsTerm;
+
+    if (existingSavedTerm) {
+        if (existingSavedTerm.inDictionary === false) {
+            // It exists but was hidden (favorites only), so promote it to visible
+            updateUserTerm({ ...existingSavedTerm, inDictionary: true });
+            showToast(t('MSG_TERM_ADDED'), 'success');
+        } else {
+            showToast(t('MSG_TERM_EXISTS'), 'success');
+        }
+    } else {
+        // Create new visible term
+        addUserTerm({
+            chinese_term: chinese,
+            english_term: english,
+            category: 'Translation',
+            note: 'Added from Translation Assistant',
+            pinyin_full: '',
+            pinyin_first: '',
+            usage_scenario: '',
+            root_analysis: '',
+            mistranslation_warning: [],
+            related_terms: [],
+            inDictionary: true // Visible
+        });
+        showToast(t('MSG_TERM_ADDED'), 'success');
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -613,6 +704,20 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
           
           {translatedText && !isLoading && (
             <div className="absolute top-14 right-4 flex gap-2">
+               <button 
+                 onClick={handleAddToDictionary}
+                 className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-blue-600 rounded-lg shadow-sm border border-blue-100 transition-all backdrop-blur-sm group"
+                 title={t('BTN_ADD_TO_DICT_SHORT')}
+               >
+                 <BookPlus className="w-4 h-4" />
+               </button>
+               <button 
+                 onClick={handleFavoriteTranslation}
+                 className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-amber-500 rounded-lg shadow-sm border border-blue-100 transition-all backdrop-blur-sm group"
+                 title={t('BTN_FAVORITE')}
+               >
+                 <Star className={`w-4 h-4 transition-colors ${isCurrentTranslationFavorited ? 'fill-amber-400 text-amber-400' : 'text-slate-400 group-hover:text-amber-400'}`} />
+               </button>
                <button 
                  onClick={() => copyToClipboard(translatedText, t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'))}
                  className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-blue-600 rounded-lg shadow-sm border border-blue-100 transition-all backdrop-blur-sm"

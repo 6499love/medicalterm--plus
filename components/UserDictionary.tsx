@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '../store';
 import { Trash2, Search, Book, Download, Upload, FileJson, AlertTriangle, ChevronLeft, ChevronRight, X, Info, Plus, Save, Sparkles, HelpCircle, Copy, Check, Loader2, ArrowUpDown, ChevronDown, Edit } from 'lucide-react';
@@ -95,11 +96,12 @@ export const UserDictionary: React.FC = () => {
   // Processing Data (Filter & Sort)
   const displayedTerms = useMemo(() => {
     if (activeTab === 'user') {
-        // User Tab: Filter by text
+        // User Tab: Filter by text AND inDictionary !== false
         return userTerms.filter(t => 
-            (t.chinese_term?.toLowerCase() || '').includes(filter.toLowerCase()) || 
+            (t.inDictionary !== false) && 
+            ((t.chinese_term?.toLowerCase() || '').includes(filter.toLowerCase()) || 
             (t.english_term?.toLowerCase() || '').includes(filter.toLowerCase()) ||
-            t.related_terms?.some(a => a.toLowerCase().includes(filter.toLowerCase()))
+            t.related_terms?.some(a => a.toLowerCase().includes(filter.toLowerCase())))
         ).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0)); // Default User sort: Newest first
     } else {
         // System Tab: Sort Only
@@ -122,7 +124,7 @@ export const UserDictionary: React.FC = () => {
   const visibleTerms = displayedTerms.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleExport = () => {
-    const dataStr = JSON.stringify(userTerms, null, 2);
+    const dataStr = JSON.stringify(userTerms.filter(t => t.inDictionary !== false), null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     
@@ -245,7 +247,8 @@ export const UserDictionary: React.FC = () => {
                 ...commonData,
                 usage_scenario: '',
                 root_analysis: '',
-                mistranslation_warning: []
+                mistranslation_warning: [],
+                inDictionary: true // Explicitly set as true for manual additions
             });
             setMessage({ type: 'success', text: t('MSG_TERM_ADDED') });
             // Clear form for next entry

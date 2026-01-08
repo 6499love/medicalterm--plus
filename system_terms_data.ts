@@ -400,18 +400,6 @@ export const systemTermsData = [
     "related_terms": []
   },
   {
-    "chinese_term": "一键体位功能",
-    "english_term": "",
-    "pinyin_full": "",
-    "pinyin_first": "",
-    "category": "",
-    "note": "",
-    "usage_scenario": "",
-    "root_analysis": "",
-    "mistranslation_warning": [],
-    "related_terms": []
-  },
-  {
     "chinese_term": "一键CPR位",
     "english_term": "One-Button CPR Position",
     "pinyin_full": "",
@@ -1146,18 +1134,6 @@ export const systemTermsData = [
   {
     "chinese_term": "反特式位",
     "english_term": "Reverse Trendelenburg",
-    "pinyin_full": "",
-    "pinyin_first": "",
-    "category": "",
-    "note": "",
-    "usage_scenario": "",
-    "root_analysis": "",
-    "mistranslation_warning": [],
-    "related_terms": []
-  },
-  {
-    "chinese_term": "一键体位：",
-    "english_term": "One-button positions",
     "pinyin_full": "",
     "pinyin_first": "",
     "category": "",
@@ -2573,7 +2549,7 @@ export const systemTermsData = [
   },
   {
     "chinese_term": "床旁拍片支持：满足重症患者床旁DR胸片拍摄、C型臂X光拍摄，减轻护理者工作强度",
-    "english_term": "/Bedside X-ray imaging support: satisfy the needs of critically ill patients for bedside DR chest X-ray imaging and C-arm X-ray imaging, reduce the work intensity of caregivers",
+    "english_term": "Bedside X-ray imaging support: satisfy the needs of critically ill patients for bedside DR chest X-ray imaging and C-arm X-ray imaging, reduce the work intensity of caregivers",
     "pinyin_full": "",
     "pinyin_first": "",
     "category": "",
@@ -2801,7 +2777,7 @@ export const systemTermsData = [
   },
   {
     "chinese_term": "预防VAP发生：一键半卧位、HOB(Head of Bed)功能语音播报提醒",
-    "english_term": "/Prevention of VAP: one-button semi-recumbent position, HOB(Head of Bed) voice announcement function",
+    "english_term": "Prevention of VAP: one-button semi-recumbent position, HOB(Head of Bed) voice announcement function",
     "pinyin_full": "",
     "pinyin_first": "",
     "category": "",
@@ -2813,7 +2789,7 @@ export const systemTermsData = [
   },
   {
     "chinese_term": "预防跌落与坠床：铰链强度升级、护栏解锁防护",
-    "english_term": "/Falls prevention: enhancement of hinges strength, locking side rails to prevent unintended movement",
+    "english_term": "Falls prevention: enhancement of hinges strength, locking side rails to prevent unintended movement",
     "pinyin_full": "",
     "pinyin_first": "",
     "category": "",
@@ -3125,7 +3101,7 @@ export const systemTermsData = [
   },
   {
     "chinese_term": "隔离变压器电源设计",
-    "english_term": "/Isolation transformer power supply design",
+    "english_term": "Isolation transformer power supply design",
     "pinyin_full": "",
     "pinyin_first": "",
     "category": "",
@@ -3137,7 +3113,7 @@ export const systemTermsData = [
   },
   {
     "chinese_term": "加热盘具有绝缘特性",
-    "english_term": "/Heating plates with insulating properties",
+    "english_term": "Heating plates with insulating properties",
     "pinyin_full": "",
     "pinyin_first": "",
     "category": "",
@@ -3149,7 +3125,7 @@ export const systemTermsData = [
   },
   {
     "chinese_term": "脱罐不加热功能",
-    "english_term": "/No heating after removing the humidification tank",
+    "english_term": "No heating after removing the humidification tank",
     "pinyin_full": "",
     "pinyin_first": "",
     "category": "",
@@ -3161,7 +3137,7 @@ export const systemTermsData = [
   },
   {
     "chinese_term": "双重高温报警及保护切断功能",
-    "english_term": "/Dual high-temperature alarm and cut-off protection function",
+    "english_term": "Dual high-temperature alarm and cut-off protection function",
     "pinyin_full": "",
     "pinyin_first": "",
     "category": "",
@@ -3173,7 +3149,7 @@ export const systemTermsData = [
   },
   {
     "chinese_term": "湿化罐水位过低报警功能",
-    "english_term": "/Low water level alarm function for the humidification tank",
+    "english_term": "Low water level alarm function for the humidification tank",
     "pinyin_full": "",
     "pinyin_first": "",
     "category": "",

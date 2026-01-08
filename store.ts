@@ -15,7 +15,7 @@ interface StoreState {
   navigatedTermId: string | null; // ID of term to open in dictionary
 
   // Actions
-  addUserTerm: (termData: Omit<Term, 'id' | 'source' | 'addedAt'>) => void;
+  addUserTerm: (termData: Omit<Term, 'id' | 'source' | 'addedAt'>) => string;
   removeUserTerm: (id: string) => void;
   updateUserTerm: (term: Term) => void;
   importUserTerms: (terms: any[]) => number; // Returns count of added terms
@@ -49,17 +49,21 @@ export const useStore = create<StoreState>()(
       auth: null,
       navigatedTermId: null,
 
-      addUserTerm: (termData) => set((state) => ({
-        userTerms: [
-          ...state.userTerms,
-          {
-            ...termData,
-            id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            source: 'user',
-            addedAt: Date.now(),
-          },
-        ],
-      })),
+      addUserTerm: (termData) => {
+        const newId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        set((state) => ({
+          userTerms: [
+            ...state.userTerms,
+            {
+              ...termData,
+              id: newId,
+              source: 'user',
+              addedAt: Date.now(),
+            },
+          ],
+        }));
+        return newId;
+      },
 
       removeUserTerm: (id) => set((state) => ({
         userTerms: state.userTerms.filter((t) => t.id !== id),

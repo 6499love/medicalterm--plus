@@ -1,66 +1,20 @@
-# MedicalTerm-Plus
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-**MedicalTerm-Plus** 是一个医学术语翻译与检索的单页应用（SPA），采用 **完全客户端运行架构**，无需后端服务即可使用。
+# Run and deploy your AI Studio app
 
-该项目基于 **Google Gemini AI Studio 模板** 构建，集成了本地 JSON 医学词库、AI 驱动翻译能力、模糊搜索引擎以及浏览器本地存储等功能，适用于医学文献翻译、医疗器械出海资料整理及内部术语管理等场景。
+This contains everything you need to run your app locally.
 
----
+View your app in AI Studio: https://ai.studio/apps/drive/1XxKm60jSqnIynOATmbRibT04fdw_ATLu
 
-## ✨ 主要功能
+## Run Locally
 
-- 医学术语智能翻译（支持 Gemini API，兼容 OpenAI 风格 API）
-- 本地 JSON 医学词典与术语别名匹配
-- 基于 Fuse.js 的模糊搜索
-- 用户自定义词典管理
-- 批量翻译与 Excel 导出
-- 浏览器 `localStorage` 本地数据持久化
-- Web Speech API 语音支持
-- 专业模式与反射能力
+**Prerequisites:**  Node.js
 
----
 
-## 🛠 技术栈
-
-- React + TypeScript
-- Vite
-- Fuse.js
-- Web Speech API
-- localStorage
-
-代码构成比例：
-- TypeScript：99.1%
-- HTML：0.9%
-
----
-
-## 🚀 本地运行
-
-### 环境要求
-- Node.js
-
-### 安装依赖
-```bash
-npm install
-````
-
-### 配置 API Key
-
-在 `.env.local` 文件中设置：
-
-```env
-GEMINI_API_KEY=your_api_key_here
-```
-
-### 启动开发
-
-```bash
-npm run dev
-```
-
----
-
-## 📄 开源协议
-
-本项目当前未明确声明开源许可证。
-
-```
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
