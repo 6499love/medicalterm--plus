@@ -1,20 +1,975 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# MediTerm Glass Pro
 
-# Run and deploy your AI Studio app
+> 专业医学术语翻译与词典管理平台
 
-This contains everything you need to run your app locally.
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19.2.0-61DAFB?style=flat-square&logo=react" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-5.8.2-3178C6?style=flat-square&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-6.2.0-646CFF?style=flat-square&logo=vite" alt="Vite" />
+  <img src="https://img.shields.io/badge/Zustand-5.0.8-brown?style=flat-square" alt="Zustand" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
+</p>
 
-View your app in AI Studio: https://ai.studio/apps/drive/1XxKm60jSqnIynOATmbRibT04fdw_ATLu
+---
 
-## Run Locally
+## 目录
 
-**Prerequisites:**  Node.js
+- [项目介绍](#1-项目介绍)
+- [项目架构](#2-项目架构)
+- [技术栈](#3-技术栈)
+- [环境要求](#4-环境要求)
+- [部署指南](#5-部署指南)
+- [接口文档](#6-接口文档)
+- [性能与可靠性](#7-性能与可靠性)
+- [常见问题](#8-常见问题及解决方案)
+- [开发团队](#9-开发团队)
+- [版本历史](#10-版本历史)
+- [附录](#11-附录)
 
+---
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 1. 项目介绍
+
+### 1.1 项目概述
+
+**MediTerm Glass Pro** 是一款专业的医学术语翻译与词典管理 Web 应用程序。它集成了智能搜索引擎、AI 驱动的翻译服务、批量处理和个人词典管理等功能，为医学翻译人员、医疗从业者和医学学习者提供高效、准确的术语查询与翻译服务。
+
+### 1.2 项目背景
+
+在医学翻译领域，专业术语的准确翻译至关重要。传统的通用翻译工具往往无法满足医学领域的专业需求：
+
+- **术语精准度不足**：通用翻译工具缺乏医学专业词库支持
+- **上下文理解欠缺**：医学术语在不同语境下可能有不同含义
+- **效率问题**：翻译人员需要频繁切换多个工具查询术语
+- **知识积累困难**：个人积累的术语无法有效管理和复用
+
+本项目旨在解决上述痛点，提供一站式的医学术语翻译解决方案。
+
+### 1.3 主要特性
+
+| 功能模块 | 描述 |
+|---------|------|
+| **智能搜索引擎** | 支持中英文精确匹配、拼音搜索（全拼/首字母）、模糊匹配 |
+| **AI 翻译助手** | 集成 Gemini、OpenAI、GLM 多种大语言模型 |
+| **批量翻译** | 支持多行文本批量处理，一键导出 Excel |
+| **个人词典** | 创建、编辑、导入导出自定义术语库 |
+| **收藏夹管理** | 快速标记和访问常用术语 |
+| **搜索历史** | 自动记录查询历史，便于回溯 |
+| **语音播放** | 英文术语发音功能 (TTS) |
+| **双语界面** | 支持中英文界面切换 |
+
+### 1.4 工程设计亮点
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     工程设计核心优势                              │
+├─────────────────────────────────────────────────────────────────┤
+│  ✦ 纯前端架构          无需后端服务，开箱即用，部署简单           │
+│  ✦ 离线优先设计        核心搜索功能完全离线可用                   │
+│  ✦ 模块化服务层        业务逻辑与 UI 完全解耦，易于扩展           │
+│  ✦ 多 LLM 提供商抽象   统一接口适配多种 AI 服务                   │
+│  ✦ 类型安全            全量 TypeScript 严格模式开发               │
+│  ✦ 高性能搜索          多级匹配策略 + Fuse.js 模糊搜索            │
+│  ✦ 状态持久化          Zustand + localStorage 自动同步            │
+│  ✦ 国际化支持          内置 i18n 系统，轻松扩展多语言             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**核心设计亮点详解：**
+
+1. **零后端依赖架构**
+   - 所有数据存储在浏览器 localStorage 中
+   - 内置 3800+ 条系统医学术语，无需联网即可使用核心功能
+   - 降低运维成本，提升系统可用性
+
+2. **多层级搜索算法**
+   - 优先级匹配：用户词条 > 系统词条 > 拼音匹配 > 模糊搜索
+   - 支持全角/半角自动转换、标点符号标准化
+   - 可配置的模糊匹配阈值
+
+3. **LLM Provider Factory Pattern**
+   - 抽象统一的 AI 调用接口
+   - 支持运行时切换提供商
+   - 内置重试机制和错误处理
+
+4. **响应式 Glassmorphism UI**
+   - 现代化毛玻璃设计风格
+   - 完整的移动端适配
+   - 无障碍访问支持
+
+---
+
+## 2. 项目架构
+
+### 2.1 整体架构图
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                           MediTerm Glass Pro                           │
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                        │
+│  ┌─────────────────────────  UI Layer  ─────────────────────────────┐  │
+│  │                                                                   │  │
+│  │   ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐            │  │
+│  │   │Translator│  │  Batch  │  │Assistant│  │Dictionary│            │  │
+│  │   │  .tsx   │  │Trans.tsx│  │  .tsx   │  │  .tsx   │            │  │
+│  │   └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘            │  │
+│  │        │            │            │            │                   │  │
+│  │   ┌────┴────────────┴────────────┴────────────┴────┐             │  │
+│  │   │              Layout.tsx (Navigation)           │             │  │
+│  │   └────────────────────────────────────────────────┘             │  │
+│  │                                                                   │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                    │                                    │
+│                                    ▼                                    │
+│  ┌─────────────────────  Service Layer  ────────────────────────────┐  │
+│  │                                                                   │  │
+│  │   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │  │
+│  │   │ search.ts│  │  llm.ts  │  │  i18n.ts │  │  tts.ts  │        │  │
+│  │   │ (搜索引擎)│  │(AI 抽象层)│  │ (国际化) │  │ (语音合成)│        │  │
+│  │   └──────────┘  └──────────┘  └──────────┘  └──────────┘        │  │
+│  │                                                                   │  │
+│  │   ┌────────────────┐  ┌─────────────────┐  ┌───────────┐        │  │
+│  │   │textProcessing.ts│  │translationChunk │  │clipboard.ts│        │  │
+│  │   │  (翻译处理)     │  │ Utils.ts (分块) │  │  (剪贴板)  │        │  │
+│  │   └────────────────┘  └─────────────────┘  └───────────┘        │  │
+│  │                                                                   │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                    │                                    │
+│                                    ▼                                    │
+│  ┌─────────────────────  State Layer  ──────────────────────────────┐  │
+│  │                                                                   │  │
+│  │   ┌────────────────────────────────────────────────────────────┐ │  │
+│  │   │                    store.ts (Zustand)                      │ │  │
+│  │   │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐          │ │  │
+│  │   │  │userTerms│ │favorites│ │ history │ │settings │          │ │  │
+│  │   │  └─────────┘ └─────────┘ └─────────┘ └─────────┘          │ │  │
+│  │   └────────────────────────────────────────────────────────────┘ │  │
+│  │                              │                                    │  │
+│  │                              ▼                                    │  │
+│  │   ┌────────────────────────────────────────────────────────────┐ │  │
+│  │   │                 localStorage (持久化)                       │ │  │
+│  │   └────────────────────────────────────────────────────────────┘ │  │
+│  │                                                                   │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                    │                                    │
+│                                    ▼                                    │
+│  ┌─────────────────────  Data Layer  ───────────────────────────────┐  │
+│  │                                                                   │  │
+│  │   ┌─────────────────────┐      ┌─────────────────────────────┐   │  │
+│  │   │system_terms_data.ts │      │    External LLM APIs        │   │  │
+│  │   │  (内置系统词库)      │      │  ┌────────┐ ┌────────┐     │   │  │
+│  │   │  3,800+ 医学术语     │      │  │ Gemini │ │ OpenAI │     │   │  │
+│  │   └─────────────────────┘      │  └────────┘ └────────┘     │   │  │
+│  │                                │  ┌────────┐                 │   │  │
+│  │                                │  │  GLM   │                 │   │  │
+│  │                                │  └────────┘                 │   │  │
+│  │                                └─────────────────────────────┘   │  │
+│  │                                                                   │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 技术架构
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      前端技术架构                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   Build Tool                    Framework                       │
+│   ┌─────────┐                  ┌──────────────┐                │
+│   │  Vite   │  ──────────────► │  React 19    │                │
+│   │  6.2.0  │     HMR/Build    │ (Concurrent) │                │
+│   └─────────┘                  └──────────────┘                │
+│                                       │                         │
+│   Language                            ▼                         │
+│   ┌─────────────┐             ┌──────────────┐                 │
+│   │ TypeScript  │  ─────────► │   Zustand    │                 │
+│   │   5.8.2     │  Type Safe  │   State Mgmt │                 │
+│   │ Strict Mode │             └──────────────┘                 │
+│   └─────────────┘                    │                         │
+│                                      ▼                         │
+│   Styling                     ┌──────────────┐                 │
+│   ┌─────────────┐             │  Fuse.js     │                 │
+│   │  Tailwind   │             │  Fuzzy Search│                 │
+│   │    CSS      │             └──────────────┘                 │
+│   └─────────────┘                    │                         │
+│                                      ▼                         │
+│   Icons                       ┌──────────────┐                 │
+│   ┌─────────────┐             │  Pinyin-Pro  │                 │
+│   │   Lucide    │             │  汉字转拼音   │                 │
+│   │   React     │             └──────────────┘                 │
+│   └─────────────┘                    │                         │
+│                                      ▼                         │
+│   Export                      ┌──────────────┐                 │
+│   ┌─────────────┐             │  @google/    │                 │
+│   │    XLSX     │             │   genai      │                 │
+│   │  (Excel)    │             │  (Gemini SDK)│                 │
+│   └─────────────┘             └──────────────┘                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 2.3 模块组成
+
+```
+medicalterm--plus/
+├── App.tsx                              # 主应用组件 & 路由管理
+├── index.tsx                            # React 入口点
+├── store.ts                             # Zustand 状态管理
+├── types.ts                             # TypeScript 类型定义
+├── vite.config.ts                       # Vite 构建配置
+├── tsconfig.json                        # TypeScript 编译配置
+├── index.html                           # HTML 模板 & Tailwind 配置
+├── package.json                         # 项目依赖声明
+│
+├── components/                          # React UI 组件
+│   ├── Layout.tsx                       # 主布局 (侧边栏/移动端导航)
+│   ├── Translator.tsx                   # 词典查询 & 搜索组件
+│   ├── TranslationAssistant.tsx         # AI 翻译助手组件
+│   ├── BatchTranslation.tsx             # 批量翻译 & Excel 导出
+│   ├── UserDictionary.tsx               # 词典管理 (CRUD 操作)
+│   └── SelectionPopup.tsx               # 文本选择上下文菜单
+│
+├── services/                            # 业务逻辑 & API 集成
+│   ├── search.ts                        # 搜索引擎 (精确/拼音/模糊)
+│   ├── llm.ts                           # LLM 提供商抽象层
+│   ├── textProcessing.ts                # 翻译处理 & 术语对齐
+│   ├── i18n.ts                          # 国际化 (中/英)
+│   ├── tts.ts                           # 文字转语音封装
+│   ├── clipboard.ts                     # 剪贴板操作
+│   ├── toast.ts                         # Toast 通知状态
+│   └── translationChunkUtils.ts         # Token 计数 & 文本分块
+│
+└── system_terms_data*.ts                # 预置医学术语数据库 (3,800+ 条目)
+```
+
+### 2.4 设计模式
+
+| 设计模式 | 应用场景 | 实现位置 |
+|---------|---------|---------|
+| **Factory Pattern** | LLM 提供商切换 | `services/llm.ts` |
+| **Observer Pattern** | 状态变更通知 | `store.ts` (Zustand) |
+| **Adapter Pattern** | 多 LLM API 统一接口 | `services/llm.ts` |
+| **Singleton Pattern** | 系统词库缓存 | `services/search.ts` |
+| **Strategy Pattern** | 搜索算法策略切换 | `services/search.ts` |
+| **Facade Pattern** | 服务层封装 | `services/*.ts` |
+
+---
+
+## 3. 技术栈
+
+### 3.1 前端框架
+
+| 技术 | 版本 | 选型理由 |
+|-----|------|---------|
+| **React** | 19.2.0 | 最新稳定版，支持并发特性，组件化开发效率高 |
+| **TypeScript** | 5.8.2 | 强类型支持，提升代码质量和开发体验 |
+| **Vite** | 6.2.0 | 极速 HMR，优化的生产构建，原生 ESM 支持 |
+
+### 3.2 状态管理
+
+| 技术 | 版本 | 选型理由 |
+|-----|------|---------|
+| **Zustand** | 5.0.8 | 轻量级状态管理，内置持久化中间件，学习成本低 |
+
+### 3.3 UI & 样式
+
+| 技术 | 说明 | 选型理由 |
+|-----|------|---------|
+| **Tailwind CSS** | CDN 方式引入 | 原子化 CSS，快速开发，定制化毛玻璃主题 |
+| **Lucide React** | 0.554.0 | 现代图标库，轻量且美观 |
+| **Inter Font** | Google Fonts | 专为屏幕阅读优化的字体 |
+
+### 3.4 核心功能库
+
+| 技术 | 版本 | 用途 |
+|-----|------|-----|
+| **Fuse.js** | 7.1.0 | 模糊搜索引擎，支持权重配置 |
+| **pinyin-pro** | 3.18.3 | 汉字转拼音，支持多音字处理 |
+| **xlsx** | 0.18.5 | Excel 文件生成和解析 |
+| **@google/genai** | latest | Google Gemini AI SDK |
+
+### 3.5 浏览器 API
+
+| API | 用途 |
+|-----|-----|
+| **Web Speech API** | 英文术语语音播放 |
+| **Clipboard API** | 一键复制功能 |
+| **localStorage** | 用户数据持久化 |
+
+---
+
+## 4. 环境要求
+
+### 4.1 开发环境
+
+| 要求 | 版本 |
+|-----|------|
+| **Node.js** | >= 18.0.0 |
+| **npm** | >= 9.0.0 |
+| **pnpm** (推荐) | >= 8.0.0 |
+
+### 4.2 运行环境
+
+| 浏览器 | 最低版本 |
+|-------|---------|
+| Chrome | 90+ |
+| Firefox | 88+ |
+| Safari | 14+ |
+| Edge | 90+ |
+
+### 4.3 可选依赖
+
+| 服务 | 用途 | 是否必需 |
+|-----|------|---------|
+| **Google Gemini API** | AI 翻译功能 | 可选 |
+| **OpenAI API** | AI 翻译功能 | 可选 |
+| **GLM API** | AI 翻译功能 | 可选 |
+
+> 注：AI 功能为可选增强功能，核心术语查询功能完全离线可用。
+
+### 4.4 硬件推荐
+
+| 场景 | CPU | 内存 | 存储 |
+|-----|-----|------|-----|
+| 开发环境 | 2核+ | 4GB+ | 1GB+ |
+| 生产部署 | 1核+ | 512MB+ | 100MB+ |
+
+---
+
+## 5. 部署指南
+
+### 5.1 快速开始
+
+```bash
+# 克隆仓库
+git clone https://github.com/your-org/mediterm-glass-pro.git
+cd mediterm-glass-pro
+
+# 安装依赖
+npm install
+# 或使用 pnpm
+pnpm install
+
+# 启动开发服务器
+npm run dev
+```
+
+### 5.2 生产构建
+
+```bash
+# 构建生产版本
+npm run build
+
+# 预览构建结果
+npm run preview
+```
+
+### 5.3 配置说明
+
+#### 环境变量配置
+
+创建 `.env` 文件（可选）：
+
+```env
+# Google Gemini API Key (可选)
+VITE_GEMINI_API_KEY=your_gemini_api_key
+
+# OpenAI API Key (可选)
+VITE_OPENAI_API_KEY=your_openai_api_key
+
+# GLM API Key (可选)
+VITE_GLM_API_KEY=your_glm_api_key
+```
+
+#### Vite 配置详解
+
+```typescript
+// vite.config.ts
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3000,           // 开发服务器端口
+    host: true            // 允许外部访问
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './')
+    }
+  }
+});
+```
+
+### 5.4 部署方案
+
+#### 方案一：静态托管（推荐）
+
+适用于：Vercel、Netlify、GitHub Pages、Cloudflare Pages
+
+```bash
+# 构建
+npm run build
+
+# dist 目录即为部署内容
+```
+
+#### 方案二：Nginx 部署
+
+```nginx
+server {
+    listen 80;
+    server_name mediterm.example.com;
+    root /var/www/mediterm/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 缓存静态资源
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
+
+#### 方案三：Docker 部署
+
+```dockerfile
+# Dockerfile
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+```bash
+# 构建并运行
+docker build -t mediterm-glass-pro .
+docker run -p 80:80 mediterm-glass-pro
+```
+
+### 5.5 部署架构建议
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      生产部署架构                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   小规模 (< 1000 用户/天)                                        │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  CDN (Cloudflare/Vercel) → 静态资源托管                   │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│   中规模 (1000-10000 用户/天)                                    │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  CDN → Nginx (负载均衡) → 多实例静态服务                   │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│   大规模 (> 10000 用户/天)                                       │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  CDN → K8s Ingress → Pod (水平扩展) → 持久化存储          │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 6. 接口文档
+
+### 6.1 核心服务接口
+
+#### 搜索服务 (search.ts)
+
+```typescript
+// 主搜索函数
+async function searchTerms(
+  query: string,              // 搜索关键词
+  userTerms: Term[],          // 用户词条
+  fuzzyThreshold?: number     // 模糊匹配阈值 (0-0.6)
+): Promise<SearchResult[]>
+
+// 加载系统词库
+async function fetchSystemTerms(): Promise<Term[]>
+```
+
+#### LLM 服务 (llm.ts)
+
+```typescript
+// AI 翻译调用
+async function getCompletion(
+  systemPrompt: string,       // 系统提示词
+  userPrompt: string,         // 用户输入
+  auth: AuthConfig            // 认证配置
+): Promise<string>
+```
+
+#### 文本处理服务 (textProcessing.ts)
+
+```typescript
+// 初始翻译
+function initialTranslate(text: string, auth: AuthConfig): Promise<string>
+
+// 翻译反思
+function reflectOnTranslation(
+  source: string,
+  translation: string,
+  auth: AuthConfig
+): Promise<string>
+
+// 术语对齐
+function alignTerms(
+  source: string,
+  translation: string,
+  terms: Term[]
+): AlignedResult
+```
+
+### 6.2 数据模型
+
+#### Term 术语数据结构
+
+```typescript
+interface Term {
+  id: string;                      // 唯一标识符
+  chinese_term: string;            // 中文术语
+  english_term: string;            // 英文翻译
+  pinyin_full: string;             // 完整拼音 (如 "gan mao")
+  pinyin_first: string;            // 拼音首字母 (如 "gm")
+  category: string;                // 术语分类
+  note: string;                    // 备注说明
+  usage_scenario: string;          // 使用场景
+  root_analysis: string;           // 词根分析
+  mistranslation_warning: string[]; // 误译警告
+  related_terms: string[];         // 相关术语
+  coreCN?: string;                 // 核心中文词
+  coreEN?: string;                 // 核心英文词
+  source: 'system' | 'user';       // 来源
+  tags?: string[];                 // 标签
+  addedAt?: number;                // 添加时间戳
+  inDictionary?: boolean;          // 是否显示在词典中
+}
+```
+
+### 6.3 REST API 设计特点
+
+本项目为纯前端应用，通过以下方式调用外部 AI API：
+
+```typescript
+// Gemini API
+POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+
+// OpenAI Compatible
+POST {baseUrl}/chat/completions
+
+// GLM API
+POST https://open.bigmodel.cn/api/paas/v4/chat/completions
+```
+
+### 6.4 搜索算法优先级
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    搜索优先级层次                               │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│   Level 1: 用户词条精确匹配                                     │
+│            ↓ (未找到)                                          │
+│   Level 2: 系统词条精确匹配 (中文/英文/别名)                     │
+│            ↓ (未找到)                                          │
+│   Level 3: 拼音完整匹配 / 首字母匹配                            │
+│            ↓ (未找到)                                          │
+│   Level 4: Fuse.js 模糊搜索 (加权评分)                          │
+│            - chinese_term: 0.5                                 │
+│            - english_term: 0.3                                 │
+│            - related_terms: 0.4                                │
+│            - pinyin_full: 0.2                                  │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 7. 性能与可靠性
+
+### 7.1 性能指标
+
+| 指标 | 目标值 | 实现方式 |
+|-----|-------|---------|
+| 首屏加载 | < 2s | Vite 代码分割、资源压缩 |
+| 搜索响应 | < 100ms | 内存缓存、优化算法 |
+| 状态同步 | < 50ms | Zustand 高效更新 |
+| 内存占用 | < 50MB | 按需加载、分页显示 |
+
+### 7.2 优化策略
+
+```typescript
+// 1. 系统词库缓存
+let cachedSystemTerms: Term[] | null = null;
+
+export async function fetchSystemTerms(): Promise<Term[]> {
+  if (cachedSystemTerms) return cachedSystemTerms;
+  cachedSystemTerms = await loadTerms();
+  return cachedSystemTerms;
+}
+
+// 2. React.memo 组件优化
+const TermCard = React.memo(({ term }: { term: Term }) => {
+  // 避免不必要的重渲染
+});
+
+// 3. 分页加载
+const ITEMS_PER_PAGE = 10;
+const paginatedTerms = terms.slice(
+  page * ITEMS_PER_PAGE,
+  (page + 1) * ITEMS_PER_PAGE
+);
+```
+
+### 7.3 高可用设计
+
+| 策略 | 实现 |
+|-----|------|
+| **离线可用** | 核心功能不依赖网络 |
+| **数据持久化** | localStorage 自动保存 |
+| **错误降级** | AI 不可用时回退到词典查询 |
+| **重试机制** | LLM 调用失败自动重试 3 次 |
+
+### 7.4 容错机制
+
+```typescript
+// LLM 调用重试逻辑
+async function getCompletion(/* ... */): Promise<string> {
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      return await callLLM(/* ... */);
+    } catch (error) {
+      if (isQuotaError(error)) {
+        await sleep(1000 * (4 - retries)); // 指数退避
+      }
+      retries--;
+    }
+  }
+  throw new Error('LLM service unavailable');
+}
+```
+
+### 7.5 扩展能力
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                      系统扩展点                                 │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐      │
+│  │ LLM Provider│     │ 搜索算法    │     │ 数据源      │      │
+│  │   新增      │     │   插件      │     │   扩展      │      │
+│  │             │     │             │     │             │      │
+│  │ • Claude    │     │ • ElasticS. │     │ • 云端同步  │      │
+│  │ • Llama     │     │ • 自定义    │     │ • API 导入  │      │
+│  │ • 本地模型  │     │   权重      │     │ • 数据库    │      │
+│  └─────────────┘     └─────────────┘     └─────────────┘      │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. 常见问题及解决方案
+
+### 8.1 开发问题
+
+**Q: 启动开发服务器时报 "port already in use" 错误**
+```bash
+# 解决方案：修改端口或杀死占用进程
+lsof -i :3000
+kill -9 <PID>
+# 或修改 vite.config.ts 中的端口配置
+```
+
+**Q: TypeScript 类型错误**
+```bash
+# 解决方案：确保依赖版本兼容
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### 8.2 功能问题
+
+**Q: AI 翻译功能不可用**
+```
+解决方案：
+1. 检查 API Key 是否正确配置
+2. 确认网络连接正常
+3. 检查 API 配额是否用尽
+4. 尝试切换其他 LLM 提供商
+```
+
+**Q: 搜索结果不准确**
+```
+解决方案：
+1. 调整模糊匹配阈值（设置 → 搜索设置）
+2. 尝试使用拼音搜索
+3. 检查术语是否在系统词库中
+4. 添加自定义术语到个人词典
+```
+
+**Q: 语音播放不工作**
+```
+解决方案：
+1. 确保浏览器支持 Web Speech API
+2. 检查系统音频输出设置
+3. 某些浏览器需要用户交互后才能播放音频
+```
+
+### 8.3 部署问题
+
+**Q: 构建后页面空白**
+```
+解决方案：
+1. 检查 base URL 配置是否正确
+2. 确保服务器配置了正确的 MIME 类型
+3. 检查浏览器控制台错误信息
+```
+
+**Q: localStorage 数据丢失**
+```
+解决方案：
+1. 定期导出个人词典备份
+2. 使用无痕模式时数据不会持久化
+3. 清除浏览器数据会删除本地存储
+```
+
+---
+
+## 9. 开发团队
+
+### 项目维护
+
+| 角色 | 联系方式 |
+|-----|---------|
+| **项目负责人** | - |
+| **技术支持** | 提交 Issue |
+| **贡献指南** | 见 CONTRIBUTING.md |
+
+### 贡献方式
+
+1. Fork 本仓库
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 创建 Pull Request
+
+---
+
+## 10. 版本历史
+
+### v0.1.0 - 初始版本
+- 基础术语搜索功能
+- 系统词库集成（3,800+ 医学术语）
+- 用户词典 CRUD 操作
+- AI 翻译集成（Gemini/OpenAI/GLM）
+
+### 技术演进路线
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                      版本演进历程                               │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  v0.1 ─────► v0.2 ─────► v0.3 ─────► v1.0                     │
+│    │          │          │          │                         │
+│    │          │          │          └─ 稳定版发布              │
+│    │          │          │             云端同步               │
+│    │          │          │                                    │
+│    │          │          └─ 批量翻译                          │
+│    │          │             Excel 导出                        │
+│    │          │             术语对齐                          │
+│    │          │                                               │
+│    │          └─ 拼音搜索                                     │
+│    │             收藏夹功能                                    │
+│    │             多语言支持                                    │
+│    │                                                          │
+│    └─ 基础搜索                                                 │
+│       词典管理                                                 │
+│       AI 集成                                                  │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 11. 附录
+
+### 11.1 数据模型 ER 图
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                       数据模型关系                            │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│   ┌─────────────┐         ┌─────────────┐                   │
+│   │    Term     │         │  HistoryItem│                   │
+│   ├─────────────┤         ├─────────────┤                   │
+│   │ id (PK)     │◄────────│ resultId    │                   │
+│   │ chinese_term│         │ id (PK)     │                   │
+│   │ english_term│         │ query       │                   │
+│   │ pinyin_full │         │ timestamp   │                   │
+│   │ pinyin_first│         │ resultTerm  │                   │
+│   │ category    │         └─────────────┘                   │
+│   │ note        │                                           │
+│   │ usage       │         ┌─────────────┐                   │
+│   │ root        │         │  Favorites  │                   │
+│   │ warnings[]  │◄────────│ (term_id[]) │                   │
+│   │ related[]   │         └─────────────┘                   │
+│   │ source      │                                           │
+│   │ tags[]      │         ┌─────────────┐                   │
+│   │ addedAt     │         │ AppSettings │                   │
+│   │ inDictionary│         ├─────────────┤                   │
+│   │ coreCN      │         │ autoPlayAudio│                  │
+│   │ coreEN      │         │ darkMode     │                  │
+│   └─────────────┘         │ fuzzyThreshold│                 │
+│                           │ autoCopy     │                  │
+│                           │ rememberKey  │                  │
+│                           └─────────────┘                   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 11.2 API 调用示例
+
+#### Gemini API 调用
+
+```typescript
+import { GoogleGenAI } from '@google/genai';
+
+const ai = new GoogleGenAI({ apiKey: 'YOUR_API_KEY' });
+
+const response = await ai.models.generateContent({
+  model: 'gemini-2.5-flash',
+  contents: [{ role: 'user', parts: [{ text: '翻译：心肌梗死' }] }],
+  config: {
+    temperature: 0.1,
+    systemInstruction: '你是一个专业的医学术语翻译专家。'
+  }
+});
+```
+
+#### 搜索服务调用
+
+```typescript
+import { searchTerms } from './services/search';
+
+const results = await searchTerms(
+  '心肌梗死',           // 搜索词
+  userTerms,           // 用户词条
+  0.3                  // 模糊匹配阈值
+);
+
+// 结果结构
+results.forEach(r => {
+  console.log(`${r.chinese_term} - ${r.english_term}`);
+  console.log(`匹配类型: ${r.matchType}`);
+  console.log(`相关度: ${r.score}`);
+});
+```
+
+### 11.3 配置参考
+
+#### TypeScript 配置 (tsconfig.json)
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES5",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}
+```
+
+#### Tailwind 主题配置
+
+```javascript
+// index.html 中的 Tailwind 配置
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        glass: {
+          light: 'rgba(255, 255, 255, 0.25)',
+          DEFAULT: 'rgba(255, 255, 255, 0.45)',
+          dark: 'rgba(255, 255, 255, 0.65)'
+        }
+      }
+    }
+  }
+}
+```
+
+### 11.4 键盘快捷键
+
+| 快捷键 | 功能 |
+|-------|------|
+| `Ctrl/Cmd + K` | 聚焦搜索框 |
+| `Enter` | 确认搜索/提交 |
+| `Esc` | 关闭弹窗 |
+
+### 11.5 浏览器兼容性
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                     浏览器支持矩阵                              │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│   Feature          Chrome   Firefox   Safari   Edge           │
+│   ─────────────────────────────────────────────────           │
+│   Core Search        ✓        ✓         ✓       ✓            │
+│   localStorage       ✓        ✓         ✓       ✓            │
+│   Web Speech API     ✓        ✓         ✓       ✓            │
+│   Clipboard API      ✓        ✓         ✓       ✓            │
+│   ES Modules         ✓        ✓         ✓       ✓            │
+│   CSS Backdrop       ✓        ✓         ✓       ✓            │
+│                                                                │
+│   ✓ = 完全支持                                                  │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 许可证
+
+本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+
+---
+
+<p align="center">
+  <strong>MediTerm Glass Pro</strong> - 专业医学术语翻译解决方案
+</p>
+<p align="center">
+  Made with React + TypeScript + AI
+</p>
