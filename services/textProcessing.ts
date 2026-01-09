@@ -8,6 +8,7 @@ export interface TextSegment {
   text: string;
   matchedTerm?: Term;
   termOccurrenceIndex?: number; // Tracks which occurrence of the term this is (0, 1, 2...)
+  matchType?: 'strong' | 'weak'; // Differentiates Exact vs Core matches
 }
 
 export interface TermSpan {
@@ -322,7 +323,8 @@ export const segmentsFromAlignments = (
             id: `seg_${side}_term_${span.start}`,
             text: text.slice(span.start, span.end),
             matchedTerm: term,
-            termOccurrenceIndex: occurrenceIndex
+            termOccurrenceIndex: occurrenceIndex,
+            matchType: 'strong' // AI aligned matches are considered strong contextually
         });
 
         currentIdx = span.end;
@@ -354,16 +356,93 @@ const escapeRegExp = (string: string) => {
 };
 
 /**
- * Helper to strip the special tags from the text for display/clipboard
- * (Legacy support, though we try to avoid generating tags now)
+ * Internal helper to find matches for a given set of string patterns.
+ * Returns sorted ranges.
  */
-export const stripTags = (text: string): string => {
-  return text.replace(/⦗(.*?)\|.*?⦘/g, '$1');
+const findMatches = (
+  text: string, 
+  termMap: Map<string, Term>, 
+  useCore: boolean = false, 
+  mode: 'source' | 'translation'
+): { start: number; end: number; term: Term; text: string }[] => {
+    // Store term with descriptor
+    const descriptors: { pattern: string; length: number; term: Term }[] = [];
+    const seenPatterns = new Set<string>();
+
+    termMap.forEach((term, key) => {
+        let patternStr = escapeRegExp(key);
+        
+        // Convert whitespace to flexible regex whitespace
+        patternStr = patternStr.replace(/\s+/g, '\\s+');
+
+        if (mode === 'translation') {
+            // 1. Flexible parentheses: ignore spaces around them
+            // key is escaped, so parens are '\(' and '\)'
+            patternStr = patternStr
+                .replace(/\\\(/g, '\\s*\\(\\s*')
+                .replace(/\\\)/g, '\\s*\\)\\s*');
+
+            // 2. English word boundaries and plurals
+            const isWordStart = /^\w/.test(key);
+            const isWordEnd = /\w$/.test(key);
+
+            if (isWordStart) {
+                patternStr = '\\b' + patternStr;
+            }
+            if (isWordEnd) {
+                // Support optional 's' or 'es' at end of term
+                patternStr = patternStr + '(?:e?s)?\\b';
+            }
+        }
+
+        if (!seenPatterns.has(patternStr)) {
+            seenPatterns.add(patternStr);
+            descriptors.push({
+                pattern: patternStr,
+                length: key.length,
+                term: term
+            });
+        }
+    });
+
+    if (descriptors.length === 0) return [];
+
+    // Sort patterns by length (Longest Match First)
+    descriptors.sort((a, b) => b.length - a.length);
+
+    // Build massive regex
+    const masterRegex = new RegExp(`(${descriptors.map(d => d.pattern).join('|')})`, 'gi');
+    
+    const matches: { start: number; end: number; term: Term; text: string }[] = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = masterRegex.exec(text)) !== null) {
+        const matchText = match[0];
+        
+        // Find which descriptor matched.
+        // We reuse the pattern but ensure it matches the whole found string (case-insensitive)
+        const matchedDescriptor = descriptors.find(desc => {
+             return new RegExp(`^${desc.pattern}$`, 'i').test(matchText);
+        });
+
+        if (matchedDescriptor) {
+            matches.push({
+                start: match.index,
+                end: match.index + matchText.length,
+                term: matchedDescriptor.term,
+                text: matchText
+            });
+        }
+    }
+    return matches;
 };
 
 /**
  * Pure function to scan text and return segments with identified terms.
- * Implements strict "Longest Match First" strategy.
+ * Implements strict "Strong Match First" then "Weak Match" strategy.
+ * 
+ * 1. Strong Matches: chinese_term (or English equiv) fully matches.
+ * 2. Weak Matches: coreCN (or coreEN) matches, but only in uncovered regions.
  */
 export const buildTermSegments = (
   text: string,
@@ -373,103 +452,127 @@ export const buildTermSegments = (
   if (!text) return [];
 
   const { mode } = options;
-  const termMap = new Map<string, Term>();
   
-  const descriptors: { pattern: string; length: number }[] = [];
-  const seenPatterns = new Set<string>();
-
-  const addPattern = (rawString: string, term: Term) => {
-      if (!rawString || !rawString.trim()) return;
-      
-      const key = normalizeKey(rawString);
-      if (!termMap.has(key)) {
-        termMap.set(key, term);
-      }
-
-      let pattern = escapeRegExp(rawString.trim());
-      pattern = pattern.replace(/\s+/g, '\\s+');
-
-      if (mode === 'translation') {
-        const isWordStart = /^\w/.test(rawString.trim());
-        const isWordEnd = /\w$/.test(rawString.trim());
-        if (isWordStart) pattern = '\\b' + pattern;
-        if (isWordEnd) pattern = pattern + '\\b';
-      }
-
-      if (!seenPatterns.has(pattern)) {
-          seenPatterns.add(pattern);
-          descriptors.push({
-              pattern,
-              length: rawString.trim().length 
-          });
-      }
-  };
+  // Maps for lookup
+  const strongMap = new Map<string, Term>();
+  const weakMap = new Map<string, Term>();
 
   terms.forEach(term => {
-    const primary = mode === 'source' ? term.chinese_term : term.english_term;
-    addPattern(primary, term);
+      // 1. Setup Strong Match Keys
+      const primary = mode === 'source' ? term.chinese_term : term.english_term;
+      if (primary) strongMap.set(normalizeKey(primary), term);
+      
+      // Aliases are treated as Strong matches
+      if (term.related_terms && term.related_terms.length > 0) {
+          term.related_terms.forEach(alias => strongMap.set(normalizeKey(alias), term));
+      }
 
-    if (term.related_terms && term.related_terms.length > 0) {
-        term.related_terms.forEach(alias => addPattern(alias, term));
-    }
+      // 2. Setup Weak Match Keys (Core Terms)
+      const core = mode === 'source' ? term.coreCN : term.coreEN;
+      if (core) {
+          const coreKey = normalizeKey(core);
+          // Only add to weak map if it's not already a strong key (prevent redundancy)
+          if (!strongMap.has(coreKey)) {
+              weakMap.set(coreKey, term);
+          }
+      }
   });
 
-  if (descriptors.length === 0) {
-    return [{ id: 'seg_0', text }];
+  // Coverage Mask (true = occupied)
+  const coverage = new Array(text.length).fill(false);
+  const finalMatches: { start: number; end: number; term: Term; text: string; type: 'strong' | 'weak' }[] = [];
+
+  // --- PASS 1: Strong Matches ---
+  const strongMatches = findMatches(text, strongMap, false, mode);
+  
+  // Sort by length desc (already done in helper) -> then by index to ensure deterministic First-Longest win
+  strongMatches.sort((a, b) => {
+      const lenA = a.end - a.start;
+      const lenB = b.end - b.start;
+      if (lenA !== lenB) return lenB - lenA; // Longest first
+      return a.start - b.start; // First occurrence
+  });
+
+  strongMatches.forEach(m => {
+      // Check collision
+      let occupied = false;
+      for (let i = m.start; i < m.end; i++) {
+          if (coverage[i]) { occupied = true; break; }
+      }
+      
+      if (!occupied) {
+          // Mark coverage
+          for (let i = m.start; i < m.end; i++) coverage[i] = true;
+          finalMatches.push({ ...m, type: 'strong' });
+      }
+  });
+
+  // --- PASS 2: Weak Matches (Now treated as Strong per request) ---
+  if (weakMap.size > 0) {
+      const weakMatches = findMatches(text, weakMap, true, mode);
+      
+      // Sort weak matches
+      weakMatches.sort((a, b) => {
+          const lenA = a.end - a.start;
+          const lenB = b.end - b.start;
+          if (lenA !== lenB) return lenB - lenA;
+          return a.start - b.start;
+      });
+
+      weakMatches.forEach(m => {
+          // Check collision with existing coverage (Strong matches)
+          let occupied = false;
+          for (let i = m.start; i < m.end; i++) {
+              if (coverage[i]) { occupied = true; break; }
+          }
+
+          if (!occupied) {
+              // Mark coverage
+              for (let i = m.start; i < m.end; i++) coverage[i] = true;
+              // CHANGE: Treat core/weak matches as 'strong' for uniform highlighting in Professional Mode context
+              finalMatches.push({ ...m, type: 'strong' });
+          }
+      });
   }
 
-  descriptors.sort((a, b) => {
-    const lenDiff = b.length - a.length;
-    if (lenDiff !== 0) return lenDiff;
-    return a.pattern.localeCompare(b.pattern);
-  });
-
-  const masterRegex = new RegExp(`(${descriptors.map(d => d.pattern).join('|')})`, 'gi');
+  // --- Construct Segments ---
+  // Sort final matches by position for segmentation
+  finalMatches.sort((a, b) => a.start - b.start);
 
   const segments: TextSegment[] = [];
   let lastIndex = 0;
-  let match: RegExpExecArray | null;
   let segIndex = 0;
-  
   const termCounts = new Map<string, number>();
 
-  while ((match = masterRegex.exec(text)) !== null) {
-    const matchStart = match.index;
-    const matchText = match[0];
-    const matchEnd = matchStart + matchText.length;
+  finalMatches.forEach(m => {
+      // Gap text
+      if (m.start > lastIndex) {
+          segments.push({
+              id: `seg_${mode}_${segIndex++}`,
+              text: text.slice(lastIndex, m.start)
+          });
+      }
 
-    if (matchStart > lastIndex) {
-        segments.push({
-            id: `seg_${mode}_${segIndex++}`,
-            text: text.slice(lastIndex, matchStart)
-        });
-    }
+      const count = termCounts.get(m.term.id) || 0;
+      termCounts.set(m.term.id, count + 1);
 
-    const lookupKey = normalizeKey(matchText);
-    const matchedTerm = termMap.get(lookupKey);
-    
-    let occurrenceIndex: number | undefined = undefined;
-    if (matchedTerm) {
-        const count = termCounts.get(matchedTerm.id) || 0;
-        occurrenceIndex = count;
-        termCounts.set(matchedTerm.id, count + 1);
-    }
+      segments.push({
+          id: `seg_${mode}_${segIndex++}`,
+          text: m.text,
+          matchedTerm: m.term,
+          termOccurrenceIndex: count,
+          matchType: m.type
+      });
 
-    segments.push({
-        id: `seg_${mode}_${segIndex++}`,
-        text: matchText,
-        matchedTerm: matchedTerm || undefined,
-        termOccurrenceIndex: occurrenceIndex
-    });
+      lastIndex = m.end;
+  });
 
-    lastIndex = matchEnd;
-  }
-
+  // Trailing text
   if (lastIndex < text.length) {
-    segments.push({
-        id: `seg_${mode}_${segIndex++}`,
-        text: text.slice(lastIndex)
-    });
+      segments.push({
+          id: `seg_${mode}_${segIndex++}`,
+          text: text.slice(lastIndex)
+      });
   }
 
   return segments;

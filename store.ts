@@ -98,7 +98,10 @@ export const useStore = create<StoreState>()(
                 
                 source: 'user',
                 addedAt: Date.now(),
-                tags: t.tags || []
+                tags: t.tags || [],
+                // Ensure core fields are mapped
+                coreCN: t.coreCN || '',
+                coreEN: t.coreEN || ''
               };
               existingMap.set(termToAdd.chinese_term, termToAdd);
               addedCount++;

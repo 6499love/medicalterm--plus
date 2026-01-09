@@ -2,7 +2,8 @@
 import Fuse from 'fuse.js';
 import { pinyin } from 'pinyin-pro';
 import { Term, SearchResult } from '../types';
-import { systemTermsData } from '../system_terms_data';
+// Updated import to the new data file
+import { systemTermsData } from '../system_terms_data-20260109';
 
 
 let systemTermsCache: Term[] | null = null;
@@ -45,7 +46,10 @@ export const fetchSystemTerms = async (): Promise<Term[]> => {
         usage_scenario: t.usage_scenario || t.usage || '', // Fallback for old data
         root_analysis: t.root_analysis || '',
         mistranslation_warning: t.mistranslation_warning || t.mistranslation || [], // Fallback
-        related_terms: t.related_terms || t.aliases || [] // Fallback
+        related_terms: t.related_terms || t.aliases || [], // Fallback
+        // Map new core fields
+        coreCN: t.coreCN || '',
+        coreEN: t.coreEN || ''
       };
     });
     return systemTermsCache || [];

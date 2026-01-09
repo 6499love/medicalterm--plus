@@ -7,7 +7,6 @@ import { Term, PageRoute } from '../types';
 import { 
   buildTermSegments, 
   translateText, 
-  segmentsFromAlignments,
   TextSegment, 
   TermAlignment
 } from '../services/textProcessing';
@@ -45,10 +44,13 @@ const RenderedText: React.FC<{
   onTermLeave: () => void;
   onTermClick?: (e: React.MouseEvent, term: Term, index: number) => void;
   onTermDoubleClick?: (e: React.MouseEvent, term: Term) => void;
-}> = React.memo(({ segments, activeState, selectedState, onTermEnter, onTermLeave, onTermClick, onTermDoubleClick }) => (
+  showWeakHints?: boolean;
+  linkedTermIds?: Set<string>;
+}> = React.memo(({ segments, activeState, selectedState, onTermEnter, onTermLeave, onTermClick, onTermDoubleClick, showWeakHints, linkedTermIds }) => (
   <div className="whitespace-pre-wrap leading-relaxed text-slate-800 text-base">
     {segments.map((seg) => {
-      if (!seg.matchedTerm) {
+      // Strict check: Must have matchedTerm AND valid matchType to be highlighted
+      if (!seg.matchedTerm || (seg.matchType !== 'strong' && seg.matchType !== 'weak')) {
         return <span key={seg.id}>{seg.text}</span>;
       }
       
@@ -56,21 +58,51 @@ const RenderedText: React.FC<{
       const isSelected = selectedState?.termId === seg.matchedTerm.id && selectedState?.index === seg.termOccurrenceIndex;
       const isActive = isHovered || isSelected;
       const isInteractive = !!onTermClick;
+      const isWeak = seg.matchType === 'weak';
       
+      // Determine linkage status (Default to true if linkedTermIds is not provided/undefined)
+      const isLinked = linkedTermIds ? linkedTermIds.has(seg.matchedTerm.id) : true;
+
+      // Style differentiation for Weak (Core) matches vs Strong (Exact) matches
+      // Weak matches use a dashed border or lighter background to indicate less certainty/precision
+      let baseStyle = isWeak 
+        ? 'bg-blue-50/50 border-b border-dashed border-blue-400 text-slate-700' 
+        : 'bg-blue-50 border-b-2 border-blue-200 text-blue-700';
+
+      // Professional Mode: Unlinked styles (Lighter/Faded)
+      if (!isLinked) {
+         baseStyle = isWeak
+           ? 'bg-slate-50/40 border-b border-dashed border-slate-200 text-slate-400' 
+           : 'bg-blue-50/30 border-b border-blue-100 text-blue-400/80';
+      }
+
+      const activeStyle = isWeak
+        ? 'bg-blue-100 border-blue-500 text-blue-900' // Active state looks similar for both
+        : 'bg-blue-200 border-blue-500 text-blue-900 font-medium';
+
+      // Logic for displaying full term hint for weak matches (English side)
+      const shouldShowHint = isWeak && showWeakHints;
+      // We use data-hint attribute and CSS ::after to display the hint
+      const hintProps = shouldShowHint ? { 'data-hint': ` (${seg.matchedTerm.english_term})` } : {};
+      const hintClass = shouldShowHint 
+        ? "after:content-[attr(data-hint)] after:text-slate-400 after:text-[0.75em] after:font-normal after:align-baseline" 
+        : "";
+
       return (
         <span
           key={seg.id}
           data-term-id={seg.matchedTerm.id}
+          {...hintProps}
           onMouseEnter={() => onTermEnter(seg.matchedTerm!, seg.termOccurrenceIndex!)}
           onMouseLeave={onTermLeave}
           onClick={(e) => isInteractive && onTermClick?.(e, seg.matchedTerm!, seg.termOccurrenceIndex!)}
           onDoubleClick={(e) => isInteractive && onTermDoubleClick?.(e, seg.matchedTerm!)}
-          className={`transition-colors duration-200 rounded px-0.5 border-b-2 
+          className={`transition-colors duration-200 rounded px-0.5 
             ${isInteractive ? 'cursor-pointer' : 'cursor-default'}
-            ${isActive 
-              ? 'bg-blue-200 border-blue-500 text-blue-900 font-medium' // Active / Clicked style
-              : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' // Normal matched style
-            }`}
+            ${isActive ? activeStyle : baseStyle}
+            hover:bg-blue-100
+            ${hintClass}
+          `}
         >
           {seg.text}
         </span>
@@ -109,6 +141,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
   
   // Tooltip Logic State
   const [activeTooltipTerm, setActiveTooltipTerm] = useState<Term | null>(null);
+  const [activeTooltipSide, setActiveTooltipSide] = useState<'source' | 'target'>('source');
   const [tooltipAnchor, setTooltipAnchor] = useState<HTMLElement | null>(null);
   const [tooltipCoords, setTooltipCoords] = useState<{x: number, y: number} | null>(null);
 
@@ -157,7 +190,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
 
       setTooltipCoords({
         x: rect.left + rect.width / 2,
-        y: rect.top
+        y: rect.bottom + 8 // Position below the element with 8px offset
       });
     };
 
@@ -221,20 +254,18 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
   const allTerms = useMemo(() => [...userTerms, ...systemTerms], [userTerms, systemTerms]);
 
   // Initial analysis is always regex based (fast)
-  // If we have alignments from LLM, we use those for segments.
+  // Replaced logic: Always use regex matching, ignore AI alignments for segmentation positions
   const inputSegments = useMemo(() => {
-    if (alignments && alignments.length > 0) {
-      return segmentsFromAlignments(inputText, alignments, 'source', allTerms);
-    }
     return buildTermSegments(inputText, allTerms, { 
       mode: isSourceChinese ? 'source' : 'translation' 
     });
-  }, [inputText, allTerms, isSourceChinese, alignments]);
+  }, [inputText, allTerms, isSourceChinese]);
 
   // Extract detected terms from source analysis to ensure target matches are consistent with source
   const detectedTerms = useMemo(() => {
     const unique = new Map<string, Term>();
-    // If we have alignments, use them to determine detected terms
+    // If we have alignments (from Pro mode), use them to determine WHICH terms were used
+    // But we don't use the alignment indices for highlighting position.
     if (alignments && alignments.length > 0) {
         alignments.forEach(a => {
             const t = allTerms.find(term => term.id === a.termId);
@@ -250,15 +281,22 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
   }, [inputSegments, alignments, allTerms]);
 
   const translatedSegments = useMemo(() => {
-    // If we have AI alignments, use them for precise mapping
-    if (alignments && alignments.length > 0) {
-        return segmentsFromAlignments(translatedText, alignments, 'target', allTerms);
-    }
-    // Fallback: Use detected terms for regex matching on target
+    // Always use pure regex matching for the translation output to ensure clean highlighting boundaries.
+    // We use the 'detectedTerms' (which may be filtered by AI alignments) to restrict WHAT to look for,
+    // but use Regex to decide WHERE it is.
     return buildTermSegments(translatedText, detectedTerms, { 
       mode: isSourceChinese ? 'translation' : 'source' 
     });
-  }, [translatedText, detectedTerms, isSourceChinese, alignments, allTerms]);
+  }, [translatedText, detectedTerms, isSourceChinese]);
+
+  // Calculate which terms are actually found in the translation (for Source highlighting in Pro Mode)
+  const translatedTermIds = useMemo(() => {
+    const ids = new Set<string>();
+    translatedSegments.forEach(seg => {
+      if (seg.matchedTerm) ids.add(seg.matchedTerm.id);
+    });
+    return ids;
+  }, [translatedSegments]);
 
   const detectedCount = detectedTerms.length;
 
@@ -359,7 +397,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     setHoveredState(null);
   }, []);
 
-  const handleTermClick = useCallback((e: React.MouseEvent, term: Term, index: number) => {
+  const handleTermClick = useCallback((e: React.MouseEvent, term: Term, index: number, side: 'source' | 'target') => {
     e.stopPropagation(); 
     
     // Toggle: if clicking same term, close it
@@ -370,6 +408,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     }
 
     setActiveTooltipTerm(term);
+    setActiveTooltipSide(side);
     setTooltipAnchor(e.currentTarget as HTMLElement);
   }, [activeTooltipTerm, tooltipAnchor]);
 
@@ -491,6 +530,19 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     }
   };
 
+  // Determine tooltip content display order
+  // Logic: Show the counterpart language of the term being clicked.
+  // If clicked term is Chinese (from Source or Target), show English Primary.
+  // If clicked term is English (from Source or Target), show Chinese Primary.
+  const isTermChinese = (activeTooltipSide === 'source' && isSourceChinese) || (activeTooltipSide === 'target' && !isSourceChinese);
+  
+  const tooltipMainText = activeTooltipTerm 
+    ? (isTermChinese ? activeTooltipTerm.english_term : activeTooltipTerm.chinese_term) 
+    : '';
+  const tooltipSubText = activeTooltipTerm
+    ? (isTermChinese ? activeTooltipTerm.chinese_term : activeTooltipTerm.english_term)
+    : '';
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -602,8 +654,9 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                     selectedState={activeTooltipTerm ? { termId: activeTooltipTerm.id, index: 0 } : null} // Only match ID for generic highlighting when selected
                     onTermEnter={handleTermEnter}
                     onTermLeave={handleTermLeave}
-                    onTermClick={handleTermClick}
+                    onTermClick={(e, t, i) => handleTermClick(e, t, i, 'source')}
                     onTermDoubleClick={handleTermDoubleClick}
+                    linkedTermIds={transMode === 'professional' ? translatedTermIds : undefined} // Pass only in pro mode
                   />
                   {inputText.length === 0 && <span className="text-slate-400 italic">{t('AST_EMPTY')}</span>}
                 </div>
@@ -622,14 +675,43 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
 
         {/* RIGHT PANEL: Translation / Preview */}
         <div className="flex flex-col bg-blue-50/50 backdrop-blur-md rounded-2xl border border-blue-100 shadow-sm overflow-hidden relative min-h-[300px] lg:min-h-0">
-           <div className="flex items-center justify-between p-3 border-b border-blue-100/50 bg-blue-50/50">
+           <div className="flex items-center justify-between p-2 md:p-3 border-b border-blue-100/50 bg-blue-50/50 min-h-[3.5rem]">
             <span className="text-xs font-bold text-blue-600/70 uppercase tracking-wider ml-2">{t('AST_TARGET')}</span>
-            {auth && (
-              <span className="text-[10px] text-blue-400 bg-white/50 px-2 py-1 rounded border border-blue-100 flex items-center gap-1">
-                {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                {isLoading ? (stepStatus || 'Processing...') : (translatedText ? t('STATUS_CONNECTED') : t('AST_AUTO_PREVIEW'))}
-              </span>
-            )}
+            
+            <div className="flex items-center gap-2">
+              {translatedText && !isLoading && (
+                <div className="flex gap-1 mr-1">
+                   <button 
+                     onClick={handleAddToDictionary}
+                     className="p-1.5 bg-white/60 hover:bg-white text-slate-500 hover:text-blue-600 rounded-lg shadow-sm border border-blue-100 transition-all group"
+                     title={t('BTN_ADD_TO_DICT_SHORT')}
+                   >
+                     <BookPlus className="w-3.5 h-3.5" />
+                   </button>
+                   <button 
+                     onClick={handleFavoriteTranslation}
+                     className="p-1.5 bg-white/60 hover:bg-white text-slate-500 hover:text-amber-500 rounded-lg shadow-sm border border-blue-100 transition-all group"
+                     title={t('BTN_FAVORITE')}
+                   >
+                     <Star className={`w-3.5 h-3.5 transition-colors ${isCurrentTranslationFavorited ? 'fill-amber-400 text-amber-400' : 'text-slate-400 group-hover:text-amber-400'}`} />
+                   </button>
+                   <button 
+                     onClick={() => copyToClipboard(translatedText, t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'))}
+                     className="p-1.5 bg-white/60 hover:bg-white text-slate-500 hover:text-blue-600 rounded-lg shadow-sm border border-blue-100 transition-all"
+                     title={t('BTN_COPY')}
+                   >
+                     <Copy className="w-3.5 h-3.5" />
+                   </button>
+                </div>
+              )}
+
+              {auth && (
+                <span className="text-[10px] text-blue-400 bg-white/50 px-2 py-1 rounded border border-blue-100 flex items-center gap-1 whitespace-nowrap">
+                  {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {isLoading ? (stepStatus || 'Processing...') : (translatedText ? t('STATUS_CONNECTED') : t('AST_AUTO_PREVIEW'))}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="p-6 flex-1 overflow-auto relative flex flex-col">
@@ -673,7 +755,8 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                   selectedState={null} // Highlighting in translation is passive only
                   onTermEnter={handleTermEnter}
                   onTermLeave={handleTermLeave}
-                  // No interaction handlers for translation panel, purely for viewing highlighted terms
+                  onTermClick={(e, t, i) => handleTermClick(e, t, i, 'target')} // Add click handler for target side
+                  showWeakHints={transMode === 'professional'} // Show hints in professional mode
                 />
                 
                 {reflectionNotes && (
@@ -701,32 +784,6 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                </div>
             )}
           </div>
-          
-          {translatedText && !isLoading && (
-            <div className="absolute top-14 right-4 flex gap-2">
-               <button 
-                 onClick={handleAddToDictionary}
-                 className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-blue-600 rounded-lg shadow-sm border border-blue-100 transition-all backdrop-blur-sm group"
-                 title={t('BTN_ADD_TO_DICT_SHORT')}
-               >
-                 <BookPlus className="w-4 h-4" />
-               </button>
-               <button 
-                 onClick={handleFavoriteTranslation}
-                 className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-amber-500 rounded-lg shadow-sm border border-blue-100 transition-all backdrop-blur-sm group"
-                 title={t('BTN_FAVORITE')}
-               >
-                 <Star className={`w-4 h-4 transition-colors ${isCurrentTranslationFavorited ? 'fill-amber-400 text-amber-400' : 'text-slate-400 group-hover:text-amber-400'}`} />
-               </button>
-               <button 
-                 onClick={() => copyToClipboard(translatedText, t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'))}
-                 className="p-2 bg-white/80 hover:bg-white text-slate-500 hover:text-blue-600 rounded-lg shadow-sm border border-blue-100 transition-all backdrop-blur-sm"
-                 title={t('BTN_COPY')}
-               >
-                 <Copy className="w-4 h-4" />
-               </button>
-            </div>
-          )}
         </div>
       </div>
       
@@ -736,15 +793,15 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
           className="mtt-tooltip fixed z-[9999] bg-slate-900 text-white p-3 rounded-xl shadow-2xl max-w-xs animate-in zoom-in-95 duration-200"
           style={{ 
             left: tooltipCoords.x,
-            top: tooltipCoords.y + 24, // Offset slightly below
+            top: tooltipCoords.y, 
             transform: 'translateX(-50%)'
           }}
         >
           <div className="flex justify-between items-start mb-1">
-             <div className="text-sm font-bold text-blue-300">{activeTooltipTerm.chinese_term}</div>
+             <div className="text-sm font-bold text-blue-300">{tooltipMainText}</div>
              <div className="text-[10px] text-slate-400 bg-slate-800 px-1.5 rounded border border-slate-700 uppercase tracking-wider">{activeTooltipTerm.source}</div>
           </div>
-          <div className="text-sm font-serif mb-2 leading-snug">{activeTooltipTerm.english_term}</div>
+          <div className="text-sm font-serif mb-2 leading-snug">{tooltipSubText}</div>
           
           {(activeTooltipTerm.note || activeTooltipTerm.category) && (
              <div className="pt-2 border-t border-slate-700 text-xs text-slate-400 flex flex-col gap-1">

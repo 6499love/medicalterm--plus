@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '../store';
-import { Trash2, Search, Book, Download, Upload, FileJson, AlertTriangle, ChevronLeft, ChevronRight, X, Info, Plus, Save, Sparkles, HelpCircle, Copy, Check, Loader2, ArrowUpDown, ChevronDown, Edit } from 'lucide-react';
+import { Trash2, Search, Book, Download, Upload, FileJson, AlertTriangle, ChevronLeft, ChevronRight, X, Info, Plus, Save, Sparkles, HelpCircle, Copy, Check, Loader2, ArrowUpDown, ChevronDown, Edit, Target } from 'lucide-react';
 import { useTranslation } from '../services/i18n';
 import { fetchSystemTerms } from '../services/search';
 import { Term } from '../types';
@@ -35,6 +35,8 @@ export const UserDictionary: React.FC = () => {
     note: string;
     pinyin_full: string;
     pinyin_first: string;
+    coreCN: string;
+    coreEN: string;
   }>({
     chinese_term: '',
     english_term: '',
@@ -42,7 +44,9 @@ export const UserDictionary: React.FC = () => {
     category: '',
     note: '',
     pinyin_full: '',
-    pinyin_first: ''
+    pinyin_first: '',
+    coreCN: '',
+    coreEN: ''
   });
 
   // Help Tooltip State
@@ -185,7 +189,9 @@ export const UserDictionary: React.FC = () => {
         category: term.category || '',
         note: term.note || '',
         pinyin_full: term.pinyin_full || '',
-        pinyin_first: term.pinyin_first || ''
+        pinyin_first: term.pinyin_first || '',
+        coreCN: term.coreCN || '',
+        coreEN: term.coreEN || ''
     });
     setEditingId(term.id);
     setShowAddForm(true);
@@ -226,6 +232,8 @@ export const UserDictionary: React.FC = () => {
             pinyin_full: newTerm.pinyin_full,
             pinyin_first: newTerm.pinyin_first,
             related_terms: newTerm.related_terms.split(/[,，]/).map(s => s.trim()).filter(Boolean),
+            coreCN: newTerm.coreCN,
+            coreEN: newTerm.coreEN,
         };
 
         if (editingId) {
@@ -259,7 +267,9 @@ export const UserDictionary: React.FC = () => {
                 category: '',
                 note: '',
                 pinyin_full: '',
-                pinyin_first: ''
+                pinyin_first: '',
+                coreCN: '',
+                coreEN: ''
             });
         }
 
@@ -277,7 +287,9 @@ export const UserDictionary: React.FC = () => {
         category: '',
         note: '',
         pinyin_full: '',
-        pinyin_first: ''
+        pinyin_first: '',
+        coreCN: '',
+        coreEN: ''
     });
   };
 
@@ -294,13 +306,16 @@ interface Term {
   category?: string;
   note?: string;
   related_terms?: string[]; // Synonyms
+  coreCN?: string; // Core Chinese Term (optional)
+  coreEN?: string; // Core English Term (optional)
 }
 Return only the valid JSON.`;
 
   const prompt2 = `Take this JSON array of medical terms. For each item:
 1. Generate 'pinyin_full' (e.g. 'gan mao') and 'pinyin_first' (e.g. 'gm').
 2. Add 'related_terms' if there are common synonyms.
-3. Keep the original fields.
+3. Identify 'coreCN' and 'coreEN'. These are the concise, essential parts of the term used for highlighting matching (e.g., if term is "Take a deep breath", core is "deep breath").
+4. Keep the original fields.
 Return the enriched JSON.`;
 
   return (
@@ -327,7 +342,9 @@ Return the enriched JSON.`;
                         category: '',
                         note: '',
                         pinyin_full: '',
-                        pinyin_first: ''
+                        pinyin_first: '',
+                        coreCN: '',
+                        coreEN: ''
                    });
                    setShowAddForm(true);
                 }}
@@ -443,6 +460,33 @@ Return the enriched JSON.`;
                     className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white outline-none transition-all"
                     placeholder={t('PH_ENGLISH')}
                   />
+               </div>
+
+               <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                 <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-2">
+                       {t('LBL_CORE_CN')}
+                       <span className="text-[10px] font-normal text-slate-400 normal-case bg-slate-100 px-1.5 rounded">Matching</span>
+                    </label>
+                    <input 
+                      value={newTerm.coreCN} 
+                      onChange={e => setNewTerm({...newTerm, coreCN: e.target.value})}
+                      className="w-full p-2.5 rounded-xl bg-slate-50/50 border border-slate-200 focus:border-blue-500 focus:bg-white outline-none transition-all text-sm"
+                      placeholder={t('PH_CORE_CN')}
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-2">
+                       {t('LBL_CORE_EN')}
+                       <span className="text-[10px] font-normal text-slate-400 normal-case bg-slate-100 px-1.5 rounded">Matching</span>
+                    </label>
+                    <input 
+                      value={newTerm.coreEN} 
+                      onChange={e => setNewTerm({...newTerm, coreEN: e.target.value})}
+                      className="w-full p-2.5 rounded-xl bg-slate-50/50 border border-slate-200 focus:border-blue-500 focus:bg-white outline-none transition-all text-sm"
+                      placeholder={t('PH_CORE_EN')}
+                    />
+                 </div>
                </div>
                
                <div className="md:col-span-2 grid grid-cols-2 gap-4">
@@ -681,6 +725,28 @@ Return the enriched JSON.`;
                   {selectedTerm.english_term}
                 </div>
               </div>
+
+              {/* Core Terms Display */}
+              {(selectedTerm.coreCN || selectedTerm.coreEN) && (
+                <div className="grid grid-cols-2 gap-4 bg-amber-50 p-3 rounded-xl border border-amber-100">
+                   {selectedTerm.coreCN && (
+                     <div>
+                       <label className="block text-[10px] font-bold text-amber-500 uppercase mb-1 flex items-center gap-1">
+                         <Target className="w-3 h-3" /> {t('LBL_CORE_CN')}
+                       </label>
+                       <div className="text-sm font-medium text-slate-800">{selectedTerm.coreCN}</div>
+                     </div>
+                   )}
+                   {selectedTerm.coreEN && (
+                     <div>
+                       <label className="block text-[10px] font-bold text-amber-500 uppercase mb-1 flex items-center gap-1">
+                         <Target className="w-3 h-3" /> {t('LBL_CORE_EN')}
+                       </label>
+                       <div className="text-sm font-medium text-slate-800">{selectedTerm.coreEN}</div>
+                     </div>
+                   )}
+                </div>
+              )}
 
               {selectedTerm.related_terms && selectedTerm.related_terms.length > 0 && (
                 <div>

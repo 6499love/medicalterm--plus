@@ -18,6 +18,10 @@ export interface Term {
   
   // New flag: if false, term is hidden from "My Dictionary" list (used for Favorites-only items)
   inDictionary?: boolean; 
+
+  // New Core Term Fields
+  coreCN?: string;
+  coreEN?: string;
 }
 
 export interface SearchResult extends Term {
