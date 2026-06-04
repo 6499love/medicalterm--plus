@@ -139,12 +139,14 @@ const SettingsPage = () => {
   const getHintText = () => {
      if (form.provider === 'gemini') return t('HINT_GEMINI_KEY');
      if (form.provider === 'glm') return t('HINT_GLM_KEY');
+     if (form.provider === 'baidu') return t('HINT_BAIDU_KEY');
      return t('HINT_OPENAI_KEY');
   };
 
   const getKeyUrl = () => {
     if (form.provider === 'gemini') return 'https://aistudio.google.com/app/apikey';
     if (form.provider === 'glm') return 'https://open.bigmodel.cn/';
+    if (form.provider === 'baidu') return 'https://console.bce.baidu.com/qianfan';
     return 'https://platform.openai.com/api-keys';
   };
 
@@ -168,8 +170,8 @@ const SettingsPage = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">{t('SET_PROVIDER')}</label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                 {['glm', 'gemini', 'openai-compatible'].map((p) => (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                 {['glm', 'gemini', 'openai-compatible', 'baidu'].map((p) => (
                    <button 
                      key={p}
                      onClick={() => setForm({ ...form, provider: p as any })}
@@ -179,7 +181,7 @@ const SettingsPage = () => {
                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                      }`}
                    >
-                     {p === 'gemini' ? t('PROVIDER_GEMINI') : p === 'glm' ? t('PROVIDER_GLM') : t('PROVIDER_OPENAI_LOCAL')}
+                     {p === 'gemini' ? t('PROVIDER_GEMINI') : p === 'glm' ? t('PROVIDER_GLM') : p === 'baidu' ? t('PROVIDER_BAIDU') : t('PROVIDER_OPENAI_LOCAL')}
                    </button>
                  ))}
               </div>

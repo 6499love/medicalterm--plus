@@ -67,8 +67,8 @@ export const getCompletion = async (
         return response.text || '';
       }
 
-      // OPENAI-COMPATIBLE & GLM IMPLEMENTATION
-      if (config.provider === 'openai-compatible' || config.provider === 'glm') {
+      // OPENAI-COMPATIBLE, GLM, & BAIDU IMPLEMENTATION
+      if (config.provider === 'openai-compatible' || config.provider === 'glm' || config.provider === 'baidu') {
         let baseUrl = config.baseUrl;
         let model = config.model;
 
@@ -76,6 +76,9 @@ export const getCompletion = async (
         if (config.provider === 'glm') {
           baseUrl = baseUrl || 'https://open.bigmodel.cn/api/paas/v4';
           model = model || 'glm-4-flash';
+        } else if (config.provider === 'baidu') {
+          baseUrl = baseUrl || 'https://qianfan.baidubce.com/v2';
+          model = model || 'ernie-4.0-8k';
         } else {
           // Generic OpenAI defaults
           baseUrl = baseUrl 

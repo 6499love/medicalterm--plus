@@ -1,3 +1,4 @@
+
 /* Auto-generated system terms bundle.
  * Updated with user provided terms.
  */
@@ -3824,5 +3825,19 @@ export const systemTermsData = [
     "related_terms": [],
     "coreCN": "中央空气切换功能",
     "coreEN": "central air switching function"
+  },
+  {
+    "chinese_term": "电动病床",
+    "english_term": "Electric beds",
+    "pinyin_full": "",
+    "pinyin_first": "",
+    "category": "",
+    "note": "",
+    "usage_scenario": "",
+    "root_analysis": "",
+    "mistranslation_warning": [],
+    "related_terms": [],
+    "coreCN": "电动病床",
+    "coreEN": "Electric beds"
   }
 ];

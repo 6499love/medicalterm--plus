@@ -47,7 +47,7 @@ export interface AppSettings {
 
 export interface AuthConfig {
   userName: string;
-  provider: 'gemini' | 'openai-compatible' | 'glm';
+  provider: 'gemini' | 'openai-compatible' | 'glm' | 'baidu';
   apiKey: string;
   baseUrl?: string;
   model?: string;

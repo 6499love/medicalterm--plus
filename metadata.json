@@ -1,5 +1,6 @@
 {
   "name": "MediTerm Glass pro",
   "description": "",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }
