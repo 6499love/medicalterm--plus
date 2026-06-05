@@ -2,7 +2,7 @@ import * as ort from "onnxruntime-web";
 import { PaddleOcrService } from "paddleocr";
 
 // Set WASM paths for ONNX runtime to avoid local resolution issues
-ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
+ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/";
 
 let paddleOcrInstance: PaddleOcrService | null = null;
 let initPromise: Promise<PaddleOcrService> | null = null;
@@ -50,7 +50,7 @@ export async function getPaddleOcr(): Promise<PaddleOcrService> {
   return initPromise;
 }
 
-export function fileToImageData(file: File): Promise<{ data: Uint8ClampedArray; width: number; height: number }> {
+export function fileToImageData(file: File): Promise<{ data: Uint8Array; width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -62,7 +62,12 @@ export function fileToImageData(file: File): Promise<{ data: Uint8ClampedArray; 
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) return reject(new Error('Canvas context not available'));
       ctx.drawImage(img, 0, 0);
-      resolve(ctx.getImageData(0, 0, img.width, img.height));
+      const imageData = ctx.getImageData(0, 0, img.width, img.height);
+      resolve({
+        data: new Uint8Array(imageData.data.buffer, imageData.data.byteOffset, imageData.data.byteLength),
+        width: img.width,
+        height: img.height
+      });
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);

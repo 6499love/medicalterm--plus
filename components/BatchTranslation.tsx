@@ -44,12 +44,9 @@ export const BatchTranslation: React.FC = () => {
 
   useEffect(() => {
     const handleGlobalPaste = async (e: ClipboardEvent) => {
-      // Only process global paste if OCR panel is open
-      if (!showOcrPanel) return;
-      
-      // If user is pasting text into the OCR editing textarea, let them
+      // If user is pasting text into an input or textarea, let them
       const activeEl = document.activeElement as HTMLElement;
-      if (activeEl && activeEl.tagName === 'TEXTAREA' && activeEl.getAttribute('placeholder') === t('OCR_EDIT_HINT')) {
+      if (activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT')) {
         // However, if they paste an image, we still want to intercept it
         const hasText = e.clipboardData?.types.includes('text/plain');
         if (hasText) return;
@@ -281,19 +278,7 @@ ${missingTerms.join('\n')}`;
     await processImageOCR(file);
   };
 
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        e.preventDefault();
-        const file = items[i].getAsFile();
-        if (file) {
-          await processImageOCR(file);
-        }
-        break;
-      }
-    }
-  };
+
 
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -440,7 +425,6 @@ ${missingTerms.join('\n')}`;
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onPaste={handlePaste}
               className={`flex-1 w-full p-4 rounded-2xl bg-white/50 border outline-none resize-none text-slate-700 font-mono text-sm leading-relaxed transition-colors border-white/60 focus:border-blue-300`}
               placeholder={t('PLACEHOLDER_INPUT')}
             />
