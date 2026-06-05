@@ -9,7 +9,7 @@ import { getCompletion } from '../services/llm';
 import { copyToClipboard } from '../services/clipboard';
 import { useToastStore } from '../services/toast';
 import * as XLSX from 'xlsx';
-import { getPaddleOcr, fileToImageData } from '../services/ocr';
+import Tesseract from 'tesseract.js';
 
 interface BatchResult {
   original: string;
@@ -42,6 +42,8 @@ export const BatchTranslation: React.FC = () => {
     fetchSystemTerms().then(setSystemTerms);
   }, []);
 
+  const processImageOCRRef = useRef<((file: File) => Promise<void>) | null>(null);
+
   useEffect(() => {
     const handleGlobalPaste = async (e: ClipboardEvent) => {
       // If user is pasting text into an input or textarea, let them
@@ -59,8 +61,8 @@ export const BatchTranslation: React.FC = () => {
         if (items[i].type.indexOf('image') !== -1) {
           e.preventDefault();
           const file = items[i].getAsFile();
-          if (file) {
-            await processImageOCR(file);
+          if (file && processImageOCRRef.current) {
+            await processImageOCRRef.current(file);
           }
           break;
         }
@@ -69,7 +71,7 @@ export const BatchTranslation: React.FC = () => {
 
     window.addEventListener('paste', handleGlobalPaste);
     return () => window.removeEventListener('paste', handleGlobalPaste);
-  }, [showOcrPanel, t]);
+  }, []);
 
   const handleProcess = async () => {
     if (!input.trim()) return;
@@ -229,6 +231,10 @@ ${missingTerms.join('\n')}`;
     reader.readAsArrayBuffer(file);
   };
 
+  useEffect(() => {
+    processImageOCRRef.current = processImageOCR;
+  });
+
   const processImageOCR = async (file: File) => {
     // Show preview and open panel
     const previewUrl = URL.createObjectURL(file);
@@ -240,13 +246,13 @@ ${missingTerms.join('\n')}`;
     showToast(t('TOAST_OCR_PROCESSING'), 'info');
 
     try {
-      const imgData = await fileToImageData(file);
-      const ocr = await getPaddleOcr();
+      const result = await Tesseract.recognize(
+        file,
+        'eng+chi_sim',
+        { logger: m => console.log(m) }
+      );
       
-      const rawResult = await ocr.recognize(imgData);
-      const result = ocr.processRecognition(rawResult, { lineMergeThresholdRatio: 0.8 });
-
-      const text = result.text;
+      const text = result.data.text;
       const lines = text.split('\n')
         .map(l => {
           let cleaned = l.replace(/\s+/g, ' ').trim();
