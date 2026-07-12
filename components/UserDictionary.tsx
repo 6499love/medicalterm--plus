@@ -8,23 +8,73 @@ import { Term } from '../types';
 import { pinyin } from 'pinyin-pro';
 import { copyToClipboard } from '../services/clipboard';
 
-type ProductFilter = 'all' | 'generic' | 'bed' | 'humidifier' | 'microcirculation';
+const ALL_PRODUCTS = '__all_products__';
+const GENERIC_PRODUCT = '__generic_product__';
+const ALL_TYPES = '__all_types__';
+const UNCATEGORIZED_TYPE = '__uncategorized_type__';
 
-const PRODUCT_FILTERS: { key: ProductFilter; label: string; product?: string }[] = [
-  { key: 'all', label: '全部' },
-  { key: 'generic', label: '通用词库' },
-  { key: 'bed', label: '病床', product: '病床' },
-  { key: 'humidifier', label: '高流量&压缩机', product: '高流量&压缩机' },
-  { key: 'microcirculation', label: '微循环', product: '微循环' },
+const FIXED_PRODUCT_FILTERS = [
+  { key: ALL_PRODUCTS, label: '全部产品' },
+  { key: GENERIC_PRODUCT, label: '通用词库' },
+  { key: '病床', label: '病床' },
+  { key: '高流量&压缩机', label: '高流量&压缩机' },
+  { key: '微循环', label: '微循环' },
 ];
 
-const matchesProductFilter = (term: Term, filter: ProductFilter) => {
+const RECOGNIZED_TERM_TYPES = ['术语', '词语', '句子', '标语', '参数'];
+
+const TYPE_FILTERS = [
+  { key: ALL_TYPES, label: '全部类型' },
+  { key: '术语', label: '术语' },
+  { key: '词语', label: '词语/短语' },
+  { key: '句子', label: '句子' },
+  { key: '标语', label: '标语' },
+  { key: '参数', label: '参数' },
+  { key: UNCATEGORIZED_TYPE, label: '未分类' },
+];
+
+const getProductValue = (term: Term) => term.product?.trim() || '';
+
+const getProductLabel = (term: Term) => getProductValue(term) || '通用词库';
+
+const getTermTypeKey = (term: Term) => {
+  const rawType = term.term_type?.trim() || '';
+  return RECOGNIZED_TERM_TYPES.includes(rawType) ? rawType : UNCATEGORIZED_TYPE;
+};
+
+const getTermTypeLabel = (term: Term) => {
+  const typeKey = getTermTypeKey(term);
+  return TYPE_FILTERS.find(item => item.key === typeKey)?.label || '未分类';
+};
+
+const matchesProductFilter = (term: Term, filter: string) => {
   const product = term.product?.trim() || '';
 
-  if (filter === 'all') return true;
-  if (filter === 'generic') return product === '';
+  if (filter === ALL_PRODUCTS) return true;
+  if (filter === GENERIC_PRODUCT) return product === '';
 
-  return product === PRODUCT_FILTERS.find(item => item.key === filter)?.product;
+  return product === filter;
+};
+
+const matchesTypeFilter = (term: Term, filter: string) => {
+  if (filter === ALL_TYPES) return true;
+  if (filter === UNCATEGORIZED_TYPE) return getTermTypeKey(term) === UNCATEGORIZED_TYPE;
+  return getTermTypeKey(term) === filter;
+};
+
+const SystemTermTags: React.FC<{ term: Term }> = ({ term }) => {
+  if (term.source !== 'system') return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+        {getProductLabel(term)}
+      </span>
+      <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-500">
+        {getTermTypeLabel(term)}
+      </span>
+    </div>
+  );
 };
 
 export const UserDictionary: React.FC = () => {
@@ -36,7 +86,8 @@ export const UserDictionary: React.FC = () => {
   
   // System Tab Specific State
   const [sortBy, setSortBy] = useState<'zh_asc' | 'zh_desc' | 'en_asc' | 'en_desc'>('en_asc');
-  const [productFilter, setProductFilter] = useState<ProductFilter>('all');
+  const [productFilter, setProductFilter] = useState(ALL_PRODUCTS);
+  const [typeFilter, setTypeFilter] = useState(ALL_TYPES);
 
   // Pagination & Selection State
   const [currentPage, setCurrentPage] = useState(1);
@@ -108,7 +159,7 @@ export const UserDictionary: React.FC = () => {
   // Reset pagination when filter/tab/sort changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, activeTab, sortBy, productFilter]);
+  }, [filter, activeTab, sortBy, productFilter, typeFilter]);
 
   useEffect(() => {
     if (message) {
@@ -128,8 +179,10 @@ export const UserDictionary: React.FC = () => {
             t.related_terms?.some(a => a.toLowerCase().includes(filter.toLowerCase())))
         ).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0)); // Default User sort: Newest first
     } else {
-        // System Tab: Product filter first, then sort
-        let data = systemTerms.filter(term => matchesProductFilter(term, productFilter));
+        // System Tab: product filter -> content type filter -> sort
+        let data = systemTerms
+          .filter(term => matchesProductFilter(term, productFilter))
+          .filter(term => matchesTypeFilter(term, typeFilter));
 
         // Sort
         data.sort((a, b) => {
@@ -142,20 +195,37 @@ export const UserDictionary: React.FC = () => {
 
         return data;
     }
-  }, [activeTab, userTerms, systemTerms, filter, sortBy, productFilter]);
+  }, [activeTab, userTerms, systemTerms, filter, sortBy, productFilter, typeFilter]);
+
+  const productFilterOptions = useMemo(() => {
+    const fixedKeys = new Set(FIXED_PRODUCT_FILTERS.map(item => item.key));
+    const extraProducts = Array.from(new Set(systemTerms.map(getProductValue)))
+      .filter(product => product && !fixedKeys.has(product))
+      .sort((a, b) => a.localeCompare(b, 'zh-CN'));
+
+    return [
+      ...FIXED_PRODUCT_FILTERS,
+      ...extraProducts.map(product => ({ key: product, label: product })),
+    ];
+  }, [systemTerms]);
 
   const productFilterCounts = useMemo(() => {
-    return PRODUCT_FILTERS.reduce<Record<ProductFilter, number>>((counts, item) => {
+    return productFilterOptions.reduce<Record<string, number>>((counts, item) => {
       counts[item.key] = systemTerms.filter(term => matchesProductFilter(term, item.key)).length;
       return counts;
-    }, {
-      all: 0,
-      generic: 0,
-      bed: 0,
-      humidifier: 0,
-      microcirculation: 0,
-    });
-  }, [systemTerms]);
+    }, {});
+  }, [systemTerms, productFilterOptions]);
+
+  const productFilteredTerms = useMemo(() => {
+    return systemTerms.filter(term => matchesProductFilter(term, productFilter));
+  }, [systemTerms, productFilter]);
+
+  const typeFilterCounts = useMemo(() => {
+    return TYPE_FILTERS.reduce<Record<string, number>>((counts, item) => {
+      counts[item.key] = productFilteredTerms.filter(term => matchesTypeFilter(term, item.key)).length;
+      return counts;
+    }, {});
+  }, [productFilteredTerms]);
 
   const totalPages = Math.ceil(displayedTerms.length / pageSize);
   const visibleTerms = displayedTerms.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -631,24 +701,58 @@ Return the enriched JSON.`;
                   <ChevronDown className="w-4 h-4" />
                </div>
              </div>
-             <div className="mt-2 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap">
-               {PRODUCT_FILTERS.map(item => {
-                 const isActive = productFilter === item.key;
-                 return (
-                   <button
-                     key={item.key}
-                     type="button"
-                     onClick={() => setProductFilter(item.key)}
-                     className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
-                       isActive
-                         ? 'border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-500/20'
-                         : 'border-slate-200 bg-white/80 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'
-                     }`}
-                   >
-                     {item.label} {productFilterCounts[item.key]}
-                   </button>
-                 );
-               })}
+             <div className="mt-2 space-y-2">
+               <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+                 <span className="flex h-7 shrink-0 items-center text-[11px] font-bold text-slate-400">产品</span>
+                 {productFilterOptions.map(item => {
+                   const isActive = productFilter === item.key;
+                   return (
+                     <button
+                       key={item.key}
+                       type="button"
+                       onClick={() => setProductFilter(item.key)}
+                       className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
+                         isActive
+                           ? 'border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                           : 'border-slate-200 bg-white/80 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'
+                       }`}
+                     >
+                       <span>{item.label}</span>
+                       <span className={`rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
+                         isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                       }`}>
+                         {productFilterCounts[item.key] || 0}
+                       </span>
+                     </button>
+                   );
+                 })}
+               </div>
+
+               <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+                 <span className="flex h-7 shrink-0 items-center text-[11px] font-bold text-slate-400">内容类型</span>
+                 {TYPE_FILTERS.map(item => {
+                   const isActive = typeFilter === item.key;
+                   return (
+                     <button
+                       key={item.key}
+                       type="button"
+                       onClick={() => setTypeFilter(item.key)}
+                       className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
+                         isActive
+                           ? 'border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                           : 'border-slate-200 bg-white/80 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'
+                       }`}
+                     >
+                       <span>{item.label}</span>
+                       <span className={`rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
+                         isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                       }`}>
+                         {typeFilterCounts[item.key] || 0}
+                       </span>
+                     </button>
+                   );
+                 })}
+               </div>
              </div>
           </div>
         )}
@@ -708,16 +812,22 @@ Return the enriched JSON.`;
                    </div>
                 )}
                 
-                <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-100 h-7 overflow-hidden">
-                   {term.category && (
-                     <span className="text-[10px] text-slate-500 bg-blue-50/50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wide truncate max-w-[40%]">
-                       {term.category}
-                     </span>
-                   )}
-                   {term.usage_scenario && (
-                      <div className="flex gap-1 items-center text-xs text-slate-500 bg-green-50/30 px-2 py-0.5 rounded-lg truncate max-w-[50%]">
-                        <Book className="w-3 h-3 opacity-70 shrink-0"/> <span className="truncate">{term.usage_scenario}</span>
-                      </div>
+                <div className="mt-auto flex min-h-7 items-center gap-2 overflow-hidden border-t border-slate-100 pt-2">
+                   {term.source === 'system' ? (
+                     <SystemTermTags term={term} />
+                   ) : (
+                     <>
+                       {term.category && (
+                         <span className="max-w-[40%] truncate rounded-full border border-blue-100 bg-blue-50/50 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+                           {term.category}
+                         </span>
+                       )}
+                       {term.usage_scenario && (
+                          <div className="flex max-w-[50%] items-center gap-1 truncate rounded-lg bg-green-50/30 px-2 py-0.5 text-xs text-slate-500">
+                            <Book className="w-3 h-3 opacity-70 shrink-0"/> <span className="truncate">{term.usage_scenario}</span>
+                          </div>
+                       )}
+                     </>
                    )}
                 </div>
               </div>
@@ -769,6 +879,9 @@ Return the enriched JSON.`;
                 {selectedTerm.pinyin_full && (
                   <div className="text-sm text-blue-500 font-mono mt-1">{selectedTerm.pinyin_full}</div>
                 )}
+                <div className="mt-3">
+                  <SystemTermTags term={selectedTerm} />
+                </div>
               </div>
 
               <div>
