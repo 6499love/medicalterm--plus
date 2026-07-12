@@ -2,8 +2,7 @@
 import Fuse from 'fuse.js';
 import { pinyin } from 'pinyin-pro';
 import { Term, SearchResult } from '../types';
-// Updated import to the new data file
-import { systemTermsData } from '../system_terms_data-20260109';
+import { systemTermsData } from '../data/terms';
 
 
 let systemTermsCache: Term[] | null = null;
