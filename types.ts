@@ -22,6 +22,9 @@ export interface Term {
   // New Core Term Fields
   coreCN?: string;
   coreEN?: string;
+
+  // If false, the term remains searchable but is excluded from text highlighting.
+  highlight_enabled?: boolean;
 }
 
 export interface SearchResult extends Term {

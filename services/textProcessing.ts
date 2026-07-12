@@ -458,6 +458,8 @@ export const buildTermSegments = (
   const weakMap = new Map<string, Term>();
 
   terms.forEach(term => {
+      if (term.highlight_enabled === false) return;
+
       // 1. Setup Strong Match Keys
       const primary = mode === 'source' ? term.chinese_term : term.english_term;
       if (primary) strongMap.set(normalizeKey(primary), term);
