@@ -26,6 +26,7 @@ export interface Term {
 
   // If false, the term remains searchable but is excluded from text highlighting.
   highlight_enabled?: boolean;
+  term_type?: '术语' | '词语' | '句子' | '标语' | '参数';
 }
 
 export interface SearchResult extends Term {

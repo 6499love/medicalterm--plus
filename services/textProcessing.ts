@@ -22,6 +22,14 @@ export interface TermAlignment {
   targetSpans: TermSpan[];
 }
 
+export interface StrictSentenceMatch {
+  id: string;
+  start: number;
+  end: number;
+  text: string;
+  term: Term;
+}
+
 const TERMINOLOGY_GUIDANCE = `
 Terminology Guidance:
 - You are translating medical text. A term dictionary is provided below.
@@ -435,6 +443,148 @@ const findMatches = (
         }
     }
     return matches;
+};
+
+const SENTENCE_BOUNDARY_CHARS = new Set([
+  '.', '?', '!', ';',
+  '。', '？', '！', '；',
+]);
+
+const toHalfWidth = (char: string) => char.normalize('NFKC');
+
+const isIgnoredForStrictSentenceMatch = (char: string) => {
+  if (!char) return true;
+  const normalized = toHalfWidth(char);
+  return /\s/u.test(normalized) || /\p{P}/u.test(normalized);
+};
+
+const isSentenceBoundaryChar = (char: string) => {
+  if (!char) return false;
+  return SENTENCE_BOUNDARY_CHARS.has(toHalfWidth(char));
+};
+
+const normalizeStrictSentenceText = (text: string) => {
+  let normalized = '';
+  const indexMap: number[] = [];
+  let originalOffset = 0;
+
+  Array.from(text).forEach((char) => {
+    const currentOffset = originalOffset;
+    originalOffset += char.length;
+
+    const halfWidth = toHalfWidth(char);
+    if (isIgnoredForStrictSentenceMatch(halfWidth)) return;
+
+    normalized += halfWidth.toLowerCase();
+    indexMap.push(currentOffset);
+  });
+
+  return { normalized, indexMap };
+};
+
+const hasLeftSentenceBoundary = (text: string, start: number) => {
+  for (let i = start - 1; i >= 0; i--) {
+    const char = text[i];
+    if (/\s/u.test(char)) continue;
+    if (isSentenceBoundaryChar(char)) return true;
+    if (isIgnoredForStrictSentenceMatch(char)) continue;
+    return false;
+  }
+
+  return true;
+};
+
+const getRightBoundary = (text: string, end: number) => {
+  let expandedEnd = end;
+
+  for (let i = end; i < text.length; i++) {
+    const char = text[i];
+    if (/\s/u.test(char)) continue;
+
+    if (isSentenceBoundaryChar(char)) {
+      return { isBoundary: true, end: i + 1 };
+    }
+
+    if (isIgnoredForStrictSentenceMatch(char)) {
+      expandedEnd = i + 1;
+      continue;
+    }
+
+    return { isBoundary: false, end };
+  }
+
+  return { isBoundary: true, end: expandedEnd };
+};
+
+/**
+ * Finds strict whole-sentence reference matches independently from term highlighting.
+ * Matching ignores whitespace, punctuation, full-width/half-width differences, and case,
+ * but still maps the result back to original source text positions for rendering.
+ */
+export const findStrictSentenceMatches = (
+  text: string,
+  terms: Term[],
+  options: { mode: 'source' | 'translation' }
+): StrictSentenceMatch[] => {
+  if (!text || !terms || terms.length === 0) return [];
+
+  const { normalized, indexMap } = normalizeStrictSentenceText(text);
+  if (!normalized) return [];
+
+  const candidates: StrictSentenceMatch[] = [];
+
+  terms.forEach(term => {
+    if (term.term_type !== '句子') return;
+
+    const referenceText = options.mode === 'source' ? term.chinese_term : term.english_term;
+    const normalizedReference = normalizeStrictSentenceText(referenceText || '').normalized;
+    if (!normalizedReference) return;
+
+    let searchFrom = 0;
+    while (searchFrom <= normalized.length) {
+      const normalizedStart = normalized.indexOf(normalizedReference, searchFrom);
+      if (normalizedStart === -1) break;
+
+      const normalizedEnd = normalizedStart + normalizedReference.length - 1;
+      const originalStart = indexMap[normalizedStart];
+      const originalEnd = indexMap[normalizedEnd] + 1;
+      const rightBoundary = getRightBoundary(text, originalEnd);
+
+      if (hasLeftSentenceBoundary(text, originalStart) && rightBoundary.isBoundary) {
+        const end = rightBoundary.end;
+        candidates.push({
+          id: `sentence_${originalStart}_${end}_${term.id}`,
+          start: originalStart,
+          end,
+          text: text.slice(originalStart, end),
+          term,
+        });
+      }
+
+      searchFrom = normalizedStart + 1;
+    }
+  });
+
+  candidates.sort((a, b) => {
+    const lenA = a.end - a.start;
+    const lenB = b.end - b.start;
+    if (lenA !== lenB) return lenB - lenA;
+    return a.start - b.start;
+  });
+
+  const coverage = new Array(text.length).fill(false);
+  const finalMatches: StrictSentenceMatch[] = [];
+
+  candidates.forEach(match => {
+    for (let i = match.start; i < match.end; i++) {
+      if (coverage[i]) return;
+    }
+
+    for (let i = match.start; i < match.end; i++) coverage[i] = true;
+    finalMatches.push(match);
+  });
+
+  return finalMatches.sort((a, b) => a.start - b.start);
 };
 
 /**
