@@ -6,7 +6,9 @@ import { fetchSystemTerms } from '../services/search';
 import { Term, PageRoute } from '../types';
 import { 
   buildTermSegments, 
+  findStrictSentenceMatches,
   translateText, 
+  StrictSentenceMatch,
   TextSegment, 
   TermAlignment
 } from '../services/textProcessing';
@@ -46,8 +48,12 @@ const RenderedText: React.FC<{
   onTermDoubleClick?: (e: React.MouseEvent, term: Term) => void;
   showWeakHints?: boolean;
   linkedTermIds?: Set<string>;
-}> = React.memo(({ segments, activeState, selectedState, onTermEnter, onTermLeave, onTermClick, onTermDoubleClick, showWeakHints, linkedTermIds }) => (
-  <div className="whitespace-pre-wrap leading-relaxed text-slate-800 text-base">
+  inline?: boolean;
+}> = React.memo(({ segments, activeState, selectedState, onTermEnter, onTermLeave, onTermClick, onTermDoubleClick, showWeakHints, linkedTermIds, inline }) => {
+  const Container = inline ? 'span' : 'div';
+
+  return (
+  <Container className="whitespace-pre-wrap leading-relaxed text-slate-800 text-base">
     {segments.map((seg) => {
       // Strict check: Must have matchedTerm AND valid matchType to be highlighted
       if (!seg.matchedTerm || (seg.matchType !== 'strong' && seg.matchType !== 'weak')) {
@@ -108,8 +114,118 @@ const RenderedText: React.FC<{
         </span>
       );
     })}
-  </div>
-));
+  </Container>
+  );
+});
+
+const SentenceReferenceText: React.FC<{
+  text: string;
+  terms: Term[];
+  matches: StrictSentenceMatch[];
+  selectedMatchId: string | null;
+  isSourceChinese: boolean;
+  activeState: { termId: string; index: number } | null;
+  selectedState: { termId: string; index: number } | null;
+  linkedTermIds?: Set<string>;
+  onSentenceClick: (match: StrictSentenceMatch) => void;
+  onCopyReference: (e: React.MouseEvent, referenceText: string) => void;
+  onTermEnter: (term: Term, index: number) => void;
+  onTermLeave: () => void;
+  onTermClick: (e: React.MouseEvent, term: Term, index: number) => void;
+  onTermDoubleClick: (e: React.MouseEvent, term: Term) => void;
+}> = React.memo(({
+  text,
+  terms,
+  matches,
+  selectedMatchId,
+  isSourceChinese,
+  activeState,
+  selectedState,
+  linkedTermIds,
+  onSentenceClick,
+  onCopyReference,
+  onTermEnter,
+  onTermLeave,
+  onTermClick,
+  onTermDoubleClick,
+}) => {
+  const mode = isSourceChinese ? 'source' : 'translation';
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let chunkIndex = 0;
+
+  const renderChunk = (chunk: string, key: string) => (
+    <RenderedText
+      key={key}
+      inline
+      segments={buildTermSegments(chunk, terms, { mode })}
+      activeState={activeState}
+      selectedState={selectedState}
+      onTermEnter={onTermEnter}
+      onTermLeave={onTermLeave}
+      onTermClick={onTermClick}
+      onTermDoubleClick={onTermDoubleClick}
+      linkedTermIds={linkedTermIds}
+    />
+  );
+
+  matches.forEach(match => {
+    if (match.start > lastIndex) {
+      nodes.push(renderChunk(text.slice(lastIndex, match.start), `plain_${chunkIndex++}`));
+    }
+
+    const isSelected = selectedMatchId === match.id;
+    const referenceText = isSourceChinese ? match.term.english_term : match.term.chinese_term;
+
+    nodes.push(
+      <React.Fragment key={match.id}>
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={() => onSentenceClick(match)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onSentenceClick(match);
+            }
+          }}
+          className={`my-0.5 inline-block rounded-lg border px-1.5 py-1 align-baseline transition-colors ${
+            isSelected
+              ? 'border-emerald-300 bg-emerald-100/80'
+              : 'border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/60'
+          } cursor-pointer`}
+        >
+          <span className="mr-1.5 inline-flex rounded-full border border-emerald-200 bg-white/70 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 align-middle">
+            整句匹配
+          </span>
+          {renderChunk(match.text, `sentence_text_${match.id}`)}
+        </span>
+        {isSelected && (
+          <div className="my-2 rounded-xl border border-emerald-200 bg-white/90 p-3 text-sm shadow-sm">
+            <div className="mb-1 text-xs font-bold text-emerald-700">词库参考译文</div>
+            <div className="mb-3 text-slate-700">{referenceText}</div>
+            <button
+              type="button"
+              onClick={(e) => onCopyReference(e, referenceText)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              复制词库译文
+            </button>
+          </div>
+        )}
+      </React.Fragment>
+    );
+
+    lastIndex = match.end;
+  });
+
+  if (lastIndex < text.length) {
+    nodes.push(renderChunk(text.slice(lastIndex), `plain_${chunkIndex++}`));
+  }
+
+  return <div className="whitespace-pre-wrap leading-relaxed text-slate-800 text-base">{nodes}</div>;
+});
 
 interface TranslationAssistantProps {
   onNavigate: (page: PageRoute) => void;
@@ -138,6 +254,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
   
   // Interaction State
   const [hoveredState, setHoveredState] = useState<{termId: string, index: number} | null>(null);
+  const [selectedSentenceMatchId, setSelectedSentenceMatchId] = useState<string | null>(null);
   
   // Tooltip Logic State
   const [activeTooltipTerm, setActiveTooltipTerm] = useState<Term | null>(null);
@@ -260,6 +377,19 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
       mode: isSourceChinese ? 'source' : 'translation' 
     });
   }, [inputText, allTerms, isSourceChinese]);
+
+  const strictSentenceMatches = useMemo(() => {
+    return findStrictSentenceMatches(inputText, systemTerms, {
+      mode: isSourceChinese ? 'source' : 'translation'
+    });
+  }, [inputText, systemTerms, isSourceChinese]);
+
+  useEffect(() => {
+    if (!selectedSentenceMatchId) return;
+    if (!strictSentenceMatches.some(match => match.id === selectedSentenceMatchId)) {
+      setSelectedSentenceMatchId(null);
+    }
+  }, [selectedSentenceMatchId, strictSentenceMatches]);
 
   // Extract detected terms from source analysis to ensure target matches are consistent with source
   const detectedTerms = useMemo(() => {
@@ -417,6 +547,17 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     setNavigatedTermId(term.id);
     onNavigate('dictionary');
   }, [onNavigate, setNavigatedTermId]);
+
+  const handleSentenceClick = useCallback((match: StrictSentenceMatch) => {
+    setActiveTooltipTerm(null);
+    setTooltipAnchor(null);
+    setSelectedSentenceMatchId(current => current === match.id ? null : match.id);
+  }, []);
+
+  const handleCopySentenceReference = useCallback((e: React.MouseEvent, referenceText: string) => {
+    e.stopPropagation();
+    copyToClipboard(referenceText, t('TOAST_COPY_SUCCESS'), t('TOAST_COPY_FAIL'));
+  }, [t]);
 
   const getTokenHint = () => {
     if (estTokens === 0) return null;
@@ -648,16 +789,35 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                 />
               ) : (
                 <div className="p-6 h-full w-full overflow-auto">
-                  <RenderedText 
-                    segments={inputSegments} 
-                    activeState={hoveredState}
-                    selectedState={activeTooltipTerm ? { termId: activeTooltipTerm.id, index: 0 } : null} // Only match ID for generic highlighting when selected
-                    onTermEnter={handleTermEnter}
-                    onTermLeave={handleTermLeave}
-                    onTermClick={(e, t, i) => handleTermClick(e, t, i, 'source')}
-                    onTermDoubleClick={handleTermDoubleClick}
-                    linkedTermIds={transMode === 'professional' ? translatedTermIds : undefined} // Pass only in pro mode
-                  />
+                  {strictSentenceMatches.length > 0 ? (
+                    <SentenceReferenceText
+                      text={inputText}
+                      terms={allTerms}
+                      matches={strictSentenceMatches}
+                      selectedMatchId={selectedSentenceMatchId}
+                      isSourceChinese={isSourceChinese}
+                      activeState={hoveredState}
+                      selectedState={activeTooltipTerm ? { termId: activeTooltipTerm.id, index: 0 } : null}
+                      linkedTermIds={transMode === 'professional' ? translatedTermIds : undefined}
+                      onSentenceClick={handleSentenceClick}
+                      onCopyReference={handleCopySentenceReference}
+                      onTermEnter={handleTermEnter}
+                      onTermLeave={handleTermLeave}
+                      onTermClick={(e, t, i) => handleTermClick(e, t, i, 'source')}
+                      onTermDoubleClick={handleTermDoubleClick}
+                    />
+                  ) : (
+                    <RenderedText
+                      segments={inputSegments}
+                      activeState={hoveredState}
+                      selectedState={activeTooltipTerm ? { termId: activeTooltipTerm.id, index: 0 } : null} // Only match ID for generic highlighting when selected
+                      onTermEnter={handleTermEnter}
+                      onTermLeave={handleTermLeave}
+                      onTermClick={(e, t, i) => handleTermClick(e, t, i, 'source')}
+                      onTermDoubleClick={handleTermDoubleClick}
+                      linkedTermIds={transMode === 'professional' ? translatedTermIds : undefined} // Pass only in pro mode
+                    />
+                  )}
                   {inputText.length === 0 && <span className="text-slate-400 italic">{t('AST_EMPTY')}</span>}
                 </div>
               )}
