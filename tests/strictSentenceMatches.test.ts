@@ -159,6 +159,25 @@ test('local matching includes terms, phrases, and parameters with distinct visua
   );
 });
 
+test('local matching skips a single Chinese character but keeps multi-character and English abbreviations', () => {
+  const singleCharacterTerm = { ...emergencyStopTerm, id: 'single-character', chinese_term: '护' };
+  const humidifierTerm = { ...emergencyStopTerm, id: 'humidifier', chinese_term: '呼吸湿化治疗仪' };
+  const glycocalyxTerm = { ...emergencyStopTerm, id: 'glycocalyx', chinese_term: '糖萼' };
+  const abbreviationTerm = { ...emergencyStopTerm, id: 'sdf', chinese_term: 'SDF', english_term: 'SDF' };
+  const explicitlyAllowedSingleCharacter = { ...singleCharacterTerm, id: 'allowed-single-character', allow_single_character_match: true };
+
+  const singleCharacterSegments = buildTermSegments('守护每一次呼吸', [singleCharacterTerm], { mode: 'source' });
+  const regularSegments = buildTermSegments('呼吸湿化治疗仪、糖萼和SDF。', [humidifierTerm, glycocalyxTerm, abbreviationTerm], { mode: 'source' });
+
+  assert.equal(singleCharacterSegments.some(segment => segment.matchedTerm?.id === singleCharacterTerm.id), false);
+  assert.deepEqual(
+    regularSegments.filter(segment => segment.matchedTerm).map(segment => segment.matchedTerm?.id),
+    [humidifierTerm.id, glycocalyxTerm.id, abbreviationTerm.id]
+  );
+  assert.ok(buildTermSegments('守护每一次呼吸', [explicitlyAllowedSingleCharacter], { mode: 'source' })
+    .some(segment => segment.matchedTerm?.id === explicitlyAllowedSingleCharacter.id));
+});
+
 test('highlight_enabled false disables every match type', () => {
   const disabledTerms = [
     { ...emergencyStopTerm, highlight_enabled: false },
