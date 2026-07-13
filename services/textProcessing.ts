@@ -9,6 +9,7 @@ export interface TextSegment {
   matchedTerm?: Term;
   termOccurrenceIndex?: number; // Tracks which occurrence of the term this is (0, 1, 2...)
   matchType?: 'strong' | 'weak'; // Differentiates Exact vs Core matches
+  visualType?: LocalMatchVisualType;
 }
 
 export interface TermSpan {
@@ -22,13 +23,48 @@ export interface TermAlignment {
   targetSpans: TermSpan[];
 }
 
-export interface StrictSentenceMatch {
+export type LocalMatchVisualType = 'term' | 'phrase' | 'parameter';
+export type StrictReferenceType = 'sentence' | 'slogan';
+
+export const TERM_TYPE_MATCH_RULES = {
+  '术语': { matchMode: 'local', visualType: 'term', label: '术语', priority: 3 },
+  '词语': { matchMode: 'local', visualType: 'phrase', label: '词语/短语', priority: 2 },
+  '参数': { matchMode: 'local', visualType: 'parameter', label: '参数', priority: 1 },
+  '句子': { matchMode: 'strict-reference', referenceType: 'sentence', label: '整句匹配', priority: 1 },
+  '标语': { matchMode: 'strict-reference', referenceType: 'slogan', label: '标语匹配', priority: 1 },
+} as const;
+
+type LocalTermType = '术语' | '词语' | '参数';
+type StrictReferenceTermType = '句子' | '标语';
+
+export interface StrictReferenceMatch {
   id: string;
   start: number;
   end: number;
   text: string;
   term: Term;
+  referenceType: StrictReferenceType;
 }
+
+export type StrictSentenceMatch = StrictReferenceMatch;
+
+export const isTermMatchEnabled = (term: Term) => term.highlight_enabled !== false;
+
+const getTermType = (term: Term): keyof typeof TERM_TYPE_MATCH_RULES => {
+  return term.term_type && term.term_type in TERM_TYPE_MATCH_RULES
+    ? term.term_type as keyof typeof TERM_TYPE_MATCH_RULES
+    : '术语';
+};
+
+const isLocalMatchTerm = (term: Term): term is Term & { term_type?: LocalTermType } => {
+  const type = getTermType(term);
+  return type === '术语' || type === '词语' || type === '参数';
+};
+
+const isStrictReferenceTerm = (term: Term): term is Term & { term_type: StrictReferenceTermType } => {
+  const type = getTermType(term);
+  return type === '句子' || type === '标语';
+};
 
 const TERMINOLOGY_GUIDANCE = `
 Terminology Guidance:
@@ -367,7 +403,7 @@ const escapeRegExp = (string: string) => {
  * Internal helper to find matches for a given set of string patterns.
  * Returns sorted ranges.
  */
-const findMatches = (
+const findMatchesLegacy = (
   text: string, 
   termMap: Map<string, Term>, 
   useCore: boolean = false, 
@@ -443,6 +479,40 @@ const findMatches = (
         }
     }
     return matches;
+};
+
+const findMatches = (
+  text: string,
+  termMap: Map<string, Term>,
+  _useCore: boolean = false,
+  mode: 'source' | 'translation'
+): { start: number; end: number; term: Term; text: string }[] => {
+  const matches: { start: number; end: number; term: Term; text: string }[] = [];
+
+  termMap.forEach((term, key) => {
+    let pattern = escapeRegExp(key).replace(/\s+/g, '\\s+');
+    if (mode === 'translation') {
+      pattern = pattern
+        .replace(/\\\(/g, '\\s*\\(\\s*')
+        .replace(/\\\)/g, '\\s*\\)\\s*');
+      if (/^\w/.test(key)) pattern = `\\b${pattern}`;
+      if (/\w$/.test(key)) pattern = `${pattern}(?:e?s)?\\b`;
+    }
+
+    const regex = new RegExp(pattern, 'gi');
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+      matches.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        term,
+        text: match[0],
+      });
+      if (match[0].length === 0) regex.lastIndex++;
+    }
+  });
+
+  return matches;
 };
 
 const SENTENCE_BOUNDARY_CHARS = new Set([
@@ -521,7 +591,7 @@ const getRightBoundary = (text: string, end: number) => {
  * Matching ignores whitespace, punctuation, full-width/half-width differences, and case,
  * but still maps the result back to original source text positions for rendering.
  */
-export const findStrictSentenceMatches = (
+const findStrictSentenceMatchesLegacy = (
   text: string,
   terms: Term[],
   options: { mode: 'source' | 'translation' }
@@ -534,7 +604,7 @@ export const findStrictSentenceMatches = (
   const candidates: StrictSentenceMatch[] = [];
 
   terms.forEach(term => {
-    if (term.term_type !== '句子') return;
+    if (!isTermMatchEnabled(term) || term.term_type !== '句子') return;
 
     const referenceText = options.mode === 'source' ? term.chinese_term : term.english_term;
     const normalizedReference = normalizeStrictSentenceText(referenceText || '').normalized;
@@ -558,6 +628,7 @@ export const findStrictSentenceMatches = (
           end,
           text: text.slice(originalStart, end),
           term,
+          referenceType: 'sentence',
         });
       }
 
@@ -587,6 +658,167 @@ export const findStrictSentenceMatches = (
   return finalMatches.sort((a, b) => a.start - b.start);
 };
 
+interface StrictReferenceCandidate {
+  start: number;
+  end: number;
+  term: Term;
+  termIndex: number;
+  referenceType: StrictReferenceType;
+}
+
+const COMMA_REFERENCE_CONNECTOR = /^[,，\s]+$/u;
+
+const normalizeStrictReferenceText = (text: string) => {
+  let normalized = '';
+  const indexMap: Array<{ start: number; end: number }> = [];
+  let offset = 0;
+
+  for (const char of text) {
+    const start = offset;
+    offset += char.length;
+    const halfWidth = toHalfWidth(char);
+    if (isIgnoredForStrictSentenceMatch(halfWidth)) continue;
+    normalized += halfWidth.toLowerCase();
+    indexMap.push({ start, end: offset });
+  }
+
+  return { normalized, indexMap };
+};
+
+const hasStrictReferenceLeftBoundary = (text: string, start: number) => {
+  for (let index = start - 1; index >= 0; index--) {
+    const char = text[index];
+    if (/\s/u.test(char)) continue;
+    if (isSentenceBoundaryChar(char)) return true;
+    if (isIgnoredForStrictSentenceMatch(char)) continue;
+    return false;
+  }
+  return true;
+};
+
+const getStrictReferenceRightBoundary = (text: string, end: number) => {
+  let expandedEnd = end;
+  for (let index = end; index < text.length; index++) {
+    const char = text[index];
+    if (/\s/u.test(char)) {
+      expandedEnd = index + 1;
+      continue;
+    }
+    if (isSentenceBoundaryChar(char)) return { isBoundary: true, end: index + 1 };
+    if (isIgnoredForStrictSentenceMatch(char)) {
+      expandedEnd = index + 1;
+      continue;
+    }
+    return { isBoundary: false, end };
+  }
+  return { isBoundary: true, end: expandedEnd };
+};
+
+const isCommaConnectedReference = (
+  text: string,
+  left: StrictReferenceCandidate,
+  right: StrictReferenceCandidate
+) => left.end <= right.start && COMMA_REFERENCE_CONNECTOR.test(text.slice(left.end, right.start));
+
+/**
+ * Finds full sentence and slogan references. It deliberately keeps strict references
+ * separate from local term matching, while allowing comma-only chains of complete
+ * references to be rendered as separate regions.
+ */
+export const findStrictReferenceMatches = (
+  text: string,
+  terms: Term[],
+  options: { mode: 'source' | 'translation' }
+): StrictReferenceMatch[] => {
+  if (!text || terms.length === 0) return [];
+
+  const { normalized, indexMap } = normalizeStrictReferenceText(text);
+  if (!normalized) return [];
+
+  const candidates: StrictReferenceCandidate[] = [];
+  terms.forEach((term, termIndex) => {
+    if (!isTermMatchEnabled(term) || !isStrictReferenceTerm(term)) return;
+
+    const referenceText = options.mode === 'source' ? term.chinese_term : term.english_term;
+    const normalizedReference = normalizeStrictReferenceText(referenceText || '').normalized;
+    if (!normalizedReference) return;
+
+    let searchFrom = 0;
+    while (searchFrom <= normalized.length) {
+      const normalizedStart = normalized.indexOf(normalizedReference, searchFrom);
+      if (normalizedStart === -1) break;
+      const normalizedEnd = normalizedStart + normalizedReference.length - 1;
+      const termType = getTermType(term) as StrictReferenceTermType;
+      candidates.push({
+        start: indexMap[normalizedStart].start,
+        end: indexMap[normalizedEnd].end,
+        term,
+        termIndex,
+        referenceType: TERM_TYPE_MATCH_RULES[termType].referenceType,
+      });
+      searchFrom = normalizedStart + 1;
+    }
+  });
+
+  const hasLeftBoundary = (candidate: StrictReferenceCandidate, seen = new Set<StrictReferenceCandidate>()): boolean => {
+    if (hasStrictReferenceLeftBoundary(text, candidate.start)) return true;
+    if (seen.has(candidate)) return false;
+    const nextSeen = new Set(seen).add(candidate);
+    return candidates.some(previous => isCommaConnectedReference(text, previous, candidate) && hasLeftBoundary(previous, nextSeen));
+  };
+
+  const getRightBoundary = (candidate: StrictReferenceCandidate, seen = new Set<StrictReferenceCandidate>()): { isBoundary: boolean; end: number } => {
+    const directBoundary = getStrictReferenceRightBoundary(text, candidate.end);
+    if (directBoundary.isBoundary || seen.has(candidate)) return directBoundary;
+    const nextSeen = new Set(seen).add(candidate);
+    const connected = candidates.find(next => isCommaConnectedReference(text, candidate, next) && getRightBoundary(next, nextSeen).isBoundary);
+    return connected ? { isBoundary: true, end: candidate.end } : directBoundary;
+  };
+
+  const validCandidates = candidates
+    .map(candidate => {
+      const rightBoundary = getRightBoundary(candidate);
+      if (!hasLeftBoundary(candidate) || !rightBoundary.isBoundary) return null;
+      return { ...candidate, end: rightBoundary.end };
+    })
+    .filter((candidate): candidate is StrictReferenceCandidate => candidate !== null)
+    .sort((a, b) => {
+      const lengthA = a.end - a.start;
+      const lengthB = b.end - b.start;
+      if (lengthA !== lengthB) return lengthB - lengthA;
+      return a.termIndex - b.termIndex;
+    });
+
+  const coverage = new Array(text.length).fill(false);
+  const matches: StrictReferenceMatch[] = [];
+  validCandidates.forEach(candidate => {
+    for (let index = candidate.start; index < candidate.end; index++) {
+      if (coverage[index]) return;
+    }
+    for (let index = candidate.start; index < candidate.end; index++) coverage[index] = true;
+    matches.push({
+      id: `${candidate.referenceType}_${candidate.start}_${candidate.end}_${candidate.term.id}`,
+      start: candidate.start,
+      end: candidate.end,
+      text: text.slice(candidate.start, candidate.end),
+      term: candidate.term,
+      referenceType: candidate.referenceType,
+    });
+  });
+
+  return matches.sort((a, b) => a.start - b.start);
+};
+
+/** Backward-compatible sentence-only view of the unified strict reference matcher. */
+export const findStrictSentenceMatches = (
+  text: string,
+  terms: Term[],
+  options: { mode: 'source' | 'translation' }
+): StrictSentenceMatch[] => {
+  return findStrictReferenceMatches(text, terms, options)
+    .filter(match => match.referenceType === 'sentence');
+};
+
 /**
  * Pure function to scan text and return segments with identified terms.
  * Implements strict "Strong Match First" then "Weak Match" strategy.
@@ -602,21 +834,37 @@ export const buildTermSegments = (
   if (!text) return [];
 
   const { mode } = options;
+  const compareLocalMatches = (
+    a: { start: number; end: number; term: Term },
+    b: { start: number; end: number; term: Term }
+  ) => {
+    const weightA = a.term.highlight_weight ?? 0;
+    const weightB = b.term.highlight_weight ?? 0;
+    if (weightA !== weightB) return weightB - weightA;
+
+    const lengthA = a.end - a.start;
+    const lengthB = b.end - b.start;
+    if (lengthA !== lengthB) return lengthB - lengthA;
+    return terms.indexOf(a.term) - terms.indexOf(b.term);
+  };
   
   // Maps for lookup
   const strongMap = new Map<string, Term>();
   const weakMap = new Map<string, Term>();
 
   terms.forEach(term => {
-      if (term.highlight_enabled === false) return;
+      if (!isTermMatchEnabled(term) || !isLocalMatchTerm(term)) return;
 
       // 1. Setup Strong Match Keys
       const primary = mode === 'source' ? term.chinese_term : term.english_term;
-      if (primary) strongMap.set(normalizeKey(primary), term);
+      if (primary && !strongMap.has(normalizeKey(primary))) strongMap.set(normalizeKey(primary), term);
       
       // Aliases are treated as Strong matches
       if (term.related_terms && term.related_terms.length > 0) {
-          term.related_terms.forEach(alias => strongMap.set(normalizeKey(alias), term));
+          term.related_terms.forEach(alias => {
+            const aliasKey = normalizeKey(alias);
+            if (!strongMap.has(aliasKey)) strongMap.set(aliasKey, term);
+          });
       }
 
       // 2. Setup Weak Match Keys (Core Terms)
@@ -638,12 +886,7 @@ export const buildTermSegments = (
   const strongMatches = findMatches(text, strongMap, false, mode);
   
   // Sort by length desc (already done in helper) -> then by index to ensure deterministic First-Longest win
-  strongMatches.sort((a, b) => {
-      const lenA = a.end - a.start;
-      const lenB = b.end - b.start;
-      if (lenA !== lenB) return lenB - lenA; // Longest first
-      return a.start - b.start; // First occurrence
-  });
+  strongMatches.sort(compareLocalMatches);
 
   strongMatches.forEach(m => {
       // Check collision
@@ -664,12 +907,7 @@ export const buildTermSegments = (
       const weakMatches = findMatches(text, weakMap, true, mode);
       
       // Sort weak matches
-      weakMatches.sort((a, b) => {
-          const lenA = a.end - a.start;
-          const lenB = b.end - b.start;
-          if (lenA !== lenB) return lenB - lenA;
-          return a.start - b.start;
-      });
+      weakMatches.sort(compareLocalMatches);
 
       weakMatches.forEach(m => {
           // Check collision with existing coverage (Strong matches)
@@ -713,7 +951,12 @@ export const buildTermSegments = (
           text: m.text,
           matchedTerm: m.term,
           termOccurrenceIndex: count,
-          matchType: m.type
+          matchType: m.type,
+          visualType: getTermType(m.term) === '词语'
+            ? 'phrase'
+            : getTermType(m.term) === '参数'
+              ? 'parameter'
+              : 'term'
       });
 
       lastIndex = m.end;
