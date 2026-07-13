@@ -24,8 +24,9 @@ export interface Term {
   coreCN?: string;
   coreEN?: string;
 
-  // If false, the term remains searchable but is excluded from text highlighting.
+  // If false, the term is manually excluded from every analysis-mode match.
   highlight_enabled?: boolean;
+  highlight_weight?: number;
   term_type?: '术语' | '词语' | '句子' | '标语' | '参数';
 }
 

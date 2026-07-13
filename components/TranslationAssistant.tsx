@@ -6,9 +6,9 @@ import { fetchSystemTerms } from '../services/search';
 import { Term, PageRoute } from '../types';
 import { 
   buildTermSegments, 
-  findStrictSentenceMatches,
+  findStrictReferenceMatches,
   translateText, 
-  StrictSentenceMatch,
+  StrictReferenceMatch,
   TextSegment, 
   TermAlignment
 } from '../services/textProcessing';
@@ -69,22 +69,24 @@ const RenderedText: React.FC<{
       // Determine linkage status (Default to true if linkedTermIds is not provided/undefined)
       const isLinked = linkedTermIds ? linkedTermIds.has(seg.matchedTerm.id) : true;
 
-      // Style differentiation for Weak (Core) matches vs Strong (Exact) matches
-      // Weak matches use a dashed border or lighter background to indicate less certainty/precision
-      let baseStyle = isWeak 
-        ? 'bg-blue-50/50 border-b border-dashed border-blue-400 text-slate-700' 
-        : 'bg-blue-50 border-b-2 border-blue-200 text-blue-700';
+      const visualStyle = seg.visualType ?? 'term';
+      let baseStyle = visualStyle === 'phrase'
+        ? 'border-b border-cyan-500 text-cyan-800'
+        : visualStyle === 'parameter'
+          ? 'border-b border-dashed border-violet-500 text-violet-800'
+          : 'bg-blue-50 border-b-2 border-blue-500 text-blue-800';
 
-      // Professional Mode: Unlinked styles (Lighter/Faded)
       if (!isLinked) {
-         baseStyle = isWeak
-           ? 'bg-slate-50/40 border-b border-dashed border-slate-200 text-slate-400' 
-           : 'bg-blue-50/30 border-b border-blue-100 text-blue-400/80';
+         baseStyle = visualStyle === 'term'
+           ? 'bg-slate-50/40 border-b border-blue-100 text-slate-400'
+           : 'border-b border-slate-200 text-slate-400';
       }
 
-      const activeStyle = isWeak
-        ? 'bg-blue-100 border-blue-500 text-blue-900' // Active state looks similar for both
-        : 'bg-blue-200 border-blue-500 text-blue-900 font-medium';
+      const activeStyle = visualStyle === 'phrase'
+        ? 'bg-cyan-50 border-cyan-700 text-cyan-950'
+        : visualStyle === 'parameter'
+          ? 'bg-violet-50 border-violet-700 text-violet-950'
+          : 'bg-blue-100 border-blue-600 text-blue-950 font-medium';
 
       // Logic for displaying full term hint for weak matches (English side)
       const shouldShowHint = isWeak && showWeakHints;
@@ -106,7 +108,7 @@ const RenderedText: React.FC<{
           className={`transition-colors duration-200 rounded px-0.5 
             ${isInteractive ? 'cursor-pointer' : 'cursor-default'}
             ${isActive ? activeStyle : baseStyle}
-            hover:bg-blue-100
+            ${visualStyle === 'phrase' ? 'hover:bg-cyan-50' : visualStyle === 'parameter' ? 'hover:bg-violet-50' : 'hover:bg-blue-100'}
             ${hintClass}
           `}
         >
@@ -118,16 +120,16 @@ const RenderedText: React.FC<{
   );
 });
 
-const SentenceReferenceText: React.FC<{
+const StrictReferenceText: React.FC<{
   text: string;
   terms: Term[];
-  matches: StrictSentenceMatch[];
+  matches: StrictReferenceMatch[];
   selectedMatchId: string | null;
   isSourceChinese: boolean;
   activeState: { termId: string; index: number } | null;
   selectedState: { termId: string; index: number } | null;
   linkedTermIds?: Set<string>;
-  onSentenceClick: (match: StrictSentenceMatch) => void;
+  onReferenceClick: (match: StrictReferenceMatch) => void;
   onCopyReference: (e: React.MouseEvent, referenceText: string) => void;
   onTermEnter: (term: Term, index: number) => void;
   onTermLeave: () => void;
@@ -142,7 +144,7 @@ const SentenceReferenceText: React.FC<{
   activeState,
   selectedState,
   linkedTermIds,
-  onSentenceClick,
+  onReferenceClick,
   onCopyReference,
   onTermEnter,
   onTermLeave,
@@ -175,39 +177,53 @@ const SentenceReferenceText: React.FC<{
     }
 
     const isSelected = selectedMatchId === match.id;
+    const isSlogan = match.referenceType === 'slogan';
     const referenceText = isSourceChinese ? match.term.english_term : match.term.chinese_term;
+    const label = isSlogan ? '标语匹配' : '整句匹配';
+    const referenceClasses = isSlogan
+      ? isSelected
+        ? 'border-orange-300 bg-orange-50/80'
+        : 'border-orange-200 bg-orange-50/40 hover:bg-orange-50/70'
+      : isSelected
+        ? 'border-emerald-300 bg-emerald-100/80'
+        : 'border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/60';
+    const labelClasses = isSlogan
+      ? 'border-orange-200 bg-white/70 text-orange-700'
+      : 'border-emerald-200 bg-white/70 text-emerald-700';
+    const cardClasses = isSlogan
+      ? 'border-orange-200 bg-white/90 text-orange-700'
+      : 'border-emerald-200 bg-white/90 text-emerald-700';
+    const buttonClasses = isSlogan
+      ? 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100'
+      : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100';
 
     nodes.push(
       <React.Fragment key={match.id}>
         <span
           role="button"
           tabIndex={0}
-          onClick={() => onSentenceClick(match)}
+          onClick={() => onReferenceClick(match)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              onSentenceClick(match);
+              onReferenceClick(match);
             }
           }}
-          className={`my-0.5 inline-block rounded-lg border px-1.5 py-1 align-baseline transition-colors ${
-            isSelected
-              ? 'border-emerald-300 bg-emerald-100/80'
-              : 'border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/60'
-          } cursor-pointer`}
+          className={`my-0.5 inline-block rounded-lg border px-1.5 py-1 align-baseline transition-colors ${referenceClasses} cursor-pointer`}
         >
-          <span className="mr-1.5 inline-flex rounded-full border border-emerald-200 bg-white/70 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 align-middle">
-            整句匹配
+          <span className={`mr-1.5 inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-bold align-middle ${labelClasses}`}>
+            {label}
           </span>
           {renderChunk(match.text, `sentence_text_${match.id}`)}
         </span>
         {isSelected && (
-          <div className="my-2 rounded-xl border border-emerald-200 bg-white/90 p-3 text-sm shadow-sm">
-            <div className="mb-1 text-xs font-bold text-emerald-700">词库参考译文</div>
+          <div className={`my-2 rounded-xl border p-3 text-sm shadow-sm ${cardClasses}`}>
+            <div className="mb-1 text-xs font-bold">词库参考译文</div>
             <div className="mb-3 text-slate-700">{referenceText}</div>
             <button
               type="button"
               onClick={(e) => onCopyReference(e, referenceText)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors ${buttonClasses}`}
             >
               <Copy className="h-3.5 w-3.5" />
               复制词库译文
@@ -378,18 +394,18 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     });
   }, [inputText, allTerms, isSourceChinese]);
 
-  const strictSentenceMatches = useMemo(() => {
-    return findStrictSentenceMatches(inputText, systemTerms, {
+  const strictReferenceMatches = useMemo(() => {
+    return findStrictReferenceMatches(inputText, systemTerms, {
       mode: isSourceChinese ? 'source' : 'translation'
     });
   }, [inputText, systemTerms, isSourceChinese]);
 
   useEffect(() => {
     if (!selectedSentenceMatchId) return;
-    if (!strictSentenceMatches.some(match => match.id === selectedSentenceMatchId)) {
+    if (!strictReferenceMatches.some(match => match.id === selectedSentenceMatchId)) {
       setSelectedSentenceMatchId(null);
     }
-  }, [selectedSentenceMatchId, strictSentenceMatches]);
+  }, [selectedSentenceMatchId, strictReferenceMatches]);
 
   // Extract detected terms from source analysis to ensure target matches are consistent with source
   const detectedTerms = useMemo(() => {
@@ -548,7 +564,7 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
     onNavigate('dictionary');
   }, [onNavigate, setNavigatedTermId]);
 
-  const handleSentenceClick = useCallback((match: StrictSentenceMatch) => {
+  const handleReferenceClick = useCallback((match: StrictReferenceMatch) => {
     setActiveTooltipTerm(null);
     setTooltipAnchor(null);
     setSelectedSentenceMatchId(current => current === match.id ? null : match.id);
@@ -789,17 +805,17 @@ export const TranslationAssistant: React.FC<TranslationAssistantProps> = ({ onNa
                 />
               ) : (
                 <div className="p-6 h-full w-full overflow-auto">
-                  {strictSentenceMatches.length > 0 ? (
-                    <SentenceReferenceText
+                  {strictReferenceMatches.length > 0 ? (
+                    <StrictReferenceText
                       text={inputText}
                       terms={allTerms}
-                      matches={strictSentenceMatches}
+                      matches={strictReferenceMatches}
                       selectedMatchId={selectedSentenceMatchId}
                       isSourceChinese={isSourceChinese}
                       activeState={hoveredState}
                       selectedState={activeTooltipTerm ? { termId: activeTooltipTerm.id, index: 0 } : null}
                       linkedTermIds={transMode === 'professional' ? translatedTermIds : undefined}
-                      onSentenceClick={handleSentenceClick}
+                      onReferenceClick={handleReferenceClick}
                       onCopyReference={handleCopySentenceReference}
                       onTermEnter={handleTermEnter}
                       onTermLeave={handleTermLeave}
