@@ -1,158 +1,210 @@
 # MediTerm Glass Pro
 
-> 医学术语翻译工具｜Medical terminology translator  
-> 一个面向医疗器械、重症医学、产品资料翻译和内部术语管理的本地优先型术语工具。
+> 面向医疗器械与医学内容工作的本地优先型术语库、双语翻译助手和批量处理工具。
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)
-![LocalStorage](https://img.shields.io/badge/Storage-LocalStorage-blue)
-![License](https://img.shields.io/badge/License-TBD-lightgrey)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-CDN-06B6D4?logo=tailwindcss&logoColor=white)
+![Tesseract.js](https://img.shields.io/badge/OCR-Tesseract.js-5A67D8)
+![License](https://img.shields.io/badge/License-Not_specified-lightgrey)
 
 ## 在线体验
 
-- 主域名：[www.meditermglasspro.icu](https://www.meditermglasspro.icu/)
-- Vercel 备用访问：[medical-term-translator.vercel.app](https://medical-term-translator.vercel.app/)
-- GitHub 仓库：[6499love/medical-term-translator](https://github.com/6499love/medical-term-translator)
+- 产品网站：[www.meditermglasspro.icu](https://www.meditermglasspro.icu/)
+- GitHub 仓库：[6499love/medicalterm--plus](https://github.com/6499love/medicalterm--plus)
 
 ## 项目简介
 
-**MediTerm Glass Pro** 是一个医学术语翻译和术语管理工具。
+**MediTerm Glass Pro** 是一个面向医疗器械、重症医学和专业资料制作场景的中英双语术语工具。
 
-它适合用于医疗器械产品资料、英文彩页、说明书、培训材料、PPT、视频脚本和市场内容制作，帮助用户把常用医学术语、产品术语和内部标准译法沉淀成可复用的词库。
+它不只是一个“输入一句、翻译一句”的普通翻译器，更像是：
 
-它不是一个“万能 AI 翻译器”，更像一个**自己的医学术语本 + 翻译记忆库**：
+- 一本可以持续补充的医学术语本；
+- 一套帮助团队统一译法的翻译记忆库；
+- 一个优先使用专业词库、再调用 AI 的翻译助手。
 
-- 普通翻译工具像“临时问路”，每次都要重新解释上下文。
-- MediTerm Glass Pro 像“自己的术语本”，把固定译法保存下来，下次直接复用。
+普通翻译工具像是每次临时问路；MediTerm Glass Pro 更像是先把常用路线画进地图，下一次直接沿着统一路线走。
 
 ## 为什么做这个项目
 
-在医疗器械资料翻译中，真正麻烦的往往不是整段文字翻不出来，而是：
+医疗器械资料翻译的难点，往往不是完全翻不出来，而是同一个术语在不同材料中反复变化：
 
-- 同一个术语在不同资料里翻译不一致
-- 产品功能、临床场景、招标参数里的表达容易写错
-- 医学术语、产品术语、公司内部叫法混在一起
-- 查完词后没有沉淀，下次还要重新查
-- 英文彩页、PPT、说明书、视频脚本之间缺少统一术语库
+- 彩页、说明书、PPT 和视频脚本中的译法不一致；
+- 医学术语、产品功能名和公司内部叫法混在一起；
+- AI 翻译语言流畅，但可能没有遵循既定术语；
+- 查过的词没有沉淀，下次仍要重新确认；
+- 长文本中很难快速发现哪些内容已经命中词库；
+- Excel、截图和批量术语表需要重复整理。
 
-这个项目的目标是帮助医疗器械相关团队更稳定地管理中英文术语，减少重复查询和重复修正。
+本项目希望把“查词、翻译、校对、沉淀词库”放进同一套工作流中。
 
 ## 核心功能
 
-### 1. 医学术语快速查询
+| 模块 | 主要能力 |
+|---|---|
+| 翻译助手 | 中英自动识别、快速模式、专业模式、术语表约束、长文本分段、Token 估算 |
+| 分析模式 | 原文与译文术语高亮、双向联动、点击查看对应译法、双击进入词典 |
+| 整句匹配 | 对 `term_type === "句子"` 的系统词条进行独立整句匹配，并显示词库参考译文 |
+| 术语查询 | 中文、英文、拼音、拼音首字母和模糊搜索 |
+| 批量翻译 | 多行处理、词库优先、AI 补充、Excel 导入与导出 |
+| 图片 OCR | 上传、拖拽或粘贴图片，识别中英文文字后进入批量翻译 |
+| 词库管理 | 系统词库浏览、产品筛选、内容类型筛选、自定义词条增删改 |
+| 数据备份 | 用户词典 JSON 导入与导出 |
+| 辅助功能 | 收藏、历史记录、发音、一键复制、自动复制设置 |
 
-支持输入：
+### 1. AI 翻译助手
 
-- 中文术语
-- 英文术语
-- 拼音
-- 拼音首字母
-- 模糊关键词
+翻译助手会先扫描输入文字中的词库术语，再把推荐译法作为术语表交给 AI。
 
-系统会根据系统词库和用户词库进行匹配，并展示推荐译法。
+支持两种模式：
 
-### 2. 系统词库
+- **快速模式**：完成一次术语约束翻译，速度更快、调用次数更少；
+- **专业模式**：依次进行初译、审校、润色和术语对齐，更适合重要资料。
 
-项目内置医学相关术语词库，适合沉淀以下内容：
+当文字较长时，系统会自动分段处理，并显示大致 Token 估算。
 
-- 医疗器械术语
-- 重症医学术语
-- 电动病床功能术语
-- 血气分析相关术语
-- 呼吸治疗相关术语
-- 微循环相关术语
-- 产品宣传资料常用表达
-- 招标参数与说明书常见表达
+### 2. 双语术语联动高亮
 
-### 3. 用户自定义词典
+进入分析模式后，系统会同时检查原文和译文：
 
-用户可以添加自己的术语，包括：
+- 完整术语命中后显示高亮；
+- 可使用 `coreCN` / `coreEN` 识别核心词；
+- 点击术语可查看对应译法；
+- 原文与译文中的同一术语可以联动；
+- 双击术语可跳转到词典详情；
+- `highlight_enabled: false` 的词条仍可搜索，但不会参与正文高亮。
 
-- 中文术语
-- 英文译法
-- 完整拼音
-- 拼音首字母
-- 分类
-- 备注 / 用法说明
+### 3. 整句严格匹配
 
-自定义术语保存在浏览器本地，适合逐步建立自己的专业词库。
+系统会把整句匹配与普通术语高亮分开处理。
 
-### 4. 批量翻译
+当输入中的完整句子命中系统词库中 `term_type: "句子"` 的条目时：
 
-支持多行术语批量查询，每行一个词条。
+- 整句显示浅绿色背景；
+- 显示“整句匹配”标记；
+- 点击后展开词库参考译文；
+- 可一键复制词库译文；
+- 句子内部原有的术语高亮仍然保留。
 
-适合处理：
+匹配时会忽略大小写、空格、常见标点以及全角/半角差异，但仍要求内容位于完整句子边界内。
 
-- 产品参数表
-- 招标参数清单
-- 彩页术语表
-- 说明书字段
-- PPT 页面固定词汇
-- 视频脚本术语列表
+### 4. 医学术语查询
 
-### 5. 收藏与历史记录
+支持以下检索方式：
 
-支持收藏高频术语，并保存近期查询历史，方便反复使用常见表达。
+- 中文术语；
+- 英文术语；
+- 完整拼音；
+- 拼音首字母；
+- 别名和相关表达；
+- 模糊关键词。
 
-### 6. 发音与复制
+查询结果会区分系统词库与用户词库，并展示推荐译法、分类、使用场景、词根分析和误译提醒等信息。
 
-支持英文发音和一键复制结果，方便用于英文资料编写和校对。
+### 5. 批量翻译与 Excel
 
-### 7. 本地优先
+批量翻译适合处理产品参数表、术语清单、PPT 固定表达和说明书字段。
 
-用户自定义词典、收藏、历史记录和设置保存在浏览器本地。
+处理逻辑为：
 
-当前核心逻辑不依赖后端数据库，适合个人或小团队快速使用。
+1. 优先使用系统词库和用户词库；
+2. 未命中的内容在配置 API 后交给 AI 翻译；
+3. 保留每一条结果的来源；
+4. 支持导出为 `.xlsx` 文件。
 
-> 注意：如果清除浏览器缓存、更换浏览器或更换设备，本地保存的数据可能丢失。建议定期导出或备份重要词库。
+也可以直接导入 Excel，系统会读取第一个工作表的第一列内容。
 
-## 适用人群
+### 6. 图片 OCR
 
-MediTerm Glass Pro 适合：
+批量翻译页面集成了 Tesseract.js，可识别中文简体和英文。
 
-- 医疗器械市场人员
-- 产品经理 / 产品工程师
-- 海外资料翻译人员
-- 医学内容编辑
-- 销售培训资料制作人员
-- 需要统一中英文术语的团队
+支持：
 
-## 典型使用场景
+- 选择本地图片；
+- 将图片拖入页面；
+- 从剪贴板直接粘贴截图；
+- 预览并修改识别结果；
+- 将识别文字加入批量翻译输入框。
 
-- 产品彩页英文版制作
-- 医疗器械说明书术语校对
-- 招标参数中英文整理
-- PPT / 视频脚本术语统一
-- 公司内部术语库沉淀
-- 医学器械相关网页、Demo、培训材料制作
-- 海外市场内容制作
+支持的常见格式包括 PNG、JPG、JPEG 和 WebP。
+
+### 7. 系统词库与用户词典
+
+当前系统词库采用统一入口管理，并包含通用词库以及以下专业方向：
+
+- 病床；
+- 高流量与压缩机；
+- 微循环；
+- 其他医疗器械与医学表达。
+
+系统词条可按产品和内容类型筛选。内容类型包括：
+
+- 术语；
+- 词语 / 短语；
+- 句子；
+- 标语；
+- 参数。
+
+用户可以创建自己的词条，并通过 JSON 文件进行导入、导出和备份。
+
+## 支持的 AI 服务
+
+| 服务 | 默认配置 |
+|---|---|
+| Google Gemini | `gemini-2.5-flash` |
+| 智谱 GLM | `glm-4-flash` |
+| 百度千帆 | `ernie-4.0-8k` |
+| OpenAI Compatible | 自定义 Base URL 与模型名称 |
+
+> 不配置 API Key 时，术语查询、词典管理、收藏、历史记录、OCR 和词库匹配仍可使用；AI 翻译相关功能不可用。
+
+## 数据与隐私
+
+项目采用本地优先设计：
+
+- 用户词典保存在浏览器 LocalStorage；
+- 收藏和历史记录保存在浏览器 LocalStorage；
+- 翻译助手输入内容可保存在当前浏览器；
+- API 配置由用户自行填写；
+- 当前不依赖后端数据库，也不需要注册账号。
+
+需要注意：
+
+- 清除浏览器数据、更换浏览器或更换设备后，本地数据不会自动同步；
+- 建议定期导出用户词典；
+- 使用 AI 翻译时，原文会发送给你选择的第三方模型服务；
+- 不建议在公共电脑上保存 API Key；
+- 前端项目无法安全隐藏部署时写入的密钥，不要把生产密钥直接打包进公开网站。
 
 ## 技术栈
 
-- React
-- TypeScript
-- Vite
-- Fuse.js
+- React 19
+- TypeScript 5.8
+- Vite 6
+- Tailwind CSS（CDN）
 - Zustand
+- Fuse.js
+- pinyin-pro
+- Tesseract.js
+- SheetJS / XLSX
 - Lucide React
-- LocalStorage
+- Google GenAI SDK
 - Web Speech API
+- LocalStorage
 
 ## 本地运行
 
 ### 环境要求
 
-请先安装：
-
-- Node.js
+- Node.js 18 或更高版本
 - npm
 
-### 1. 克隆项目
+### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/6499love/medical-term-translator.git
-cd medical-term-translator
+git clone https://github.com/6499love/medicalterm--plus.git
+cd medicalterm--plus
 ```
 
 ### 2. 安装依赖
@@ -167,12 +219,10 @@ npm install
 npm run dev
 ```
 
-启动后，在浏览器中打开终端提示的本地地址。
+默认开发地址：
 
-常见地址为：
-
-```bash
-http://localhost:5173
+```text
+http://localhost:3000
 ```
 
 ### 4. 构建生产版本
@@ -187,138 +237,156 @@ npm run build
 npm run preview
 ```
 
-## 词库数据结构
+## Gemini 本地环境变量（可选）
 
-项目中的术语数据围绕统一结构设计。
+本地开发时，可以在项目根目录创建 `.env.local`：
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+该配置会被打包到前端代码中，只适合个人本地开发或受控环境。公开部署时，请不要通过这种方式写入需要保密的生产密钥。
+
+也可以直接在应用的“设置”页面填写模型服务和 API Key。
+
+## 项目结构
+
+```text
+medicalterm--plus/
+├─ components/                 # 页面与交互组件
+│  ├─ TranslationAssistant.tsx # AI 翻译与分析模式
+│  ├─ Translator.tsx           # 单条术语查询
+│  ├─ BatchTranslation.tsx     # 批量翻译、Excel 与 OCR
+│  └─ UserDictionary.tsx       # 系统词库和用户词典
+├─ data/terms/                 # 分类词库
+│  ├─ index.ts                 # 系统词库统一入口
+│  ├─ bed_terms.ts
+│  ├─ humidifier_terms.ts
+│  └─ microcirculation_terms.ts
+├─ services/
+│  ├─ search.ts                # 检索与模糊匹配
+│  ├─ textProcessing.ts        # 高亮、整句匹配与翻译流程
+│  ├─ llm.ts                   # 模型服务适配
+│  └─ translationChunkUtils.ts # Token 估算与长文本分段
+├─ store.ts                    # Zustand 状态与本地持久化
+├─ types.ts                    # 类型定义
+├─ App.tsx                     # 页面路由入口
+└─ vite.config.ts
+```
+
+## 词条数据结构
 
 示例：
 
-```json
+```ts
 {
-  "id": "term_001",
-  "chinese_term": "一键PLR位",
-  "english_term": "One-button standard PLR position",
-  "pinyin_full": "yi jian PLR wei",
-  "pinyin_first": "yjplrw",
-  "category": "Electric Hospital Bed",
-  "note": "用于描述病床一键完成被动抬腿体位。",
-  "usage": "适用于产品彩页、功能说明、培训材料。",
-  "root_analysis": "PLR = Passive Leg Raising",
-  "mistranslation": [
-    "One-key PLR location",
-    "PLR place"
-  ],
-  "source": "system",
-  "tags": ["PLR", "hospital bed"]
+  id: "bed_sentence_001",
+  chinese_term: "将床头抬高至三十度。",
+  english_term: "Elevate the head of the bed to 30 degrees.",
+  pinyin_full: "jiang chuang tou tai gao zhi san shi du",
+  pinyin_first: "jcttgzssd",
+  category: "Electric Hospital Bed",
+  note: "用于病床体位调节相关资料。",
+  usage_scenario: "产品彩页、操作指南、培训材料",
+  root_analysis: "",
+  mistranslation_warning: [],
+  related_terms: [],
+  source: "system",
+  product: "病床",
+  term_type: "句子",
+  coreCN: "床头抬高",
+  coreEN: "elevate the head of the bed",
+  highlight_enabled: true
 }
 ```
 
-字段说明：
+主要字段说明：
 
 | 字段 | 说明 |
 |---|---|
-| `id` | 术语 ID |
-| `chinese_term` | 中文术语 |
-| `english_term` | 推荐英文译法 |
-| `pinyin_full` | 完整拼音，用于拼音搜索 |
-| `pinyin_first` | 拼音首字母，用于快速检索 |
-| `category` | 术语分类 |
+| `chinese_term` | 中文标准表达 |
+| `english_term` | 英文标准表达 |
+| `pinyin_full` | 完整拼音 |
+| `pinyin_first` | 拼音首字母 |
+| `category` | 专业分类 |
 | `note` | 备注说明 |
-| `usage` | 使用场景 |
-| `root_analysis` | 词根、缩写或术语拆解 |
-| `mistranslation` | 不推荐使用的错误译法 |
-| `source` | 术语来源：系统词库或用户词库 |
-| `tags` | 标签 |
+| `usage_scenario` | 推荐使用场景 |
+| `root_analysis` | 词根、缩写或表达拆解 |
+| `mistranslation_warning` | 不推荐使用的误译 |
+| `related_terms` | 别名或相关表达 |
+| `product` | 所属产品线 |
+| `term_type` | 术语、词语、句子、标语或参数 |
+| `coreCN` / `coreEN` | 用于核心词识别 |
+| `highlight_enabled` | 是否参与正文高亮 |
+| `source` | 系统词库或用户词库 |
 
-## 与普通翻译工具的区别
+## 可用命令
 
-| 普通翻译工具 | MediTerm Glass Pro |
+| 命令 | 作用 |
 |---|---|
-| 适合临时翻译句子 | 适合沉淀固定术语 |
-| 每次都要重新输入上下文 | 可以长期复用标准译法 |
-| 结果可能不稳定 | 更强调术语一致性 |
-| 不适合管理内部叫法 | 支持用户自定义词典 |
-| 更像一次性工具 | 更像个人/团队术语库 |
+| `npm run dev` | 启动开发服务器 |
+| `npm run build` | 构建生产版本 |
+| `npm run preview` | 本地预览构建结果 |
 
-## 隐私说明
+## 当前限制
 
-MediTerm Glass Pro 当前采用本地优先设计：
-
-- 用户词典保存在浏览器 LocalStorage
-- 查询历史保存在浏览器 LocalStorage
-- 收藏记录保存在浏览器 LocalStorage
-- 设置项保存在浏览器 LocalStorage
-- 不需要登录
-- 不需要后端数据库
-
-请注意：
-
-- 清除浏览器缓存可能会删除本地数据
-- 更换浏览器后，本地词库不会自动同步
-- 正式团队协作场景建议增加导入、导出、版本管理和权限管理能力
-
-## 注意事项
-
-本项目用于医学术语查询、资料翻译辅助和内部术语管理，不构成：
-
-- 医学建议
-- 临床诊断意见
-- 法规注册意见
-- 正式认证翻译
-- 产品合规声明
-
-涉及以下内容时，建议由专业人员复核：
-
-- 注册资料
-- 临床文件
-- 法规文件
-- 医疗声明
-- 产品适应症
-- 风险警示
-- 对外发布的正式英文材料
+- 用户数据仅保存在当前浏览器，暂不支持跨设备同步；
+- OCR 结果会受到截图清晰度、排版和字体影响；
+- 第三方模型接口可能受到配额、网络、CORS 和服务可用性的影响；
+- AI 翻译不能替代医学、法规和母语专业人员复核；
+- 当前仓库尚未配置自动化测试和完整 CI 流程。
 
 ## Roadmap
 
-后续可继续扩展：
-
-- [ ] 增加更多医学器械分类词库
-- [ ] 支持 Excel / CSV 批量导入
-- [ ] 支持词库导出和备份
-- [ ] 支持术语审核流程
-- [ ] 支持术语版本管理
-- [ ] 支持长文本中的术语识别与高亮
-- [ ] 支持中英双语对照导出
-- [ ] 支持团队共享词库
-- [ ] 支持可选 AI 翻译能力，用于非词库内容辅助翻译
+- [x] 中英文术语与拼音检索
+- [x] 用户词典与本地持久化
+- [x] 收藏和历史记录
+- [x] AI 快速翻译与专业翻译
+- [x] 原文和译文术语联动高亮
+- [x] 整句严格匹配与词库参考译文
+- [x] Excel 批量导入与结果导出
+- [x] 图片 OCR
+- [x] 分类词库统一入口
+- [ ] 系统词条审核、版本记录和变更日志
+- [ ] CSV / Excel 词库批量导入
+- [ ] 团队共享词库与权限管理
+- [ ] 跨设备同步与云端备份
+- [ ] 更完善的 OCR 裁剪、表格识别和结果校正
+- [ ] 自动化测试、Lint 与 GitHub Actions
+- [ ] 更安全的服务端 API 代理方案
 
 ## 贡献方式
 
 欢迎通过 Issue 或 Pull Request 提交：
 
-- 医学术语补充
-- 错误译法修正
-- 功能建议
-- UI 优化建议
-- Bug 反馈
-- 文档改进
+- 新的医学或医疗器械词条；
+- 现有译法修正；
+- 误译提醒和使用场景补充；
+- Bug 反馈；
+- UI 与交互优化；
+- 文档改进。
 
-提交术语时，建议尽量包含：
+提交词条时，建议尽量提供：
 
-- 中文术语
-- 推荐英文译法
-- 所属分类
-- 使用场景
-- 是否有容易误译的表达
+- 中文标准表达；
+- 推荐英文译法；
+- 所属产品和分类；
+- 内容类型；
+- 使用场景；
+- 容易出现的错误译法；
+- 可供核对的可靠来源。
+
+## 医疗免责声明
+
+本项目用于医学术语查询、资料翻译辅助和内部术语管理，不构成医学建议、临床诊断、法规注册意见、正式认证翻译或产品合规声明。
+
+注册资料、临床文件、风险警示、适应症和对外发布的正式英文材料，应由具备相应资质或专业背景的人员复核。
 
 ## License
 
-当前项目尚未明确开源协议。
+当前仓库尚未包含明确的 `LICENSE` 文件。
 
-如果你希望正式开源，建议后续补充 `LICENSE` 文件。常见选择包括：
-
-- MIT License：更开放，适合工具类项目
-- Apache License 2.0：更重视专利授权说明
-- GPL：更强调开源传染性
+在正式添加开源许可证之前，请勿默认本项目可以被自由复制、商用或重新分发。若计划开放协作，可根据项目目标选择 MIT、Apache-2.0 或其他合适的许可证。
 
 ## Author
 
