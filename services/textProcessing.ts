@@ -61,6 +61,12 @@ const isLocalMatchTerm = (term: Term): term is Term & { term_type?: LocalTermTyp
   return type === '术语' || type === '词语' || type === '参数';
 };
 
+const isSingleChineseCharacter = (value: string) => /^\p{Script=Han}$/u.test(value.trim());
+
+const canUseLocalPattern = (term: Term, value: string) => {
+  return term.allow_single_character_match === true || !isSingleChineseCharacter(value);
+};
+
 const isStrictReferenceTerm = (term: Term): term is Term & { term_type: StrictReferenceTermType } => {
   const type = getTermType(term);
   return type === '句子' || type === '标语';
@@ -857,11 +863,14 @@ export const buildTermSegments = (
 
       // 1. Setup Strong Match Keys
       const primary = mode === 'source' ? term.chinese_term : term.english_term;
-      if (primary && !strongMap.has(normalizeKey(primary))) strongMap.set(normalizeKey(primary), term);
+      if (primary && canUseLocalPattern(term, primary) && !strongMap.has(normalizeKey(primary))) {
+        strongMap.set(normalizeKey(primary), term);
+      }
       
       // Aliases are treated as Strong matches
       if (term.related_terms && term.related_terms.length > 0) {
           term.related_terms.forEach(alias => {
+            if (!canUseLocalPattern(term, alias)) return;
             const aliasKey = normalizeKey(alias);
             if (!strongMap.has(aliasKey)) strongMap.set(aliasKey, term);
           });
@@ -869,7 +878,7 @@ export const buildTermSegments = (
 
       // 2. Setup Weak Match Keys (Core Terms)
       const core = mode === 'source' ? term.coreCN : term.coreEN;
-      if (core) {
+      if (core && canUseLocalPattern(term, core)) {
           const coreKey = normalizeKey(core);
           // Only add to weak map if it's not already a strong key (prevent redundancy)
           if (!strongMap.has(coreKey)) {

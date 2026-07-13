@@ -26,6 +26,7 @@ export interface Term {
 
   // If false, the term is manually excluded from every analysis-mode match.
   highlight_enabled?: boolean;
+  allow_single_character_match?: boolean;
   highlight_weight?: number;
   term_type?: '术语' | '词语' | '句子' | '标语' | '参数';
 }
