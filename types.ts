@@ -52,9 +52,11 @@ export interface AppSettings {
   rememberApiKey: boolean; // New: Whether to persist API key
 }
 
+export type LLMProvider = 'gemini' | 'openai-compatible' | 'glm' | 'baidu';
+
 export interface AuthConfig {
   userName: string;
-  provider: 'gemini' | 'openai-compatible' | 'glm' | 'baidu';
+  provider: LLMProvider;
   apiKey: string;
   baseUrl?: string;
   model?: string;
