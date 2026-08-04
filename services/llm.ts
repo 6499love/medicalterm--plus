@@ -1,8 +1,9 @@
 
 import { GoogleGenAI } from "@google/genai";
+import type { LLMProvider } from '../types';
 
 export interface LLMConfig {
-  provider: 'gemini' | 'openai-compatible' | 'glm';
+  provider: LLMProvider;
   apiKey: string;
   baseUrl?: string;
   model?: string;
