@@ -44,7 +44,7 @@ export const SelectionPopup: React.FC<SelectionPopupProps> = ({ onTranslate }) =
       }
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
+    const handleMouseUp = (e: MouseEvent | KeyboardEvent) => {
        if (popupRef.current && popupRef.current.contains(e.target as Node)) {
          return;
        }
