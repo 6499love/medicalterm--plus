@@ -2,6 +2,13 @@
 import { GoogleGenAI } from "@google/genai";
 import type { LLMProvider } from '../types';
 
+export const DEFAULT_LLM_MODELS: Record<LLMProvider, string> = {
+  glm: 'glm-4-flash',
+  baidu: 'ernie-4.0-8k',
+  gemini: 'gemini-2.5-flash',
+  'openai-compatible': 'gpt-3.5-turbo',
+};
+
 export interface LLMConfig {
   provider: LLMProvider;
   apiKey: string;
@@ -60,7 +67,7 @@ export const getCompletion = async (
         const ai = new GoogleGenAI({ apiKey });
         
         const response = await ai.models.generateContent({
-          model: config.model || 'gemini-2.5-flash',
+          model: config.model || DEFAULT_LLM_MODELS.gemini,
           contents: userPrompt,
           config: systemPrompt ? { systemInstruction: systemPrompt } : undefined
         });
@@ -76,16 +83,16 @@ export const getCompletion = async (
         // Apply defaults based on provider
         if (config.provider === 'glm') {
           baseUrl = baseUrl || 'https://open.bigmodel.cn/api/paas/v4';
-          model = model || 'glm-4-flash';
+          model = model || DEFAULT_LLM_MODELS.glm;
         } else if (config.provider === 'baidu') {
           baseUrl = baseUrl || 'https://qianfan.baidubce.com/v2';
-          model = model || 'ernie-4.0-8k';
+          model = model || DEFAULT_LLM_MODELS.baidu;
         } else {
           // Generic OpenAI defaults
           baseUrl = baseUrl 
             ? baseUrl.replace(/\/+$/, '') 
             : 'https://api.openai.com/v1';
-          model = model || 'gpt-3.5-turbo';
+          model = model || DEFAULT_LLM_MODELS['openai-compatible'];
         }
         
         // Ensure URL ends correctly

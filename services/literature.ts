@@ -55,10 +55,12 @@ export class LiteratureResponseError extends Error {}
 export function literatureErrorMessage(error: unknown): string {
   if (error instanceof LiteratureResponseError) return error.message;
   const message = error instanceof Error ? error.message : '';
+  if (/"code"\s*:\s*"invalid_model"/i.test(message)) return '模型不存在或当前账号无权使用。请在设置中核对模型 ID，并使用该 API 账号已开通的模型。';
   const status = message.match(/API Error \((\d{3})\)/)?.[1];
   if (status === '401') return '模型接口拒绝认证（401）。配置已保存，但 API Key 未被接受，请检查密钥及所属平台。';
   if (status === '403') return '模型接口拒绝访问（403）。请检查账号或模型使用权限。';
   if (status === '404') return '模型接口返回 404。请检查接口地址和模型名称。';
+  if (status === '504') return '请求等待超时（504），可能来自网站转发服务或模型平台。不能据此判断密钥错误；请先用同一模型测试一句短文字。';
   if (status === '429' || message === 'QUOTA_EXCEEDED') return '模型调用达到限制。请检查平台额度或调用频率，稍后再试。';
   if (status) return `模型接口返回错误（${status}）。请检查平台服务状态及请求配置。`;
   if (/Failed to fetch|NetworkError|Load failed/i.test(message)) return '浏览器未能完成模型请求。可能是网络或接口跨域限制；配置已保存不代表连接成功。';
