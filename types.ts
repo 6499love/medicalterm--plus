@@ -62,4 +62,4 @@ export interface AuthConfig {
   model?: string;
 }
 
-export type PageRoute = 'translate' | 'batch' | 'dictionary' | 'assistant' | 'history' | 'favorites' | 'settings';
+export type PageRoute = 'translate' | 'batch' | 'dictionary' | 'assistant' | 'history' | 'favorites' | 'settings' | 'literature';

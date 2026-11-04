@@ -33,6 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
     { id: 'translate', label: t('NAV_TRANSLATE'), icon: <Search className="w-5 h-5" /> },
     { id: 'dictionary', label: t('NAV_DICTIONARY'), icon: <Book className="w-5 h-5" /> },
     { id: 'batch', label: t('NAV_BATCH'), icon: <Layers className="w-5 h-5" /> },
+    { id: 'literature', label: language === 'zh-CN' ? '文献翻译 · 试验' : 'PDF reader · Preview', icon: <Book className="w-5 h-5" /> },
     { id: 'favorites', label: t('NAV_SAVED'), icon: <Star className="w-5 h-5" /> },
     { id: 'history', label: t('NAV_HISTORY'), icon: <HistoryIcon className="w-5 h-5" /> },
     { id: 'settings', label: t('NAV_SETTINGS'), icon: <SettingsIcon className="w-5 h-5" /> },
@@ -72,6 +73,7 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
         {navItems.map((item) => (
           <button
             key={item.id}
+            aria-label={item.label}
             onClick={() => onNavigate(item.id)}
             className={`p-3 rounded-xl transition-all duration-200 whitespace-nowrap shrink-0 ${
               activePage === item.id
@@ -130,7 +132,7 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
 
         <div className="mt-auto p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
           <p className="text-xs text-blue-900/60 leading-relaxed">
-            {t('FOOTER_NOTE')}
+            {activePage === 'literature' ? 'PDF 在本地读取；翻译时会将当前页文字发送给设置中的模型服务。' : t('FOOTER_NOTE')}
           </p>
         </div>
       </aside>
