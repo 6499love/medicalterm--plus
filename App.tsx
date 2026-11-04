@@ -12,6 +12,8 @@ import { speakText } from './services/tts';
 import { useTranslation } from './services/i18n';
 import { SelectionPopup } from './components/SelectionPopup';
 
+const LiteratureTranslation = React.lazy(() => import('./components/LiteratureTranslation'));
+
 const HistoryPage = () => {
   const { history, clearHistory } = useStore();
   const { t } = useTranslation();
@@ -279,7 +281,7 @@ const SettingsPage = () => {
                 <CheckCircle className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
-                <p className="font-bold text-emerald-800">{t('STATUS_CONNECTED')}</p>
+                <p className="font-bold text-emerald-800">{t('STATUS_CONFIGURED')}</p>
                 <p className="text-xs text-emerald-600">{auth.provider.toUpperCase()} • {auth.userName}</p>
               </div>
             </div>
@@ -359,6 +361,7 @@ export default function App() {
       {activePage === 'translate' && <Translator initialQuery={popupQuery} onQueryConsumed={handlePopupConsumed} />}
       {activePage === 'assistant' && <TranslationAssistant onNavigate={setActivePage} />}
       {activePage === 'batch' && <BatchTranslation />}
+      {activePage === 'literature' && <React.Suspense fallback={<p>正在打开文献阅读器…</p>}><LiteratureTranslation onNavigate={setActivePage} /></React.Suspense>}
       {activePage === 'dictionary' && <UserDictionary />}
       {activePage === 'favorites' && <FavoritesPage onNavigate={setActivePage} />}
       {activePage === 'history' && <HistoryPage />}
