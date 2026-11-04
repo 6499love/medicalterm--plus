@@ -90,8 +90,8 @@ export const getCompletion = async (
         
         // Ensure URL ends correctly
         baseUrl = baseUrl.replace(/\/+$/, '');
-        // Local development uses a same-origin proxy; custom endpoints remain explicit.
-        const url = import.meta.env.DEV && config.provider === 'glm' && baseUrl === 'https://open.bigmodel.cn/api/paas/v4'
+        // Vite and Vercel provide the same fixed GLM route; custom endpoints remain explicit.
+        const url = config.provider === 'glm' && baseUrl === 'https://open.bigmodel.cn/api/paas/v4'
           ? '/api/glm/chat/completions'
           : `${baseUrl}/chat/completions`;
 
