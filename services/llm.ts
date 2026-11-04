@@ -90,7 +90,10 @@ export const getCompletion = async (
         
         // Ensure URL ends correctly
         baseUrl = baseUrl.replace(/\/+$/, '');
-        const url = `${baseUrl}/chat/completions`;
+        // Local development uses a same-origin proxy; custom endpoints remain explicit.
+        const url = import.meta.env.DEV && config.provider === 'glm' && baseUrl === 'https://open.bigmodel.cn/api/paas/v4'
+          ? '/api/glm/chat/completions'
+          : `${baseUrl}/chat/completions`;
 
         const messages = [];
         if (systemPrompt) {
