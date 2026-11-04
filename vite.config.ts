@@ -8,6 +8,14 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          '^/api/glm/chat/completions$': {
+            target: 'https://open.bigmodel.cn',
+            changeOrigin: true,
+            rewrite: () => '/api/paas/v4/chat/completions',
+            proxyTimeout: 120000,
+          },
+        },
       },
       plugins: [react()],
       define: {

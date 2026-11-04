@@ -4,6 +4,11 @@ import { groupPdfLines, parseLiteratureResponse, literatureErrorMessage } from '
 const line = (text: string, x: number, y: number) => ({ text, x, y, width: 180, height: 12, fontSize: 10 });
 
 describe('literature PDF translation boundaries', () => {
+  it('treats Baidu invalid_model as a model access error even when HTTP is 401', () => {
+    const message = literatureErrorMessage(new Error('BAIDU API Error (401): {"error":{"code":"invalid_model","message":"模型不存在或您无法访问。"}}'));
+    expect(message).toContain('模型不存在');
+    expect(message).not.toContain('密钥');
+  });
   it('distinguishes an accepted response with invalid JSON from authentication failure', () => {
     const blocks = groupPdfLines([line('One', 40, 100)]);
     try { parseLiteratureResponse('Not JSON', blocks); }

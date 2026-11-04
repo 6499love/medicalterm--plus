@@ -11,6 +11,7 @@ import { fetchSystemTerms } from './services/search';
 import { speakText } from './services/tts';
 import { useTranslation } from './services/i18n';
 import { SelectionPopup } from './components/SelectionPopup';
+import { DEFAULT_LLM_MODELS } from './services/llm';
 
 const LiteratureTranslation = React.lazy(() => import('./components/LiteratureTranslation'));
 
@@ -275,6 +276,7 @@ const SettingsPage = () => {
             </p>
           </div>
         ) : (
+          <div className="space-y-4">
           <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 p-4 rounded-xl">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
@@ -283,6 +285,7 @@ const SettingsPage = () => {
               <div>
                 <p className="font-bold text-emerald-800">{t('STATUS_CONFIGURED')}</p>
                 <p className="text-xs text-emerald-600">{auth.provider.toUpperCase()} • {auth.userName}</p>
+                <p className="text-xs text-slate-600 mt-1 break-all">{t('SET_ACTIVE_MODEL')}: {auth.model || DEFAULT_LLM_MODELS[auth.provider]}</p>
               </div>
             </div>
             <button 
@@ -291,6 +294,19 @@ const SettingsPage = () => {
             >
               <LogOut className="w-4 h-4" /> {t('BTN_LOGOUT')}
             </button>
+          </div>
+          <div>
+            <label htmlFor="saved-model-id" className="block text-sm font-medium text-slate-700 mb-1">{t('SET_MODEL')}</label>
+            <div className="flex flex-wrap gap-2">
+              <input id="saved-model-id" type="text" value={form.model} placeholder={DEFAULT_LLM_MODELS[auth.provider]}
+                onChange={event => setForm({ ...form, model: event.target.value })}
+                className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none" />
+              <button onClick={() => setAuth({ ...auth, model: form.model.trim() })}
+                disabled={form.model.trim() === (auth.model || '')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl disabled:opacity-40">{t('SET_SAVE_MODEL')}</button>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">{t('SET_MODEL_ACCESS_NOTE')}</p>
+          </div>
           </div>
         )}
       </div>
