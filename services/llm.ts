@@ -1,5 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
+import { resolveSiliconFlowModel } from './siliconflow';
 import type { LLMProvider } from '../types';
 
 export const DEFAULT_LLM_MODELS: Record<LLMProvider, string> = {
@@ -52,9 +53,8 @@ export const getCompletion = async (
     throw new Error('API Key is required. Please configure it in Settings.');
   }
 
-  if (config.provider === 'siliconflow' && !config.model?.trim()) {
-    throw new Error('请在设置中填写硅基流动模型 ID / SiliconFlow model ID is required.');
-  }
+  const siliconFlowModel = config.provider === 'siliconflow'
+    ? await resolveSiliconFlowModel(apiKey, config.model) : undefined;
 
   const MAX_RETRIES = 3;
   let lastError: any;
@@ -90,7 +90,7 @@ export const getCompletion = async (
           model = model || DEFAULT_LLM_MODELS.glm;
         } else if (config.provider === 'siliconflow') {
           baseUrl = baseUrl || 'https://api.siliconflow.cn/v1';
-          model = model?.trim();
+          model = siliconFlowModel;
         } else {
           // Generic OpenAI defaults
           baseUrl = baseUrl 

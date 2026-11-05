@@ -34,10 +34,13 @@ describe('SiliconFlow routing', () => {
     expect(JSON.parse(request.mock.calls[0][1].body).model).toBe('selected-model');
     expect(request.mock.calls[0][1].headers.Authorization).toBe('Bearer test-only');
   });
-  it('does not send a request when no model is selected', async () => {
-    const request = vi.fn();
+  it('automatically selects a recommended model before translating', async () => {
+    const request = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: 'THUDM/GLM-4-9B-0414' }] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ choices: [{ message: { content: 'ok' } }] }) });
     vi.stubGlobal('fetch', request);
-    await expect(getCompletion({ provider: 'siliconflow', apiKey: 'test-only', model: ' ' }, 'hello')).rejects.toThrow('model ID is required');
-    expect(request).not.toHaveBeenCalled();
+    expect(await getCompletion({ provider: 'siliconflow', apiKey: 'test-only' }, 'hello')).toBe('ok');
+    expect(request.mock.calls[0][0]).toBe('https://api.siliconflow.cn/v1/models?sub_type=chat');
+    expect(JSON.parse(request.mock.calls[1][1].body).model).toBe('THUDM/GLM-4-9B-0414');
   });
 });

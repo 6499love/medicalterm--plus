@@ -1,3 +1,4 @@
+import { SiliconFlowConfigError } from './siliconflow';
 import type { Term } from '../types';
 
 export interface PdfBlock {
@@ -53,7 +54,7 @@ export function buildLiteraturePrompt(blocks: PdfBlock[], terms: Term[]): string
 export class LiteratureResponseError extends Error {}
 
 export function literatureErrorMessage(error: unknown): string {
-  if (error instanceof LiteratureResponseError) return error.message;
+  if (error instanceof LiteratureResponseError || error instanceof SiliconFlowConfigError) return error.message;
   const message = error instanceof Error ? error.message : '';
   if (/"code"\s*:\s*"invalid_model"/i.test(message)) return '模型不存在或当前账号无权使用。请在设置中核对模型 ID，并使用该 API 账号已开通的模型。';
   const status = message.match(/API Error \((\d{3})\)/)?.[1];
