@@ -150,6 +150,12 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'mediterm-storage',
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<StoreState> | undefined;
+        // Retire Baidu credentials without sending them to the replacement provider.
+        const auth = (saved?.auth as { provider?: string } | null)?.provider === 'baidu' ? null : saved?.auth;
+        return { ...current, ...saved, auth: auth ?? null };
+      },
       partialize: (state) => {
         // If rememberApiKey is false, omit 'auth' from the persisted state
         // This ensures the key is removed from localStorage on the next save/update

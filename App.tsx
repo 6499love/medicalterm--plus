@@ -124,12 +124,12 @@ const SettingsPage = () => {
   }, [auth]);
 
   const handleAuthSave = () => {
-    if (!form.apiKey) return;
+    if (!form.apiKey || (form.provider === 'siliconflow' && !form.model.trim())) return;
     setAuth({
       provider: form.provider as any,
       apiKey: form.apiKey,
       baseUrl: form.baseUrl,
-      model: form.model,
+      model: form.model.trim(),
       userName: form.userName || 'User'
     });
   };
@@ -142,14 +142,14 @@ const SettingsPage = () => {
   const getHintText = () => {
      if (form.provider === 'gemini') return t('HINT_GEMINI_KEY');
      if (form.provider === 'glm') return t('HINT_GLM_KEY');
-     if (form.provider === 'baidu') return t('HINT_BAIDU_KEY');
+     if (form.provider === 'siliconflow') return t('HINT_SILICONFLOW_KEY');
      return t('HINT_OPENAI_KEY');
   };
 
   const getKeyUrl = () => {
     if (form.provider === 'gemini') return 'https://aistudio.google.com/app/apikey';
     if (form.provider === 'glm') return 'https://open.bigmodel.cn/';
-    if (form.provider === 'baidu') return 'https://console.bce.baidu.com/qianfan';
+    if (form.provider === 'siliconflow') return 'https://cloud.siliconflow.cn/account/ak';
     return 'https://platform.openai.com/api-keys';
   };
 
@@ -174,17 +174,17 @@ const SettingsPage = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">{t('SET_PROVIDER')}</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                 {['glm', 'gemini', 'openai-compatible', 'baidu'].map((p) => (
+                 {['glm', 'gemini', 'openai-compatible', 'siliconflow'].map((p) => (
                    <button 
                      key={p}
-                     onClick={() => setForm({ ...form, provider: p as any })}
+                     onClick={() => p !== form.provider && setForm({ ...form, provider: p as any, apiKey: '', baseUrl: '', model: '' })}
                      className={`py-2 rounded-lg text-sm font-medium border transition-all ${
                        form.provider === p 
                        ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                      }`}
                    >
-                     {p === 'gemini' ? t('PROVIDER_GEMINI') : p === 'glm' ? t('PROVIDER_GLM') : p === 'baidu' ? t('PROVIDER_BAIDU') : t('PROVIDER_OPENAI_LOCAL')}
+                     {p === 'gemini' ? t('PROVIDER_GEMINI') : p === 'glm' ? t('PROVIDER_GLM') : p === 'siliconflow' ? t('PROVIDER_SILICONFLOW') : t('PROVIDER_OPENAI_LOCAL')}
                    </button>
                  ))}
               </div>
@@ -222,14 +222,16 @@ const SettingsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {form.provider !== 'gemini' && (
                 <div>
-                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('SET_MODEL')}</label>
+                   <label htmlFor="config-model-id" className="block text-sm font-medium text-slate-700 mb-1">{t(form.provider === 'siliconflow' ? 'SET_MODEL_REQUIRED' : 'SET_MODEL')}</label>
                    <div className="relative">
                       <input
                         type="text"
+                        id="config-model-id"
+                        required={form.provider === 'siliconflow'}
                         value={form.model}
                         onChange={(e) => setForm({ ...form, model: e.target.value })}
                         className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none"
-                        placeholder="gpt-4, claude-3, etc."
+                        placeholder={form.provider === 'siliconflow' ? t('PH_SILICONFLOW_MODEL') : DEFAULT_LLM_MODELS[form.provider]}
                       />
                       <Cpu className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                    </div>
@@ -266,7 +268,7 @@ const SettingsPage = () => {
 
             <button 
               onClick={handleAuthSave}
-              disabled={!form.apiKey}
+              disabled={!form.apiKey || (form.provider === 'siliconflow' && !form.model.trim())}
               className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex justify-center items-center gap-2"
             >
               <Save className="w-4 h-4" /> {t('BTN_SAVE_CONFIG')}
@@ -296,16 +298,16 @@ const SettingsPage = () => {
             </button>
           </div>
           <div>
-            <label htmlFor="saved-model-id" className="block text-sm font-medium text-slate-700 mb-1">{t('SET_MODEL')}</label>
+            <label htmlFor="saved-model-id" className="block text-sm font-medium text-slate-700 mb-1">{t(auth.provider === 'siliconflow' ? 'SET_MODEL_REQUIRED' : 'SET_MODEL')}</label>
             <div className="flex flex-wrap gap-2">
-              <input id="saved-model-id" type="text" value={form.model} placeholder={DEFAULT_LLM_MODELS[auth.provider]}
+              <input id="saved-model-id" type="text" value={form.model} placeholder={auth.provider === 'siliconflow' ? t('PH_SILICONFLOW_MODEL') : DEFAULT_LLM_MODELS[auth.provider]}
                 onChange={event => setForm({ ...form, model: event.target.value })}
                 className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none" />
               <button onClick={() => setAuth({ ...auth, model: form.model.trim() })}
-                disabled={form.model.trim() === (auth.model || '')}
+                disabled={form.model.trim() === (auth.model || '') || (auth.provider === 'siliconflow' && !form.model.trim())}
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl disabled:opacity-40">{t('SET_SAVE_MODEL')}</button>
             </div>
-            <p className="text-xs text-slate-500 mt-2">{t('SET_MODEL_ACCESS_NOTE')}</p>
+            <p className="text-xs text-slate-500 mt-2">{t(auth.provider === 'siliconflow' ? 'HINT_SILICONFLOW_KEY' : 'SET_MODEL_ACCESS_NOTE')}</p>
           </div>
           </div>
         )}

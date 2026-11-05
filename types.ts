@@ -52,7 +52,7 @@ export interface AppSettings {
   rememberApiKey: boolean; // New: Whether to persist API key
 }
 
-export type LLMProvider = 'gemini' | 'openai-compatible' | 'glm' | 'baidu';
+export type LLMProvider = 'gemini' | 'openai-compatible' | 'glm' | 'siliconflow';
 
 export interface AuthConfig {
   userName: string;

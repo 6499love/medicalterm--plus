@@ -23,3 +23,21 @@ describe('GLM same-origin routing', () => {
     expect(request.mock.calls[1][0]).toBe('/api/glm/chat/completions');
   });
 });
+
+
+describe('SiliconFlow routing', () => {
+  it('sends the chosen model and key only to SiliconFlow', async () => {
+    const request = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: 'translated' } }] }) });
+    vi.stubGlobal('fetch', request);
+    expect(await getCompletion({ provider: 'siliconflow', apiKey: 'test-only', model: ' selected-model ' }, 'hello')).toBe('translated');
+    expect(request.mock.calls[0][0]).toBe('https://api.siliconflow.cn/v1/chat/completions');
+    expect(JSON.parse(request.mock.calls[0][1].body).model).toBe('selected-model');
+    expect(request.mock.calls[0][1].headers.Authorization).toBe('Bearer test-only');
+  });
+  it('does not send a request when no model is selected', async () => {
+    const request = vi.fn();
+    vi.stubGlobal('fetch', request);
+    await expect(getCompletion({ provider: 'siliconflow', apiKey: 'test-only', model: ' ' }, 'hello')).rejects.toThrow('model ID is required');
+    expect(request).not.toHaveBeenCalled();
+  });
+});
