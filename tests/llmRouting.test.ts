@@ -23,3 +23,24 @@ describe('GLM same-origin routing', () => {
     expect(request.mock.calls[1][0]).toBe('/api/glm/chat/completions');
   });
 });
+
+
+describe('SiliconFlow routing', () => {
+  it('sends the chosen model and key only to SiliconFlow', async () => {
+    const request = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: 'translated' } }] }) });
+    vi.stubGlobal('fetch', request);
+    expect(await getCompletion({ provider: 'siliconflow', apiKey: 'test-only', model: ' selected-model ' }, 'hello')).toBe('translated');
+    expect(request.mock.calls[0][0]).toBe('https://api.siliconflow.cn/v1/chat/completions');
+    expect(JSON.parse(request.mock.calls[0][1].body).model).toBe('selected-model');
+    expect(request.mock.calls[0][1].headers.Authorization).toBe('Bearer test-only');
+  });
+  it('automatically selects a recommended model before translating', async () => {
+    const request = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: 'THUDM/GLM-4-9B-0414' }] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ choices: [{ message: { content: 'ok' } }] }) });
+    vi.stubGlobal('fetch', request);
+    expect(await getCompletion({ provider: 'siliconflow', apiKey: 'test-only' }, 'hello')).toBe('ok');
+    expect(request.mock.calls[0][0]).toBe('https://api.siliconflow.cn/v1/models?sub_type=chat');
+    expect(JSON.parse(request.mock.calls[1][1].body).model).toBe('THUDM/GLM-4-9B-0414');
+  });
+});

@@ -11,6 +11,7 @@ import { fetchSystemTerms } from './services/search';
 import { speakText } from './services/tts';
 import { useTranslation } from './services/i18n';
 import { SelectionPopup } from './components/SelectionPopup';
+import { resolveSiliconFlowModel } from './services/siliconflow';
 import { DEFAULT_LLM_MODELS } from './services/llm';
 
 const LiteratureTranslation = React.lazy(() => import('./components/LiteratureTranslation'));
@@ -123,15 +124,25 @@ const SettingsPage = () => {
      }
   }, [auth]);
 
-  const handleAuthSave = () => {
-    if (!form.apiKey) return;
+  const [saving, setSaving] = useState(false);
+  const [configError, setConfigError] = useState('');
+
+  const handleAuthSave = async () => {
+    if (!form.apiKey.trim() || saving) return;
+    setSaving(true);
+    setConfigError('');
+    try {
+    if (form.provider === 'siliconflow') await resolveSiliconFlowModel(form.apiKey.trim(), form.model);
     setAuth({
       provider: form.provider as any,
-      apiKey: form.apiKey,
+      apiKey: form.apiKey.trim(),
       baseUrl: form.baseUrl,
-      model: form.model,
+      model: form.model.trim(),
       userName: form.userName || 'User'
     });
+    } catch (error) {
+      setConfigError(error instanceof Error ? error.message : t('SET_CHECK_FAILED'));
+    } finally { setSaving(false); }
   };
 
   const handleLogout = () => {
@@ -142,14 +153,14 @@ const SettingsPage = () => {
   const getHintText = () => {
      if (form.provider === 'gemini') return t('HINT_GEMINI_KEY');
      if (form.provider === 'glm') return t('HINT_GLM_KEY');
-     if (form.provider === 'baidu') return t('HINT_BAIDU_KEY');
+     if (form.provider === 'siliconflow') return t('HINT_SILICONFLOW_KEY');
      return t('HINT_OPENAI_KEY');
   };
 
   const getKeyUrl = () => {
     if (form.provider === 'gemini') return 'https://aistudio.google.com/app/apikey';
     if (form.provider === 'glm') return 'https://open.bigmodel.cn/';
-    if (form.provider === 'baidu') return 'https://console.bce.baidu.com/qianfan';
+    if (form.provider === 'siliconflow') return 'https://cloud.siliconflow.cn/account/ak';
     return 'https://platform.openai.com/api-keys';
   };
 
@@ -173,25 +184,33 @@ const SettingsPage = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">{t('SET_PROVIDER')}</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                 {['glm', 'gemini', 'openai-compatible', 'baidu'].map((p) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {([{ label: 'SET_DOMESTIC', providers: ['glm', 'siliconflow'] }, { label: 'SET_OTHER', providers: ['gemini', 'openai-compatible'] }] as const).map(group => (
+                <fieldset key={group.label} disabled={saving}>
+                  <legend className="text-xs text-slate-500 mb-2">{t(group.label)}</legend>
+                  <div className="grid grid-cols-2 gap-2">
+                 {group.providers.map((p) => (
                    <button 
                      key={p}
-                     onClick={() => setForm({ ...form, provider: p as any })}
+                     aria-pressed={form.provider === p}
+                     onClick={() => { if (p !== form.provider) { setForm({ ...form, provider: p as any, apiKey: '', baseUrl: '', model: '' }); setConfigError(''); } }}
                      className={`py-2 rounded-lg text-sm font-medium border transition-all ${
                        form.provider === p 
                        ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                      }`}
                    >
-                     {p === 'gemini' ? t('PROVIDER_GEMINI') : p === 'glm' ? t('PROVIDER_GLM') : p === 'baidu' ? t('PROVIDER_BAIDU') : t('PROVIDER_OPENAI_LOCAL')}
+                     {p === 'gemini' ? t('PROVIDER_GEMINI') : p === 'glm' ? t('PROVIDER_GLM') : p === 'siliconflow' ? t('PROVIDER_SILICONFLOW') : t('PROVIDER_OPENAI_LOCAL')}
                    </button>
                  ))}
+                  </div>
+                </fieldset>
+                ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center flex-wrap gap-2">
+              <label htmlFor="api-key" className="block text-sm font-medium text-slate-700 mb-1 flex items-center flex-wrap gap-2">
                 <span>{t('SET_API_KEY')}</span>
                 
                 <div className="group relative hidden md:block">
@@ -209,6 +228,8 @@ const SettingsPage = () => {
               <div className="relative">
                 <input
                   type="password"
+                  id="api-key"
+                  disabled={saving}
                   value={form.apiKey}
                   onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
                   className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none transition-all"
@@ -219,17 +240,21 @@ const SettingsPage = () => {
               <p className="text-xs text-slate-400 mt-1">{getHintText()}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <details>
+              <summary className="text-sm text-slate-600 cursor-pointer">{t('SET_ADVANCED')}</summary>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
               {form.provider !== 'gemini' && (
                 <div>
-                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('SET_MODEL')}</label>
+                   <label htmlFor="config-model-id" className="block text-sm font-medium text-slate-700 mb-1">{t('SET_MODEL')}</label>
                    <div className="relative">
                       <input
                         type="text"
+                        id="config-model-id"
+                        disabled={saving}
                         value={form.model}
                         onChange={(e) => setForm({ ...form, model: e.target.value })}
                         className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none"
-                        placeholder="gpt-4, claude-3, etc."
+                        placeholder={form.provider === 'siliconflow' ? t('PH_SILICONFLOW_MODEL') : DEFAULT_LLM_MODELS[form.provider]}
                       />
                       <Cpu className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                    </div>
@@ -250,6 +275,8 @@ const SettingsPage = () => {
                 </div>
             </div>
 
+            </details>
+            {configError && <p role="alert" className="text-sm text-red-600">{configError}</p>}
             <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
               <input
                 type="checkbox"
@@ -266,10 +293,10 @@ const SettingsPage = () => {
 
             <button 
               onClick={handleAuthSave}
-              disabled={!form.apiKey}
+              disabled={!form.apiKey.trim() || saving}
               className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex justify-center items-center gap-2"
             >
-              <Save className="w-4 h-4" /> {t('BTN_SAVE_CONFIG')}
+              <Save className="w-4 h-4" /> {t(saving ? 'SET_CHECKING' : 'BTN_SAVE_CONFIG')}
             </button>
             <p className="text-center text-xs text-slate-400 flex items-center justify-center gap-1">
               <Key className="w-3 h-3" /> {t('HINT_LOCAL_STORAGE')}
@@ -285,7 +312,7 @@ const SettingsPage = () => {
               <div>
                 <p className="font-bold text-emerald-800">{t('STATUS_CONFIGURED')}</p>
                 <p className="text-xs text-emerald-600">{auth.provider.toUpperCase()} • {auth.userName}</p>
-                <p className="text-xs text-slate-600 mt-1 break-all">{t('SET_ACTIVE_MODEL')}: {auth.model || DEFAULT_LLM_MODELS[auth.provider]}</p>
+                <p className="text-xs text-slate-600 mt-1 break-all">{t('SET_ACTIVE_MODEL')}: {auth.model || (auth.provider === 'siliconflow' ? t('SET_AUTO_MODEL') : DEFAULT_LLM_MODELS[auth.provider])}</p>
               </div>
             </div>
             <button 
@@ -295,18 +322,19 @@ const SettingsPage = () => {
               <LogOut className="w-4 h-4" /> {t('BTN_LOGOUT')}
             </button>
           </div>
-          <div>
+          <details>
+            <summary className="text-sm text-slate-600 cursor-pointer">{t('SET_ADVANCED')}</summary>
             <label htmlFor="saved-model-id" className="block text-sm font-medium text-slate-700 mb-1">{t('SET_MODEL')}</label>
             <div className="flex flex-wrap gap-2">
-              <input id="saved-model-id" type="text" value={form.model} placeholder={DEFAULT_LLM_MODELS[auth.provider]}
+              <input id="saved-model-id" type="text" value={form.model} placeholder={auth.provider === 'siliconflow' ? t('PH_SILICONFLOW_MODEL') : DEFAULT_LLM_MODELS[auth.provider]}
                 onChange={event => setForm({ ...form, model: event.target.value })}
                 className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none" />
               <button onClick={() => setAuth({ ...auth, model: form.model.trim() })}
                 disabled={form.model.trim() === (auth.model || '')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl disabled:opacity-40">{t('SET_SAVE_MODEL')}</button>
             </div>
-            <p className="text-xs text-slate-500 mt-2">{t('SET_MODEL_ACCESS_NOTE')}</p>
-          </div>
+            <p className="text-xs text-slate-500 mt-2">{t(auth.provider === 'siliconflow' ? 'HINT_SILICONFLOW_KEY' : 'SET_MODEL_ACCESS_NOTE')}</p>
+          </details>
           </div>
         )}
       </div>

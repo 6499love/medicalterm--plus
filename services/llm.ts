@@ -1,10 +1,11 @@
 
 import { GoogleGenAI } from "@google/genai";
+import { resolveSiliconFlowModel } from './siliconflow';
 import type { LLMProvider } from '../types';
 
 export const DEFAULT_LLM_MODELS: Record<LLMProvider, string> = {
   glm: 'glm-4-flash',
-  baidu: 'ernie-4.0-8k',
+  siliconflow: '',
   gemini: 'gemini-2.5-flash',
   'openai-compatible': 'gpt-3.5-turbo',
 };
@@ -52,6 +53,9 @@ export const getCompletion = async (
     throw new Error('API Key is required. Please configure it in Settings.');
   }
 
+  const siliconFlowModel = config.provider === 'siliconflow'
+    ? await resolveSiliconFlowModel(apiKey, config.model) : undefined;
+
   const MAX_RETRIES = 3;
   let lastError: any;
 
@@ -75,8 +79,8 @@ export const getCompletion = async (
         return response.text || '';
       }
 
-      // OPENAI-COMPATIBLE, GLM, & BAIDU IMPLEMENTATION
-      if (config.provider === 'openai-compatible' || config.provider === 'glm' || config.provider === 'baidu') {
+      // OPENAI-COMPATIBLE, GLM, & SILICONFLOW IMPLEMENTATION
+      if (config.provider === 'openai-compatible' || config.provider === 'glm' || config.provider === 'siliconflow') {
         let baseUrl = config.baseUrl;
         let model = config.model;
 
@@ -84,9 +88,9 @@ export const getCompletion = async (
         if (config.provider === 'glm') {
           baseUrl = baseUrl || 'https://open.bigmodel.cn/api/paas/v4';
           model = model || DEFAULT_LLM_MODELS.glm;
-        } else if (config.provider === 'baidu') {
-          baseUrl = baseUrl || 'https://qianfan.baidubce.com/v2';
-          model = model || DEFAULT_LLM_MODELS.baidu;
+        } else if (config.provider === 'siliconflow') {
+          baseUrl = baseUrl || 'https://api.siliconflow.cn/v1';
+          model = siliconFlowModel;
         } else {
           // Generic OpenAI defaults
           baseUrl = baseUrl 
