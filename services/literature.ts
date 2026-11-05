@@ -57,6 +57,9 @@ export function literatureErrorMessage(error: unknown): string {
   if (error instanceof LiteratureResponseError || error instanceof SiliconFlowConfigError) return error.message;
   const message = error instanceof Error ? error.message : '';
   if (/"code"\s*:\s*"invalid_model"/i.test(message)) return '模型不存在或当前账号无权使用。请在设置中核对模型 ID，并使用该 API 账号已开通的模型。';
+  if (message.includes('GLM_PROXY_TIMEOUT')) return '网站等待智谱超过 50 秒，已主动中止本批请求（504）。';
+  if (message.includes('GLM_UPSTREAM_TIMEOUT')) return '智谱上游返回超时（504），不是网站的 50 秒计时器主动中止。';
+  if (message.includes('FUNCTION_INVOCATION_TIMEOUT')) return 'Vercel 函数运行超过时限（504）。';
   const status = message.match(/API Error \((\d{3})\)/)?.[1];
   if (status === '401') return '模型接口拒绝认证（401）。配置已保存，但 API Key 未被接受，请检查密钥及所属平台。';
   if (status === '403') return '模型接口拒绝访问（403）。请检查账号或模型使用权限。';
