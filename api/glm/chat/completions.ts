@@ -16,9 +16,10 @@ interface ApiResponse {
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   response.setHeader('Content-Type', 'application/json; charset=utf-8');
   response.setHeader('Cache-Control', 'no-store');
-  const fail = (status: number, message: string) => {
+  const started = Date.now();
+  const fail = (status: number, message: string, code?: string) => {
     response.statusCode = status;
-    response.end(JSON.stringify({ error: { message } }));
+    response.end(JSON.stringify({ error: { message, ...(code ? { code, elapsedMs: Date.now() - started } : {}) } }));
   };
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
@@ -48,7 +49,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     });
     if (!upstream.ok) {
       await upstream.body?.cancel();
-      return fail(upstream.status, 'GLM rejected the request. Check credentials, model permissions or quota.');
+      return fail(upstream.status, 'GLM rejected the request. Check credentials, model permissions or quota.', upstream.status === 504 ? 'GLM_UPSTREAM_TIMEOUT' : undefined);
     }
     const data = await upstream.json();
     const content = data.choices?.[0]?.message?.content;
@@ -56,6 +57,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     response.statusCode = 200;
     response.end(JSON.stringify({ choices: [{ message: { content } }] }));
   } catch (error) {
-    return fail(error instanceof Error && error.name === 'TimeoutError' ? 504 : 502, 'GLM service could not be reached or returned an invalid response.');
+    const timedOut = error instanceof Error && error.name === 'TimeoutError';
+    return fail(timedOut ? 504 : 502, 'GLM service could not be reached or returned an invalid response.', timedOut ? 'GLM_PROXY_TIMEOUT' : undefined);
   }
 }
