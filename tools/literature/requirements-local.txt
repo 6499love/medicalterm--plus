@@ -1,0 +1,4 @@
+-r requirements-ocr.txt
+pdf2zh-next==2.9.0
+babeldoc==0.6.2
+bitstring==4.4.0

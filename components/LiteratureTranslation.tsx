@@ -100,6 +100,7 @@ export default function LiteratureTranslation({ onNavigate }: { onNavigate: (pag
   const tooDense = !!page && (page.blocks.length > 120 || page.blocks.reduce((sum, block) => sum + block.text.length, 0) > 18000);
   return <section className="literature">
     <div className="lit-heading"><div><span className="lit-eyebrow">LITERATURE READER · 试验版</span><h2>文献翻译</h2><p>对照原文阅读，让专业译法保持一致。</p></div><FileText size={32} color="#2563eb" /></div>
+    {import.meta.env.DEV && <div className="lit-notice"><a href="http://127.0.0.1:7868/" target="_blank" rel="noreferrer">打开本机全文翻译与 PDF 下载</a><p>需先启动本机文献服务。参考文献和复杂统计图可能保留英文。</p></div>}
     <div className="lit-notice">支持英文文字型 PDF。原位置译文为实验排版，表格、公式、旋转文字及图中文字可能保留原文；不等同于原版式 PDF 导出。</div>
     <input ref={inputRef} type="file" accept=".pdf,application/pdf" aria-label="选择 PDF 文献" hidden onChange={event => { const file = event.target.files?.[0]; if (file) void openFile(file); event.target.value = ''; }} />
     {!page && <button className="lit-drop" disabled={!!busy} onClick={() => inputRef.current?.click()} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); const file = event.dataTransfer.files[0]; if (file) void openFile(file); }}>
