@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>MediTerm · 本机文献翻译</title>
+<style>body{font:16px/1.7 system-ui;max-width:760px;margin:40px auto;padding:20px;background:#f5f8fc;color:#18324b}label{display:block;margin-top:20px}input,button{font:inherit;padding:12px;box-sizing:border-box}input{width:100%}button{margin-top:24px;background:#2463eb;color:white;border:0;border-radius:8px}button:disabled{opacity:.6}a{color:#2463eb;margin-right:20px}progress{width:100%}.note{padding:16px;background:#eaf0f8;border-radius:8px}</style>
+<h1>文献翻译 · 本机试验版</h1>
+<p>上传 PDF，生成中文和双语对照文件。</p>
+<p class="note">参考文献和复杂统计图可能有意保留英文。医学用词和遗漏内容仍需核对。暂不支持扫描件。</p>
+<form id="form"><label for="pdf">PDF 文献（最多 20 MB / 100 页）</label><input id="pdf" type="file" accept="application/pdf,.pdf" required>
+<label for="key">智谱 API Key</label><input id="key" type="password" autocomplete="off" required>
+<p>Key 仅用于本次处理，不保存。文字发送到智谱官方接口，使用 GLM-4-Flash；额度与收费以账号实际政策为准。文件和结果保存在这台电脑，不上传 GitHub。</p>
+<button id="start">开始翻译全文</button></form>
+<p id="message" role="status">等待选择文件</p><progress id="progress" max="100" hidden aria-label="翻译进度"></progress><p id="time"></p>
+<div id="results" hidden><a href="/result/bilingual.pdf" target="_blank">打开双语 PDF</a><a href="/result/translated.pdf" target="_blank">打开中文 PDF</a><a href="/result/review.html" target="_blank">查看保留英文与待核对清单</a><p>在 PDF 查看器中下载保存。开始下一篇后，本页链接将切换到新任务。</p></div>
+<script>
+const form=document.querySelector('#form'),file=document.querySelector('#pdf'),key=document.querySelector('#key'),button=document.querySelector('#start'),message=document.querySelector('#message');let submitting=false;
+form.onsubmit=async e=>{e.preventDefault();const pdf=file.files[0];if(!pdf||pdf.size>20*1024*1024){message.textContent='请选择不超过20 MB的PDF';return;}submitting=true;button.disabled=true;let secret=key.value.trim();key.value='';try{const r=await fetch('/start',{method:'POST',headers:{'X-Local-Test':'1','X-GLM-Key':secret,'Content-Type':'application/pdf'},body:pdf});if(!r.ok){message.textContent=r.status===409?'已有任务正在处理':'无法开始：请检查PDF是否有效、未加密且不超过100页，以及Key是否填写';return;}await update();}catch{message.textContent='本机服务无法连接，请重新启动后再试';}finally{secret='';submitting=false;button.disabled=false;}};
+async function update(){try{const s=await(await fetch('/status')).json();const running=s.state==='running';button.disabled=running||submitting;file.disabled=running;key.disabled=running;button.textContent=running?'正在处理，请稍候':'开始翻译全文';document.querySelector('#progress').hidden=!running;document.querySelector('#progress').value=s.progress||0;document.querySelector('#time').textContent=s.elapsed_seconds!=null?'已用时 '+Math.round(s.elapsed_seconds)+' 秒':'';document.querySelector('#results').hidden=s.state!=='complete';if(running)message.textContent='正在翻译和排版，可以等待；请勿关闭本机服务。';if(s.state==='complete')message.textContent='文件已生成，请下载；生成成功不代表内容已经人工校对。';if(s.state==='error')message.textContent='处理失败（'+(s.error_type||'未知错误')+'）。已保存的本机任务文件保留，请联系维护者检查。';}catch{message.textContent='本机服务无法连接，请重新启动后刷新';}}
+update();setInterval(update,2000);
+</script></html>

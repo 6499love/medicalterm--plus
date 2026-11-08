@@ -48,3 +48,16 @@ describe('Vercel GLM function', () => {
     }
   });
 });
+
+it('distinguishes upstream 504 from the local deadline and returns elapsed time', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response('private upstream body', { status: 504 }))
+    .mockRejectedValueOnce(new DOMException('simulated', 'TimeoutError')));
+  for (const code of ['GLM_UPSTREAM_TIMEOUT', 'GLM_PROXY_TIMEOUT']) {
+    const result = reply(); await handler(request, result);
+    expect(result.statusCode).toBe(504);
+    const error = JSON.parse(result.end.mock.calls[0][0]).error;
+    expect(error.code).toBe(code);
+    expect(error.elapsedMs).toBeGreaterThanOrEqual(0);
+    expect(result.end.mock.calls[0][0]).not.toContain('private');
+  }
+});

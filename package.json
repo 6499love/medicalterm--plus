@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "literature:local": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/literature/start-local.ps1",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
