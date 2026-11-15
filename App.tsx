@@ -14,7 +14,7 @@ import { SelectionPopup } from './components/SelectionPopup';
 import { resolveSiliconFlowModel } from './services/siliconflow';
 import { DEFAULT_LLM_MODELS } from './services/llm';
 
-const LiteratureTranslation = React.lazy(() => import('./components/LiteratureTranslation'));
+const LiteratureTranslation = React.lazy(() => import('./components/BrowserLiterature'));
 
 const HistoryPage = () => {
   const { history, clearHistory } = useStore();
