@@ -15,6 +15,7 @@ export interface LLMConfig {
   apiKey: string;
   baseUrl?: string;
   model?: string;
+  browserDirect?: boolean;
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -45,7 +46,7 @@ export const getCompletion = async (
 
   // Only use process.env.API_KEY if the provider is Gemini.
   // This prevents the environment's Gemini key from overriding user-provided keys for other services.
-  if (config.provider === 'gemini' && process.env.API_KEY) {
+  if (!config.browserDirect && config.provider === 'gemini' && process.env.API_KEY) {
     apiKey = process.env.API_KEY;
   }
 
@@ -102,7 +103,7 @@ export const getCompletion = async (
         // Ensure URL ends correctly
         baseUrl = baseUrl.replace(/\/+$/, '');
         // Vite and Vercel provide the same fixed GLM route; custom endpoints remain explicit.
-        const url = config.provider === 'glm' && baseUrl === 'https://open.bigmodel.cn/api/paas/v4'
+        const url = !config.browserDirect && config.provider === 'glm' && baseUrl === 'https://open.bigmodel.cn/api/paas/v4'
           ? '/api/glm/chat/completions'
           : `${baseUrl}/chat/completions`;
 
@@ -113,6 +114,7 @@ export const getCompletion = async (
         messages.push({ role: 'user', content: userPrompt });
 
         const response = await fetch(url, {
+          ...(config.browserDirect ? { signal: AbortSignal.timeout(90000) } : {}),
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

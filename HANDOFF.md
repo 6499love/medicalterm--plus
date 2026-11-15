@@ -98,3 +98,10 @@
 2026-11-08 本地接入：tools/literature/local_server.py + local_worker.py 支持上传20MB/100页内未加密PDF、单任务后台全文处理、状态及PDF/复核表下载；127.0.0.1:7868仅本机，检查Host/Origin，自定义请求头，Key仅请求内存与子进程stdin。网站文献入口仅DEV显示本机链接，生产部署未改变。npm run literature:local启动；任务在忽略目录node_modules/.qa/local-literature/jobs，不自动清理。服务HTTP200、状态waiting，3项上传/权限/Key不落盘测试通过；另9项PDF工具回归、网站48项测试、类型检查、构建通过。浏览器自动打开超时，未完成交互目视检查；未用真实Key跑新上传服务，不能声称端到端真实翻译通过。生产网站整合和公网后台尚未实施。
 
 2026-11-08 推送前复核：本机上传任务776c99644872445d9b1ee413b6ecc55a完成，23页，总1286.3秒（引擎1173.7秒）；两份23页PDF逐页渲染成功，未逐句校对。12项Python测试、48项网站测试及类型检查通过。提交仅代码/术语表/文档，任务PDF、OCR、模型回复、Key和环境目录不进入Git。功能分支推送不等同于生产部署。
+
+2026-11-12 用户明确改为纯浏览器、无后台/无本机安装。新增BrowserLiterature入口及browserLiterature服务：PDF.js读取，Tesseract.js浏览器OCR，pdf-lib导出栅格双语对照；原图不覆盖。文献调用browserDirect，GLM不再经/api转发，其他模块路由保持不变，模型CORS仍可能阻止直连。实际IAB读取已知3页PDF；OCR用3倍稀疏文字模式后第2页新增19区域，含GREY ZONE/13/9/左右标签。浏览器实际导出9页约4.2MB未翻译对照PDF，首尾渲染检查完成。真实模型直连待页面Key；不得把OCR/导出验证说成实际译文验收。详细限制见docs/browser-literature.md。未发布生产站。
+
+2026-11-15 纯浏览器连接诊断：上次UI确认GLM/glm-4-flash，实际点击复现Failed to fetch类错误，但浏览器日志未提供CORS具体信息。本次无Key OPTIONS官方智谱chat/completions，Origin为127.0.0.1:5173，HTTP200但无Access-Control-Allow-Origin/Headers，无法满足浏览器该跨域预检；不能据此判定Key无效或声称历史请求唯一根因。硅基流动curl曾TLS失败，urllib正常TLS复核204，返回Allow-Origin *、Allow-Headers *等；只证明此预检回复，未验证带Authorization的真实浏览器调用。新增翻译前短句直连检查（失败不进入OCR）、独立连接按钮、服务商相关网络错误和超时说明；原文保留/待核对不再计入已翻译。仍不使用网站后台、不改用户配置。
+2026-11-15 正式站复核：用户确认报错来自 www.meditermglasspro.icu。正式站 HTTP 200，入口脚本加载旧 LiteratureTranslation 模块。本地 5173 返回 BrowserLiterature 和连接检查代码。以正式站为 Origin 的无 Key 预检中，智谱返回 HTTP 200 但没有跨域许可头；硅基流动返回 HTTP 204 和跨域许可头，仍需验证带鉴权的真实翻译。旧转发代码仅向前端传递上游 HTTP 状态和通用错误，截图无法区分 429 的具体业务原因。本次未发布。
+
+2026-11-15 正式站上线范围：用户同意默认智谱复用本站现有 Vercel 转发，PDF 读取、识图与导出仍由浏览器完成。连接检查和文献批次均采用相同配置，默认智谱翻译直接从正文批次开始，避免多发一次检查请求。自定义地址与其他服务保留直连。类型检查、55 项测试及生产构建通过；测试临时目录设到项目内，避开 Windows 下的 EPERM。实际账号的智谱调用仍待在正式站验证。
