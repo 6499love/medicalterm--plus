@@ -1,7 +1,7 @@
 import { describe,it,expect,vi,afterEach } from 'vitest';
 import { browserConnectionError,checkBrowserConnection,literatureModelConfig,numbersMatch,overlapsNative,preserveSource,resultCounts } from '../services/browserLiterature';
 import { getCompletion } from '../services/llm';
-afterEach(()=>vi.unstubAllGlobals());
+afterEach(()=>{vi.unstubAllGlobals();vi.useRealTimers();});
 describe('browser literature safety',()=>{
   it('does not count retained and review entries as translated',()=>{
     expect(resultCounts({0:'【有意保留原文】13',1:'【待核对：数字不符】text',2:'灰区'})).toEqual({translated:1,retained:1,review:1});
@@ -27,6 +27,29 @@ describe('browser literature safety',()=>{
     await checkBrowserConnection(config);
     await getCompletion(literatureModelConfig({...config,baseUrl:'https://open.bigmodel.cn/api/paas/v4/'}),'test');
     expect(request.mock.calls.map(([url])=>url)).toEqual(['/api/glm/chat/completions','/api/glm/chat/completions']);
+  });
+  it.each([
+    ['1113', '账号欠费'], ['1308', '使用额度已达上限'], ['1311', '未开通所选模型'],
+  ])('shows the GLM reason %s without repeating a blocked request', async (code, reason) => {
+    const request=vi.fn().mockImplementation(async()=>new Response(JSON.stringify({error:{code,message:'private detail'}}),{status:429}));
+    vi.stubGlobal('fetch',request);
+    const config={provider:'glm' as const,apiKey:'fake-only'};
+    const failure=await checkBrowserConnection(config).catch(error=>error);
+    const message=browserConnectionError(failure,config);
+    expect(message).toContain(reason);
+    expect(message).toContain(code);
+    expect(message).not.toContain('private detail');
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+  it('preserves the model busy reason after delayed retries',async()=>{
+    vi.useFakeTimers();
+    const request=vi.fn().mockImplementation(async()=>new Response(JSON.stringify({error:{code:'1305'}}),{status:429}));
+    vi.stubGlobal('fetch',request);
+    const config={provider:'glm' as const,apiKey:'fake-only'};
+    const failure=checkBrowserConnection(config).catch(error=>error);
+    await vi.runAllTimersAsync();
+    expect(request).toHaveBeenCalledTimes(4);
+    expect(browserConnectionError(await failure,config)).toContain('模型当前繁忙');
   });
   it('rejects changed or dropped numeric values while allowing date order',()=>{
     expect(numbersMatch('2×2 13 9','2-7 13 9')).toBe(false);

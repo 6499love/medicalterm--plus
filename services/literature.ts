@@ -1,4 +1,5 @@
 import { SiliconFlowConfigError } from './siliconflow';
+import { GlmRateLimitError } from './llm';
 import type { Term } from '../types';
 
 export interface PdfBlock {
@@ -53,8 +54,31 @@ export function buildLiteraturePrompt(blocks: PdfBlock[], terms: Term[]): string
 
 export class LiteratureResponseError extends Error {}
 
+const glmLimitMessages: Record<string, string> = {
+  '1113': '智谱报告账号欠费，请在智谱控制台核对账单。',
+  '1302': '智谱账号达到调用频率限制，请稍后再试。',
+  '1305': '智谱模型当前繁忙，请稍后再试。',
+  '1308': '智谱使用额度已达上限，请查看额度重置时间。',
+  '1309': '智谱编程套餐已到期，请核对套餐状态。',
+  '1310': '智谱使用额度已达上限，请查看额度重置时间。',
+  '1311': '智谱套餐未开通所选模型，请核对模型权限。',
+  '1313': '智谱限制了该账号的调用频率，请在智谱控制台查看详情。',
+  '1314': '智谱企业套餐已失效，请联系账号管理员。',
+  '1315': '此智谱 Key 仅限企业编程套餐场景使用，请核对 Key 类型。',
+  '1316': '智谱已达 5 小时使用上限，主账号余额不足。',
+  '1317': '智谱已达 7 天使用上限，主账号余额不足。',
+  '1318': '智谱已达 5 小时使用上限，且已达子账号月消费上限。',
+  '1319': '智谱已达 7 天使用上限，且已达子账号月消费上限。',
+  '1320': '智谱已达 5 小时使用上限，且已达企业月消费上限。',
+  '1321': '智谱已达 7 天使用上限，且已达企业月消费上限。',
+};
+
 export function literatureErrorMessage(error: unknown): string {
   if (error instanceof LiteratureResponseError || error instanceof SiliconFlowConfigError) return error.message;
+  if (error instanceof GlmRateLimitError) {
+    const reason = error.code && glmLimitMessages[error.code];
+    return `${reason || '智谱返回调用限制，具体原因请在智谱控制台核对。'}（429${error.code ? ` / ${error.code}` : ''}）`;
+  }
   const message = error instanceof Error ? error.message : '';
   if (/"code"\s*:\s*"invalid_model"/i.test(message)) return '模型不存在或当前账号无权使用。请在设置中核对模型 ID，并使用该 API 账号已开通的模型。';
   if (message.includes('GLM_PROXY_TIMEOUT')) return '网站等待智谱超过 50 秒，已主动中止本批请求（504）。';

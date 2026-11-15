@@ -2,7 +2,10 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { batchLiteratureBlocks, translateLiteratureBatches, LiteratureBatchError } from '../services/literatureTranslation';
 import { getCompletion } from '../services/llm';
 import { literatureErrorMessage, type PdfBlock } from '../services/literature';
-vi.mock('../services/llm', () => ({ getCompletion: vi.fn() }));
+vi.mock(import('../services/llm'), async importOriginal => ({
+  ...await importOriginal(),
+  getCompletion: vi.fn(),
+}));
 afterEach(() => vi.resetAllMocks());
 const blocks = Array.from({ length: 7 }, (_, id) => ({ id, text: 'a'.repeat(500), x: 0, y: id * 20, width: 100, height: 10, fontSize: 10 } as PdfBlock));
 const config = { provider: 'glm' as const, apiKey: 'synthetic' };
