@@ -40,6 +40,18 @@ describe('Vercel GLM function', () => {
     expect(result.statusCode).toBe(403);
     expect(result.end.mock.calls[0][0]).not.toContain('sensitive');
   });
+  it('forwards only the numeric reason code for a GLM rate limit', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({error: {code: 1113, message: 'private detail'}}), {status: 429}))
+      .mockResolvedValueOnce(new Response(JSON.stringify({error: {code: 'private detail'}}), {status: 429})));
+    for (const code of ['1113', undefined]) {
+      const result = reply();
+      await handler(request, result);
+      expect(result.statusCode).toBe(429);
+      expect(JSON.parse(result.end.mock.calls[0][0]).error.code).toBe(code);
+      expect(result.end.mock.calls[0][0]).not.toContain('private');
+    }
+  });
   it('reports network failure, timeout and missing model content', async () => {
     const upstream = vi.fn().mockRejectedValueOnce(new Error('network details')).mockRejectedValueOnce(new DOMException('timeout', 'TimeoutError')).mockResolvedValueOnce(new Response('{}'));
     vi.stubGlobal('fetch', upstream);

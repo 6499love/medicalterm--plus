@@ -48,6 +48,12 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       signal: AbortSignal.timeout(50000),
     });
     if (!upstream.ok) {
+      if (upstream.status === 429) {
+        const data = await upstream.json().catch(() => null);
+        const rawCode = data?.error?.code;
+        const code = typeof rawCode === 'number' || typeof rawCode === 'string' ? String(rawCode) : '';
+        return fail(429, 'GLM returned a usage limit.', /^\d{4}$/.test(code) ? code : undefined);
+      }
       await upstream.body?.cancel();
       return fail(upstream.status, 'GLM rejected the request. Check credentials, model permissions or quota.', upstream.status === 504 ? 'GLM_UPSTREAM_TIMEOUT' : undefined);
     }

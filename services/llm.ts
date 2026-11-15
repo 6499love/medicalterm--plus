@@ -18,6 +18,14 @@ export interface LLMConfig {
   browserDirect?: boolean;
 }
 
+export class GlmRateLimitError extends Error {
+  readonly status = 429;
+
+  constructor(readonly code?: string) {
+    super('QUOTA_EXCEEDED');
+  }
+}
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const isQuotaError = (error: any): boolean => {
@@ -128,6 +136,12 @@ export const getCompletion = async (
         });
 
         if (!response.ok) {
+           if (url === '/api/glm/chat/completions' && response.status === 429) {
+             const data = await response.json().catch(() => null);
+             const rawCode = data?.error?.code;
+             const code = typeof rawCode === 'number' || typeof rawCode === 'string' ? String(rawCode) : '';
+             throw new GlmRateLimitError(/^\d{4}$/.test(code) ? code : undefined);
+           }
            let errorText = await response.text();
            try {
               const jsonErr = JSON.parse(errorText);
@@ -155,6 +169,10 @@ export const getCompletion = async (
       lastError = error;
       
       // Handle Quota/Rate Limit Errors
+      if (error instanceof GlmRateLimitError &&
+          (attempt === MAX_RETRIES || (error.code !== '1302' && error.code !== '1305'))) {
+        throw error;
+      }
       if (isQuotaError(error)) {
         if (attempt < MAX_RETRIES) {
            console.warn(`Quota limit hit (Attempt ${attempt + 1}/${MAX_RETRIES + 1}). Retrying...`);
