@@ -109,10 +109,12 @@ function collectAbbreviations(lines: Line[], taken: Set<Line>): Line[] {
 }
 
 export function structureLiteraturePage(lines: Line[], width: number, height: number, images: PdfBounds[]): PdfBlock[] {
+  // Keep scanned page backgrounds protected in the renderer, while allowing their text layers to be translated.
+  const figures = images.filter(image => image.width < width*.9 || image.height < height*.9);
   const labelsByImage = new Map<PdfBounds,Line[]>();
   const text: Line[] = [];
   for (const line of lines) {
-    const image = images.find(a => a.height>=25 &&
+    const image = figures.find(a => a.height>=25 &&
       Math.min(right(a),right(line))-Math.max(a.x,line.x) >= line.width*.6 &&
       Math.min(bottom(a),bottom(line))-Math.max(a.y,line.y) >= line.height*.6);
     if (!image) text.push(line);

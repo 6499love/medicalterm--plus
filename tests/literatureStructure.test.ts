@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { planLiteratureLayout } from '../services/literatureLayout';
 import { borderedArtwork, structureLiteraturePage } from '../services/literatureStructure';
 
 const line = (text: string, x: number, y: number, width = 234, fontSize = 9.8) =>
@@ -77,5 +78,20 @@ describe('browser literature reading zones', () => {
     expect(structureLiteraturePage([label,figureCaption],595,794,images).map(b=>[b.kind,b.text,b.retainSource===true]))
       .toEqual([['figure','STUDY ID',true],['caption',figureCaption.text,false]]);
     expect(borderedArtwork([figureCaption],paths.slice(0,3),595)).toEqual([]);
+  });
+
+  it('keeps the searchable text layer of a scanned page eligible for translation', () => {
+    const background = {x:0,y:0,width:595,height:794};
+    const prose = line('This paragraph is searchable text on a scan.',60,180);
+    const blocks = structureLiteraturePage([prose],595,794,[background]);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({kind:'body',text:prose.text});
+    expect(blocks[0].retainSource).not.toBe(true);
+
+    const translation = '扫描页上这段文字可以搜索。';
+    const layout = planLiteratureLayout({width:595,height:794,images:[background],blocks},
+      {[blocks[0].id]:translation}, text => text.length * 8);
+    expect(layout.masks).toEqual([]);
+    expect(layout.continuations).toEqual([expect.objectContaining({text:translation})]);
   });
 });
