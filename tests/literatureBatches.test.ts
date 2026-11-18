@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { batchLiteratureBlocks, translateLiteratureBatches, LiteratureBatchError } from '../services/literatureTranslation';
+import { batchLiteratureBlocks, prepareLiteratureTranslationBlocks, translateLiteratureBatches, LiteratureBatchError } from '../services/literatureTranslation';
 import { getCompletion } from '../services/llm';
 import { literatureErrorMessage, type PdfBlock } from '../services/literature';
 vi.mock(import('../services/llm'), async importOriginal => ({
@@ -14,6 +14,42 @@ it('groups without losing IDs or exceeding three blocks / target characters', ()
   expect(batchLiteratureBlocks(blocks).map(b => b.length)).toEqual([3, 3, 1]);
   expect(batchLiteratureBlocks(blocks).flat().map(b => b.id)).toEqual(blocks.map(b => b.id));
   expect(batchLiteratureBlocks(blocks.map(b => ({ ...b, text: 'x'.repeat(1000) })))).toHaveLength(7);
+});
+it('sends each sentence cut across columns or pages exactly once without changing source blocks', async () => {
+  const request = vi.mocked(getCompletion).mockImplementation(respond);
+  const left = { ...blocks[0], y: 400, kind: 'body', readingZone: 'left',
+    text: 'What was the result at 7–9 ml/kg? Would PPV above 13' } as const;
+  const right = { ...blocks[1], x: 260, y: 200, kind: 'body', readingZone: 'right',
+    text: 'and SVV predict fluid responsiveness?' } as const;
+  const tail = { ...right, id: 2, y: 590,
+    text: 'Otherwise, the analysis may be misleading. When these limitations are' };
+  const next = { ...left, id: 1, y: 150,
+    text: 'respected, the variables may improve management [10].' };
+  const page = [left,right,tail], nextPage = [next];
+  const prepared = prepareLiteratureTranslationBlocks(page, undefined, nextPage);
+  const preparedNext = prepareLiteratureTranslationBlocks(nextPage, page);
+  expect(prepared[2].continuesOnNextPage).toBe(true);
+  expect(preparedNext[0].continuesOnNextPage).toBeUndefined();
+  expect(left.text).toContain('Would PPV above 13');
+  expect(tail.text).toContain('When these limitations are');
+  expect(next.text).toMatch(/^respected,/);
+  await translateLiteratureBatches(config, prepared, [], {}, () => {}, () => true);
+  await translateLiteratureBatches(config, preparedNext, [], {}, () => {}, () => true);
+  const requested = request.mock.calls.flatMap(call => JSON.parse(call[1]).blocks);
+  expect(requested).toEqual([
+    {id:left.id,text:'What was the result at 7–9 ml/kg?'},
+    {id:right.id,text:'Would PPV above 13 and SVV predict fluid responsiveness?'},
+    {id:tail.id,text:'Otherwise, the analysis may be misleading.'},
+    {id:next.id,text:'When these limitations are respected, the variables may improve management [10].'},
+  ]);
+});
+it.each([
+  ['The treatment levels were', 'not significantly different.'],
+  ['The levels were reviewed by Dr. Smith and her', 'colleagues.'],
+])('keeps an incomplete first block without a clear prior sentence boundary', (text, continuation) => {
+  const left = { ...blocks[0], y:400, kind:'body',readingZone:'left',text } as const;
+  const right = { ...blocks[1], x:260,y:200,kind:'body',readingZone:'right',text:continuation } as const;
+  expect(prepareLiteratureTranslationBlocks([left,right])).toEqual([left,right]);
 });
 it('retains successful results and resumes only missing IDs after timeout', async () => {
   const request = vi.mocked(getCompletion);

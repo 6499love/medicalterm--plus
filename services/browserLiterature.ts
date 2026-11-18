@@ -1,7 +1,9 @@
 import type { PdfBlock } from './literature';
 import type { LiteraturePage } from './literaturePdf';
 import { getCompletion, type LLMConfig } from './llm';
-import { literatureErrorMessage } from './literature';
+import { literatureErrorMessage, preserveSource } from './literature';
+import { planLiteratureLayout, sampleBannerBackdrop, type TranslatedLayout } from './literatureLayout';
+import { drawLiteratureContinuation, prepareLiteratureContinuations } from './literatureContinuation';
 
 export function literatureModelConfig(config: LLMConfig): LLMConfig {
   const baseUrl = config.baseUrl?.replace(/\/+$/, '');
@@ -25,8 +27,8 @@ export function browserConnectionError(error: unknown, config: LLMConfig): strin
   return literatureErrorMessage(error);
 }
 
-export function resultCounts(values: Record<number,string>) {
-  const all=Object.values(values);
+export function resultCounts(values: Record<number,string>, blocks?: PdfBlock[]) {
+  const all=blocks?.map(block=>values[block.id] || (preserveSource(block) ? '【有意保留原文】' : '【待核对】')) || Object.values(values);
   const retained=all.filter(value=>value.startsWith('【有意保留原文】')).length;
   const review=all.filter(value=>value.startsWith('【待核对')).length;
   return {translated:all.length-retained-review,retained,review};
@@ -45,9 +47,12 @@ export function overlapsNative(box: PdfBlock, native: PdfBlock[]): boolean {
   });
 }
 
-export function preserveSource(text: string): boolean {
-  return !/[A-Za-z]{2}/.test(text) || /^(references|bibliography)\b/i.test(text.trim()) ||
-    /^\s*\d{1,3}[.)]\s+[A-Z][a-z]+\s+[A-Z][A-Za-z.,\s]*[,.:]/.test(text);
+export { preserveSource };
+
+export function reviewBrowserTranslation(source: string, translation: string): string {
+  if (translation.startsWith('【有意保留原文】') || translation.startsWith('【待核对')) return translation;
+  if (!numbersMatch(source,translation)) return `【待核对：译文数字或单位不一致，保留原文】${source}`;
+  return /\p{Script=Han}/u.test(translation) ? translation : `【待核对：未返回中文译文，保留原文】${source}`;
 }
 
 export function numbersMatch(source: string, translation: string): boolean {
@@ -72,7 +77,7 @@ export async function recognizePage(page: BrowserPage, onProgress: (message: str
     for (const block of data.blocks || []) for (const paragraph of block.paragraphs) for (const line of paragraph.lines) {
       if (!line.text.trim()) continue;
       const box: PdfBlock = { id: blocks.length, text: line.text.trim(), x:line.bbox.x0*sx, y:line.bbox.y0*sy,
-        width:(line.bbox.x1-line.bbox.x0)*sx, height:(line.bbox.y1-line.bbox.y0)*sy, fontSize:Math.max(6,(line.bbox.y1-line.bbox.y0)*sy*.8) };
+        width:(line.bbox.x1-line.bbox.x0)*sx, height:(line.bbox.y1-line.bbox.y0)*sy, fontSize:Math.max(6,(line.bbox.y1-line.bbox.y0)*sy*.8), imageText:true };
       if (overlapsNative(box,page.blocks)) continue;
       if (line.confidence < 70) { low++; continue; }
       blocks.push(box);
@@ -82,17 +87,40 @@ export async function recognizePage(page: BrowserPage, onProgress: (message: str
   } finally { await worker.terminate(); }
 }
 
-function wrap(ctx: CanvasRenderingContext2D, value: string, width: number): string[] {
-  const lines: string[] = []; let line = '';
-  for (const char of value) {
-    if (char === '\n' || (line && ctx.measureText(line+char).width>width)) { lines.push(line); line=''; }
-    if (char !== '\n') line+=char;
+export function drawTranslatedLayout(canvas: HTMLCanvasElement, page: BrowserPage, image: HTMLImageElement,
+  translations: Record<number, string>): TranslatedLayout {
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const ctx = canvas.getContext('2d', {willReadFrequently:true})!;
+  ctx.drawImage(image, 0, 0);
+  const sx = canvas.width/page.width, sy = canvas.height/page.height;
+  let currentFont = '';
+  const plan = planLiteratureLayout(page, translations, (text,font)=>{
+    if (currentFont !== font) { ctx.font = font; currentFont = font; }
+    return ctx.measureText(text).width;
+  }, ({x,y,width,height})=>{
+    if (width<1 || height<1) return true;
+    const corners = [[x,y],[x+width-.6,y],[x,y+height-.6],[x+width-.6,y+height-.6]];
+    // Paper must be white at the edges; one isolated ink pixel at a crop edge is harmless.
+    return corners.filter(([px,py])=>{
+      const [r,g,b] = ctx.getImageData(Math.floor(px*sx),Math.floor(py*sy),1,1).data;
+      return Math.min(r,g,b)>=245;
+    }).length >= 3;
+  }, rect=>sampleBannerBackdrop(ctx,rect,sx,sy));
+  ctx.scale(sx, sy);
+  ctx.textBaseline = 'top';
+  for (const r of plan.masks) {
+    ctx.fillStyle = r.color || '#fff';
+    ctx.fillRect(r.x,r.y,r.width,r.height);
   }
-  if (line) lines.push(line);
-  return lines;
+  for (const {rect,lines,font,leading,marker} of plan.labels) {
+    ctx.font = font;
+    ctx.fillStyle = marker ? '#275a83' : '#172033';
+    lines.forEach((line,i)=>ctx.fillText(line,rect.x,rect.y+i*leading));
+  }
+  return { placed:plan.placed, continuations:plan.continuations };
 }
 
-/** Source stays intact; paginated Chinese side notes never cover chart geometry. */
 export async function exportBrowserPdf(name: string, count: number,
   read: (number:number)=>Promise<BrowserPage>, translations: Record<number,Record<number,string>>,
   onProgress: (value:string)=>void, isCurrent:()=>boolean) {
@@ -102,24 +130,26 @@ export async function exportBrowserPdf(name: string, count: number,
     if (!isCurrent()) return;
     onProgress(`本机生成 PDF ${number}/${count}`);
     const data = await read(number); const image=new Image(); image.src=data.image; await image.decode();
-    const canvas=document.createElement('canvas');canvas.width=1800;canvas.height=1280;
-    const ctx=canvas.getContext('2d')!;ctx.font='20px sans-serif';
-    const all=data.blocks.flatMap(block=>wrap(ctx,`#${block.id+1} 原文：${block.text}\n对照：${translations[number]?.[block.id] || (preserveSource(block.text)?'【有意保留原文】':'【尚未翻译】')}`,800).concat(['']));
-    if (!all.length) all.push('本页未提取到文字。原图保留，需人工检查或运行图片文字识别。');
-    for (let offset=0;offset<all.length;offset+=38) {
-      ctx.fillStyle='white';ctx.fillRect(0,0,1800,1280);ctx.fillStyle='#15283d';ctx.font='20px sans-serif';
-      ctx.fillText(`原文第 ${number} 页 · ${offset ? '对照续页' : '浏览器对照稿'}`,30,35);
-      const scale=Math.min(850/image.width,1190/image.height);ctx.drawImage(image,25,60,image.width*scale,image.height*scale);
-      ctx.fillText('中文对照 · 图中文字按编号查看 · 机器翻译请复核',920,35);
-      all.slice(offset,offset+38).forEach((line,i)=>ctx.fillText(line,920,75+i*30));
-      const png=await output.embedPng(canvas.toDataURL('image/png'));
-      const sheet=output.addPage([900,640]);sheet.drawImage(png,{x:0,y:0,width:900,height:640});
+    const right=document.createElement('canvas');
+    const layout=drawTranslatedLayout(right,data,image,translations[number] || {});
+    const sheets=prepareLiteratureContinuations(layout.continuations,data.width,data.height);
+    const original=await output.embedPng(data.image);
+    const margin=18, gap=18, width=data.width*2+margin*2+gap, height=data.height+margin*2;
+    const background=await output.embedPng(right.toDataURL('image/png'));
+    for (let sheetIndex=-1;sheetIndex<sheets.length;sheetIndex++) {
+      if (!isCurrent()) return;
+      if (sheetIndex>=0) drawLiteratureContinuation(right,sheets[sheetIndex],data.width,data.height,number,sheetIndex);
+      const translated=sheetIndex<0?background:await output.embedPng(right.toDataURL('image/png'));
+      const sheet=output.addPage([width,height]);
+      const fit={y:margin,width:data.width,height:data.height};
+      sheet.drawImage(original,{...fit,x:margin});
+      sheet.drawImage(translated,{...fit,x:margin+data.width+gap});
     }
-    canvas.width=canvas.height=0;
+    right.width=right.height=0;
     await new Promise(resolve=>setTimeout(resolve,0));
   }
   if (!isCurrent()) return;
   const bytes=await output.save();
   const url=URL.createObjectURL(new Blob([bytes as BlobPart],{type:'application/pdf'}));
-  const link=document.createElement('a');link.href=url;link.download=`${name}-浏览器双语对照.pdf`;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+  const link=document.createElement('a');link.href=url;link.download=`${name.replace(/\.pdf$/i,'')}-双语对照.pdf`;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
