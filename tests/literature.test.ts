@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupPdfLines, parseLiteratureResponse, literatureErrorMessage } from '../services/literature';
+import { groupPdfLines, joinPdfTextPieces, parseLiteratureResponse, literatureErrorMessage } from '../services/literature';
 
 const line = (text: string, x: number, y: number) => ({ text, x, y, width: 180, height: 12, fontSize: 10 });
 
@@ -26,6 +26,14 @@ describe('literature PDF translation boundaries', () => {
   it('keeps two columns separate while joining lines within each column', () => {
     const blocks = groupPdfLines([line('Left one', 40, 100), line('Right one', 320, 100), line('Left two', 40, 114), line('Right two', 320, 114)]);
     expect(blocks.map(block => block.text)).toEqual(['Left one Left two', 'Right one Right two']);
+  });
+  it('keeps PDF.js lines apart when the gap between the two columns is less than 1.5 em', () => {
+    const left = {...line('Left column', 64.6, 334.4), width: 225.9, fontSize: 9.8, hasEOL: true};
+    const right = {...line('Right column', 304.7, 334.4), width: 233.9, fontSize: 9.8, hasEOL: true};
+    expect(joinPdfTextPieces([left, right]).map(piece => piece.text)).toEqual(['Left column', 'Right column']);
+    const fragment = {...left, text: 'First', width: 22, hasEOL: false};
+    const continuation = {...left, text: 'fragment', x: 88, width: 45};
+    expect(joinPdfTextPieces([fragment, continuation]).map(piece => piece.text)).toEqual(['First fragment']);
   });
   it('keeps paragraphs separated by a large vertical gap', () => {
     expect(groupPdfLines([line('First paragraph', 40, 100), line('Second paragraph', 40, 150)])).toHaveLength(2);

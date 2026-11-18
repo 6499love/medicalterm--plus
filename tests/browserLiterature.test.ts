@@ -1,6 +1,7 @@
 import { describe,it,expect,vi,afterEach } from 'vitest';
 import { browserConnectionError,checkBrowserConnection,literatureModelConfig,numbersMatch,overlapsNative,preserveSource,resultCounts } from '../services/browserLiterature';
 import { getCompletion } from '../services/llm';
+import { translatePublicationLabel, type PdfBlock } from '../services/literature';
 afterEach(()=>{vi.unstubAllGlobals();vi.useRealTimers();});
 describe('browser literature safety',()=>{
   it('does not count retained and review entries as translated',()=>{
@@ -63,6 +64,24 @@ describe('browser literature safety',()=>{
     expect(preserveSource('13')).toBe(true);
     expect(preserveSource('7. Levin MA, McCormick PJ, Lin HM. Title')).toBe(true);
     expect(preserveSource('GREY ZONE')).toBe(false);
+  });
+  it('translates publication labels without changing their values',()=>{
+    const block: PdfBlock={id:0,text:'',x:0,y:0,width:100,height:10,fontSize:8,kind:'metadata'};
+    const examples=[
+      ['Open Access','开放获取'],
+      ['References','参考文献'],
+      ['Page 2 of 3','第2页，共3页'],
+      ['*Correspondence: A. Smith a@example.test','*通讯作者：A. Smith a@example.test'],
+      ['This comment refers to the article available online at https://doi.org/10.1234/abc.','本文所评论的文章可在线阅读：https://doi.org/10.1234/abc.'],
+      ['Received: 24 November 2023 Accepted: 28 November 2023','收稿：24 November 2023 接收：28 November 2023'],
+    ];
+    for (const [text,expected] of examples) {
+      expect(preserveSource({...block,text})).toBe(false);
+      expect(translatePublicationLabel({...block,text})).toBe(expected);
+      expect(numbersMatch(text,expected)).toBe(true);
+    }
+    expect(translatePublicationLabel({...block,kind:undefined,imageText:true,text:'Published online: 07 December 2023'})).toBe('在线发表：07 December 2023');
+    expect(preserveSource({...block,text:'A. Smith',retainSource:true})).toBe(true);
   });
   it('filters OCR duplicates but keeps labels outside native text',()=>{
     const native={id:0,text:'body',x:10,y:10,width:100,height:20,fontSize:10};
