@@ -165,6 +165,7 @@ export default function BrowserLiterature() {
     return !!(blocks&&values&&blocks.every(block=>!!values[block.id]));
   };
   const complete=total>0&&Array.from({length:total},(_,i)=>i+1).every(pageProcessed);
+  const reviewTotal=complete?Object.values(results.current).reduce((sum,values)=>sum+resultCounts(values).review,0):0;
   const fileControl=<label className={page?'lit-file-change':`lit-upload${modelOpen?' lit-upload-secondary':''}`}>
     <input className="lit-sr-only" type="file" aria-label="选择 PDF 文件" accept=".pdf,application/pdf" disabled={!!busy}
       onChange={e=>{void open(e.target.files?.[0]);e.target.value='';}} />
@@ -193,6 +194,7 @@ export default function BrowserLiterature() {
           </div>
         </details>
       </div>
+      {complete&&reviewTotal>0&&<p className="lit-review-warning" role="status">整篇已处理，仍有 {reviewTotal} 处待核对。请核对后使用。</p>}
       <div className="lit-reading-toolbar">
         <div className="lit-modes" role="group" aria-label="对照方式">
           <button type="button" aria-pressed={view==='layout'} onClick={()=>setView('layout')}>页面对照</button>
