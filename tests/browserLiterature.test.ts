@@ -42,6 +42,19 @@ describe('browser literature safety',()=>{
     expect(message).not.toContain('private detail');
     expect(request).toHaveBeenCalledTimes(1);
   });
+  it('shows the quota reason for a custom GLM endpoint without retrying or switching routes',async()=>{
+    vi.useFakeTimers();
+    const request=vi.fn().mockImplementation(async()=>new Response(JSON.stringify({error:{code:1308,message:'private detail'}}),{status:429}));
+    vi.stubGlobal('fetch',request);
+    const config={provider:'glm' as const,apiKey:'fake-only',baseUrl:'https://example.test/v4'};
+    const failure=checkBrowserConnection(config).catch(error=>error);
+    await vi.runAllTimersAsync();
+    const message=browserConnectionError(await failure,config);
+    expect(message).toContain('使用额度已达上限');
+    expect(message).toContain('1308');
+    expect(message).not.toContain('private detail');
+    expect(request.mock.calls.map(([url])=>url)).toEqual(['https://example.test/v4/chat/completions']);
+  });
   it('preserves the model busy reason after delayed retries',async()=>{
     vi.useFakeTimers();
     const request=vi.fn().mockImplementation(async()=>new Response(JSON.stringify({error:{code:'1305'}}),{status:429}));

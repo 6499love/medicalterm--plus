@@ -136,7 +136,7 @@ export const getCompletion = async (
         });
 
         if (!response.ok) {
-           if (url === '/api/glm/chat/completions' && response.status === 429) {
+           if (config.provider === 'glm' && response.status === 429) {
              const data = await response.json().catch(() => null);
              const rawCode = data?.error?.code;
              const code = typeof rawCode === 'number' || typeof rawCode === 'string' ? String(rawCode) : '';
