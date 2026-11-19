@@ -130,11 +130,11 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
           ))}
         </nav>
 
-        <div className="mt-auto p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+        {activePage !== 'literature' && <div className="mt-auto p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
           <p className="text-xs text-blue-900/60 leading-relaxed">
-            {activePage === 'literature' ? 'PDF 在本地读取；翻译时会将当前页文字发送给设置中的模型服务。' : t('FOOTER_NOTE')}
+            {t('FOOTER_NOTE')}
           </p>
-        </div>
+        </div>}
       </aside>
 
       {/* Main Content Area */}
