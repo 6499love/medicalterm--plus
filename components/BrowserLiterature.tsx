@@ -6,8 +6,8 @@ import { prepareLiteratureTranslationBlocks, translateLiteratureBatches, Literat
 import { translatePublicationLabel, type PdfBlock } from '../services/literature';
 import type { TranslatedLayout } from '../services/literatureLayout';
 import { drawLiteratureContinuation, prepareLiteratureContinuations, type ContinuationSheet } from '../services/literatureContinuation';
-import type { PageRoute } from '../types';
 import { fetchSystemTerms } from '../services/search';
+import LiteratureModelSettings from './LiteratureModelSettings';
 import './literature.css';
 import './browserLiterature.css';
 
@@ -24,8 +24,8 @@ function Continuation({sheet,page,number,index}: {sheet:ContinuationSheet; page:
   </>;
 }
 
-export default function BrowserLiterature({ onNavigate }: { onNavigate: (route: PageRoute) => void }) {
-  const auth = useStore(s=>s.auth), terms = useStore(s=>s.userTerms);
+export default function BrowserLiterature() {
+  const auth = useStore(s=>s.literatureAuth), terms = useStore(s=>s.userTerms);
   const pdf = useRef<PDFDocumentProxy|null>(null), alive = useRef(true), stop = useRef(false);
   const metadata = useRef(new Map<number,Omit<BrowserPage,'image'>>());
   const results = useRef<Record<number,Record<number,string>>>({});
@@ -54,7 +54,7 @@ export default function BrowserLiterature({ onNavigate }: { onNavigate: (route: 
     }).catch(()=>{if(active)setRendered(null);});
     return ()=>{active=false;};
   },[page,translated,view]);
-  useEffect(()=>setConnection(''),[auth]);
+  useEffect(()=>{setConnection('');setError('');},[auth]);
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;stop.current=true;void pdf.current?.destroy();};},[]);
   const current=()=>alive.current&&!stop.current;
   async function read(n:number): Promise<BrowserPage> {
@@ -148,10 +148,10 @@ export default function BrowserLiterature({ onNavigate }: { onNavigate: (route: 
   async function checkConnection(){if(!auth?.apiKey||busy)return;stop.current=false;setError('');setConnection('');setBusy('检查模型连接…');try{await checkBrowserConnection(auth);if(current())setConnection('模型连接检查通过；全文翻译仍可能遇到限额或超时。');}catch(cause){if(current())setError(browserConnectionError(cause,auth));}finally{if(alive.current)setBusy('');}}
   return <section className="literature" data-revision={revision}>
     <div className="lit-heading"><div><span className="lit-eyebrow">浏览器处理 · 试验版</span><h2>文献翻译</h2></div></div>
-    <div className="lit-notice">PDF、图片识别和导出在浏览器处理。默认智谱通过本站转发待译文字，其他配置由浏览器连接模型。模型可能产生调用费用。首次OCR需要下载识别资源。关闭页面会清除本次结果。</div>
+    <div className="lit-notice">PDF、图片识别和导出在浏览器处理。待译文字通过本站转发给智谱。首次 OCR 需要下载识别资源。关闭页面会清除本次结果。</div>
+    <LiteratureModelSettings disabled={!!busy} />
     <label>选择PDF（最多20 MB / 100页）<input type="file" accept=".pdf,application/pdf" disabled={!!busy} onChange={e=>{void open(e.target.files?.[0]);e.target.value='';}} /></label>
-    {!auth?.apiKey&&<p><button onClick={()=>onNavigate('settings')}>前往设置填写模型Key</button></p>}
-    {auth?.apiKey&&<p><button disabled={!!busy} onClick={()=>void checkConnection()}>检查模型连接</button> · 当前服务：{auth.provider}。检查会发送一句短文字，可能使用模型额度。</p>}
+    {auth?.apiKey&&<p className="lit-actions"><button disabled={!!busy} onClick={()=>void checkConnection()}>检查文献模型连接</button>检查会发送一句短文字，按模型用量计费。</p>}
     {connection&&<p role="status">{connection}</p>}
     <p><label><input type="checkbox" checked={ocr} disabled={!!busy} onChange={e=>setOcr(e.target.checked)} /> 识别图片里的英文（耗时较长）</label></p>
     {error&&<p role="alert" className="lit-error">{error}</p>}

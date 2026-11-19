@@ -10,6 +10,8 @@ interface StoreState {
   history: HistoryItem[];
   settings: AppSettings;
   auth: AuthConfig | null; // Auth state
+  literatureAuth: AuthConfig | null;
+  rememberLiteratureKey: boolean;
   
   // Navigation State
   navigatedTermId: string | null; // ID of term to open in dictionary
@@ -29,6 +31,8 @@ interface StoreState {
   
   setAuth: (config: AuthConfig) => void;
   logout: () => void;
+  setLiteratureAuth: (config: AuthConfig, rememberKey?: boolean) => void;
+  clearLiteratureAuth: () => void;
   
   setNavigatedTermId: (id: string | null) => void;
 }
@@ -47,6 +51,8 @@ export const useStore = create<StoreState>()(
         rememberApiKey: true,
       },
       auth: null,
+      literatureAuth: null,
+      rememberLiteratureKey: false,
       navigatedTermId: null,
 
       addUserTerm: (termData) => {
@@ -145,6 +151,8 @@ export const useStore = create<StoreState>()(
       setAuth: (config) => set({ auth: config }),
       
       logout: () => set({ auth: null }),
+      setLiteratureAuth: (config, rememberKey = false) => set({ literatureAuth: config, rememberLiteratureKey: rememberKey }),
+      clearLiteratureAuth: () => set({ literatureAuth: null, rememberLiteratureKey: false }),
       
       setNavigatedTermId: (id) => set({ navigatedTermId: id }),
     }),
@@ -154,16 +162,15 @@ export const useStore = create<StoreState>()(
         const saved = persisted as Partial<StoreState> | undefined;
         // Retire Baidu credentials without sending them to the replacement provider.
         const auth = (saved?.auth as { provider?: string } | null)?.provider === 'baidu' ? null : saved?.auth;
-        return { ...current, ...saved, auth: auth ?? null };
+        return { ...current, ...saved, auth: auth ?? null,
+          literatureAuth: saved?.rememberLiteratureKey ? saved.literatureAuth ?? null : null,
+          rememberLiteratureKey: saved?.rememberLiteratureKey === true };
       },
       partialize: (state) => {
-        // If rememberApiKey is false, omit 'auth' from the persisted state
-        // This ensures the key is removed from localStorage on the next save/update
-        if (!state.settings.rememberApiKey) {
-          const { auth, ...rest } = state;
-          return rest;
-        }
-        return state;
+        const { auth, literatureAuth, ...rest } = state;
+        return { ...rest,
+          ...(state.settings.rememberApiKey ? { auth } : {}),
+          ...(state.rememberLiteratureKey ? { literatureAuth } : {}) };
       }
     }
   )
