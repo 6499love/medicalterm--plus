@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { getDocument, readLiteraturePage, readLiteraturePageStructure, type PDFDocumentProxy } from '../services/literaturePdf';
-import { browserConnectionError, checkBrowserConnection, drawTranslatedLayout, exportBrowserPdf, literatureModelConfig, preserveSource, recognizePage, resultCounts, reviewBrowserTranslation, type BrowserPage } from '../services/browserLiterature';
+import { browserConnectionError, checkBrowserConnection, drawTranslatedLayout, exportBrowserPdf, isBrowserPageProcessed, literatureModelConfig, preserveSource, recognizePage, resultCounts, reviewBrowserTranslation, type BrowserPage } from '../services/browserLiterature';
 import { prepareLiteratureTranslationBlocks, translateLiteratureBatches, LiteratureBatchError } from '../services/literatureTranslation';
 import { translatePublicationLabel, type PdfBlock } from '../services/literature';
 import type { TranslatedLayout } from '../services/literatureLayout';
@@ -160,12 +160,9 @@ export default function BrowserLiterature() {
     finally {if(alive.current)setBusy('');}
   }
   const hasResults=Object.keys(results.current).length>0;
-  const pageProcessed=(n:number)=>{
-    const blocks=metadata.current.get(n)?.blocks, values=results.current[n];
-    return !!(blocks&&values&&blocks.every(block=>!!values[block.id]));
-  };
+  const pageProcessed=(n:number)=>isBrowserPageProcessed(metadata.current.get(n),results.current[n],ocr);
   const complete=total>0&&Array.from({length:total},(_,i)=>i+1).every(pageProcessed);
-  const reviewTotal=complete?Object.values(results.current).reduce((sum,values)=>sum+resultCounts(values).review,0):0;
+  const reviewTotal=Object.values(results.current).reduce((sum,values)=>sum+resultCounts(values).review,0);
   const fileControl=<label className={page?'lit-file-change':`lit-upload${modelOpen?' lit-upload-secondary':''}`}>
     <input className="lit-sr-only" type="file" aria-label="选择 PDF 文件" accept=".pdf,application/pdf" disabled={!!busy}
       onChange={e=>{void open(e.target.files?.[0]);e.target.value='';}} />
@@ -194,7 +191,7 @@ export default function BrowserLiterature() {
           </div>
         </details>
       </div>
-      {complete&&reviewTotal>0&&<p className="lit-review-warning" role="status">整篇已处理，仍有 {reviewTotal} 处待核对。请核对后使用。</p>}
+      {reviewTotal>0&&<p className="lit-review-warning" role="status">{complete?'整篇已处理，仍有':'已有结果中有'} {reviewTotal} 处待核对。请核对后使用。</p>}
       <div className="lit-reading-toolbar">
         <div className="lit-modes" role="group" aria-label="对照方式">
           <button type="button" aria-pressed={view==='layout'} onClick={()=>setView('layout')}>页面对照</button>

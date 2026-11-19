@@ -39,6 +39,11 @@ export interface BrowserPage extends LiteraturePage {
   ocrLowConfidence?: number;
 }
 
+export function isBrowserPageProcessed(page: Pick<BrowserPage,'blocks'|'ocrDone'> | undefined,
+  values: Record<number,string> | undefined, withOcr: boolean): boolean {
+  return !!(page&&values&&(!withOcr||page.ocrDone)&&page.blocks.every(block=>!!values[block.id]));
+}
+
 export function overlapsNative(box: PdfBlock, native: PdfBlock[]): boolean {
   return native.some(other => {
     const width = Math.max(0, Math.min(box.x+box.width,other.x+other.width)-Math.max(box.x,other.x));
