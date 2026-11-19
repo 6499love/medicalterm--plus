@@ -1,49 +1,65 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
+import type { AuthConfig } from '../types';
 
 const model = 'glm-4-flashx-250414';
 
-export default function LiteratureModelSettings({disabled}: {disabled:boolean}) {
+interface Props {
+  disabled: boolean;
+  open: boolean;
+  onOpenChange: (open:boolean)=>void;
+  onSave: (config:AuthConfig,remember:boolean)=>Promise<boolean>;
+}
+
+export default function LiteratureModelSettings({disabled,open,onOpenChange,onSave}: Props) {
   const auth = useStore(s=>s.literatureAuth);
   const rememberKey = useStore(s=>s.rememberLiteratureKey);
-  const setAuth = useStore(s=>s.setLiteratureAuth);
   const clearAuth = useStore(s=>s.clearLiteratureAuth);
-  const [editing,setEditing] = useState(!auth);
   const [key,setKey] = useState('');
   const [remember,setRemember] = useState(rememberKey);
+  const [error,setError] = useState('');
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(()=>{if(open&&!disabled)input.current?.focus();},[open,disabled]);
 
-  function save(event:React.FormEvent) {
+  async function save(event:React.FormEvent) {
     event.preventDefault();
     if (disabled || !key.trim()) return;
-    setAuth({provider:'glm',apiKey:key.trim(),model,userName:'Literature'},remember);
-    setKey('');
-    setEditing(false);
+    setError('');
+    try {
+      if(await onSave({provider:'glm',apiKey:key.trim(),model,userName:'Literature'},remember))setKey('');
+    } catch(cause) {setError(cause instanceof Error?cause.message:'连接检查失败，请重试。');}
   }
 
   return <section className="lit-model-settings" aria-labelledby="lit-model-title">
-    <h3 id="lit-model-title">文献翻译 API · 按量计费</h3>
-    <p>文献翻译单独配置 Key，费用由你的智谱账号承担。普通翻译保留原来的配置。</p>
-    <p className="lit-model-name">智谱 GLM · GLM-4-FlashX-250414</p>
-    <p className="lit-caption">参考价：输入、输出各 0.10 元 / 百万 Token（2026-11-19 核对）。实际费用以平台账单为准。<a className="lit-link" href="https://docs.bigmodel.cn/cn/guide/start/pricing" target="_blank" rel="noreferrer">查看官方价格</a></p>
+    <div className="lit-key-summary">
+      <h3 id="lit-model-title">文献 Key <span className={auth?'lit-key-ready':'lit-key-missing'}>{auth?'已配置':'未配置'}</span></h3>
+      <button type="button" disabled={disabled} aria-expanded={open} aria-controls="lit-key-form"
+        onClick={()=>{setRemember(rememberKey);setError('');onOpenChange(!open);}}>{open?'收起':auth?'修改':'配置 Key'}</button>
+    </div>
+    <p className="lit-cost-notice">按模型用量计费，费用由你的智谱账号承担。</p>
     <fieldset disabled={disabled}>
-      {auth&&!editing ? <div className="lit-actions">
-        <span>文献 Key 已保存</span>
-        <button type="button" onClick={()=>{setRemember(rememberKey);setEditing(true);}}>更换文献 Key</button>
-        <button type="button" onClick={()=>{clearAuth();setKey('');setRemember(false);setEditing(true);}}>移除文献 Key</button>
-      </div> : <form onSubmit={save}>
+      {open&&<form id="lit-key-form" onSubmit={save}>
         <label htmlFor="literature-api-key">智谱标准 API Key</label>
         <div className="lit-key-row">
-          <input id="literature-api-key" type="password" autoComplete="off" spellCheck={false} value={key}
-            onChange={event=>setKey(event.target.value)} aria-describedby="lit-key-help" required />
+          <input ref={input} id="literature-api-key" type="password" autoComplete="off" spellCheck={false} value={key}
+            onChange={event=>setKey(event.target.value)} aria-describedby="lit-key-help" aria-invalid={!!error} required />
           <a className="lit-link" href="https://bigmodel.cn/usercenter/proj-mgmt/apikeys" target="_blank" rel="noreferrer">获取标准 API Key</a>
         </div>
-        <p id="lit-key-help" className="lit-caption">填写可调用此模型的标准 Key 或历史兼容 Key。已有可用 Key 可直接使用；保存配置不会验证连接。</p>
+        <p id="lit-key-help" className="lit-caption">已有适用 Key 可直接填写。文献 Key 与普通翻译配置独立。</p>
+        {error&&<p role="alert" className="lit-error">{error}</p>}
         <label className="lit-remember"><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)} />在此浏览器记住文献 Key</label>
         <div className="lit-actions">
-          <button type="submit" disabled={!key.trim()}>保存文献配置</button>
-          {auth&&<button type="button" onClick={()=>{setKey('');setEditing(false);}}>取消</button>}
+          <button className="lit-primary" type="submit" disabled={!key.trim()}>保存并检查连接</button>
+          <button type="button" onClick={()=>{setKey('');setRemember(rememberKey);setError('');onOpenChange(false);}}>取消</button>
+          {auth&&<button className="lit-remove-key" type="button" onClick={()=>{clearAuth();setKey('');setRemember(false);setError('');}}>移除文献 Key</button>}
         </div>
+        <p className="lit-caption">检查会发送一句短文字，按用量计费。通过后自动收起配置。</p>
       </form>}
     </fieldset>
+    <details className="lit-model-info">
+      <summary>价格与使用说明</summary>
+      <p>智谱 GLM-4-FlashX-250414。参考价：输入、输出各 0.10 元 / 百万 Token（2026-11-19 核对），实际以平台账单为准。<a className="lit-link" href="https://docs.bigmodel.cn/cn/guide/start/pricing" target="_blank" rel="noreferrer">官方价格</a></p>
+      <p>PDF 读取、识图和导出在浏览器完成，待译文字通过本站发送给智谱。Key 默认只用于当前页面会话，勾选记住后才本地保存。</p>
+    </details>
   </section>;
 }

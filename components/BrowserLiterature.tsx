@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { getDocument, readLiteraturePage, readLiteraturePageStructure, type PDFDocumentProxy } from '../services/literaturePdf';
-import { browserConnectionError, checkBrowserConnection, drawTranslatedLayout, exportBrowserPdf, literatureModelConfig, preserveSource, recognizePage, resultCounts, reviewBrowserTranslation, type BrowserPage } from '../services/browserLiterature';
+import { browserConnectionError, checkBrowserConnection, drawTranslatedLayout, exportBrowserPdf, isBrowserPageProcessed, literatureModelConfig, preserveSource, recognizePage, resultCounts, reviewBrowserTranslation, type BrowserPage } from '../services/browserLiterature';
 import { prepareLiteratureTranslationBlocks, translateLiteratureBatches, LiteratureBatchError } from '../services/literatureTranslation';
 import { translatePublicationLabel, type PdfBlock } from '../services/literature';
 import type { TranslatedLayout } from '../services/literatureLayout';
 import { drawLiteratureContinuation, prepareLiteratureContinuations, type ContinuationSheet } from '../services/literatureContinuation';
 import { fetchSystemTerms } from '../services/search';
 import LiteratureModelSettings from './LiteratureModelSettings';
+import type { AuthConfig } from '../types';
 import './literature.css';
 import './browserLiterature.css';
 
@@ -26,6 +27,7 @@ function Continuation({sheet,page,number,index}: {sheet:ContinuationSheet; page:
 
 export default function BrowserLiterature() {
   const auth = useStore(s=>s.literatureAuth), terms = useStore(s=>s.userTerms);
+  const setLiteratureAuth = useStore(s=>s.setLiteratureAuth);
   const pdf = useRef<PDFDocumentProxy|null>(null), alive = useRef(true), stop = useRef(false);
   const metadata = useRef(new Map<number,Omit<BrowserPage,'image'>>());
   const results = useRef<Record<number,Record<number,string>>>({});
@@ -33,7 +35,8 @@ export default function BrowserLiterature() {
   const [name,setName]=useState(''), [total,setTotal]=useState(0), [busy,setBusy]=useState('');
   const [error,setError]=useState(''), [revision,setRevision]=useState(0), [selected,setSelected]=useState<number|null>(null);
   const [ocr,setOcr]=useState(true);
-  const [connection,setConnection]=useState('');
+  const [modelOpen,setModelOpen]=useState(false);
+  const primaryAction=useRef<HTMLButtonElement>(null);
   const [view,setView]=useState<'layout'|'text'>('layout');
   const translatedCanvas=useRef<HTMLCanvasElement>(null);
   const [rendered,setRendered]=useState<{page:BrowserPage; translations:Record<number,string>; layout:TranslatedLayout; sheets:ContinuationSheet[]}|null>(null);
@@ -54,7 +57,8 @@ export default function BrowserLiterature() {
     }).catch(()=>{if(active)setRendered(null);});
     return ()=>{active=false;};
   },[page,translated,view]);
-  useEffect(()=>{setConnection('');setError('');},[auth]);
+  useEffect(()=>setError(''),[auth]);
+  useEffect(()=>{if(auth&&!modelOpen)primaryAction.current?.focus();},[auth,modelOpen]);
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;stop.current=true;void pdf.current?.destroy();};},[]);
   const current=()=>alive.current&&!stop.current;
   async function read(n:number): Promise<BrowserPage> {
@@ -86,6 +90,7 @@ export default function BrowserLiterature() {
       if(!current()){await document.destroy();return;}
       if(document.numPages>100){await document.destroy();throw new Error('请拆分为100页以内的PDF');}
       pdf.current=document;setName(file.name);setTotal(document.numPages);save(1,await read(1));
+      if(!auth?.apiKey)setModelOpen(true);
     }catch{if(alive.current)setError('无法读取PDF，请检查文件是否损坏、加密或超过100页。');}
     finally{if(alive.current)setBusy('');}
   }
@@ -94,12 +99,10 @@ export default function BrowserLiterature() {
     const modelConfig=literatureModelConfig(auth);
     stop.current=false;setError('');setBusy('准备浏览器翻译…');
     try{
-      setConnection('');
       if(modelConfig.browserDirect){
         setBusy('先检查模型能否从网页直连…');
         await checkBrowserConnection(auth);
         if(!current())return;
-        setConnection('模型连接检查通过；全文翻译仍可能遇到限额或超时。');
       }
       const glossary=[...terms,...await fetchSystemTerms()];
       for(let n=all?1:number;n<=(all?total:number);n++){
@@ -145,32 +148,60 @@ export default function BrowserLiterature() {
   const translationFor=(block:PdfBlock)=>preserveSource(block)?'原文保留':translated[block.id]||'待核对：尚未翻译';
   const selectedBlock=page?.blocks.find(b=>b.id===selected);
   const selectedSheet=preview?.sheets.findIndex(sheet=>sheet.notes.some(note=>note.id===selected)) ?? -1;
-  async function checkConnection(){if(!auth?.apiKey||busy)return;stop.current=false;setError('');setConnection('');setBusy('检查模型连接…');try{await checkBrowserConnection(auth);if(current())setConnection('模型连接检查通过；全文翻译仍可能遇到限额或超时。');}catch(cause){if(current())setError(browserConnectionError(cause,auth));}finally{if(alive.current)setBusy('');}}
+  async function saveModel(config:AuthConfig,remember:boolean) {
+    if(busy)return false;
+    stop.current=false;setBusy('正在检查文献 Key…');setError('');
+    try {
+      await checkBrowserConnection(config);
+      if(!current())return false;
+      setLiteratureAuth(config,remember);setModelOpen(false);
+      return true;
+    } catch(cause) {throw new Error(browserConnectionError(cause,config));}
+    finally {if(alive.current)setBusy('');}
+  }
+  const hasResults=Object.keys(results.current).length>0;
+  const pageProcessed=(n:number)=>isBrowserPageProcessed(metadata.current.get(n),results.current[n],ocr);
+  const complete=total>0&&Array.from({length:total},(_,i)=>i+1).every(pageProcessed);
+  const reviewTotal=Object.values(results.current).reduce((sum,values)=>sum+resultCounts(values).review,0);
+  const fileControl=<label className={page?'lit-file-change':`lit-upload${modelOpen?' lit-upload-secondary':''}`}>
+    <input className="lit-sr-only" type="file" aria-label="选择 PDF 文件" accept=".pdf,application/pdf" disabled={!!busy}
+      onChange={e=>{void open(e.target.files?.[0]);e.target.value='';}} />
+    {page?'更换 PDF':<><strong>选择 PDF</strong><span>英文论文 · 最多 20 MB / 100 页</span></>}
+  </label>;
   return <section className="literature" data-revision={revision}>
-    <div className="lit-heading"><div><span className="lit-eyebrow">浏览器处理 · 试验版</span><h2>文献翻译</h2></div></div>
-    <div className="lit-notice">PDF、图片识别和导出在浏览器处理。待译文字通过本站转发给智谱。首次 OCR 需要下载识别资源。关闭页面会清除本次结果。</div>
-    <LiteratureModelSettings disabled={!!busy} />
-    <label>选择PDF（最多20 MB / 100页）<input type="file" accept=".pdf,application/pdf" disabled={!!busy} onChange={e=>{void open(e.target.files?.[0]);e.target.value='';}} /></label>
-    {auth?.apiKey&&<p className="lit-actions"><button disabled={!!busy} onClick={()=>void checkConnection()}>检查文献模型连接</button>检查会发送一句短文字，按模型用量计费。</p>}
-    {connection&&<p role="status">{connection}</p>}
-    <p><label><input type="checkbox" checked={ocr} disabled={!!busy} onChange={e=>setOcr(e.target.checked)} /> 识别图片里的英文（耗时较长）</label></p>
+    <div className="lit-heading"><div><h2>文献翻译</h2><p>选择英文 PDF，生成可下载的双语对照。</p></div></div>
+    {page?<div className="lit-document"><div><strong>{name}</strong><span>{total} 页</span></div>{fileControl}</div>:fileControl}
+    <LiteratureModelSettings disabled={!!busy} open={modelOpen} onOpenChange={setModelOpen} onSave={saveModel} />
     {error&&<p role="alert" className="lit-error">{error}</p>}
     {busy&&<p role="status">{busy} <button onClick={()=>{stop.current=true;setBusy('正在停止，等待当前步骤结束…');}}>停止后续处理</button></p>}
     {page&&<>
-      <div className="lit-toolbar"><strong>{name}</strong><button disabled={!!busy||number<=1} onClick={()=>void change(number-1)}>上一页</button><span>{number}/{total}</span><button disabled={!!busy||number>=total} onClick={()=>void change(number+1)}>下一页</button></div>
-      <div className="lit-actions">
+      <div className="lit-actions lit-main-actions">
+        {!modelOpen&&(complete?
+          <button ref={primaryAction} className="lit-primary" disabled={!!busy} onClick={()=>void exportPdf()}>下载双语 PDF</button>:
+          <button ref={primaryAction} className="lit-primary" disabled={!!busy} onClick={()=>auth?.apiKey?void process(true):setModelOpen(true)}>{auth?.apiKey?(hasResults?'继续翻译整篇':'翻译整篇'):'配置文献 Key'}</button>)}
+        {hasResults&&(!complete||modelOpen)&&<button disabled={!!busy} onClick={()=>void exportPdf()}>下载当前结果</button>}
+        <details className="lit-more">
+          <summary>更多操作</summary>
+          <div className="lit-more-panel">
+            <button disabled={!!busy||!auth?.apiKey||modelOpen||pageProcessed(number)} onClick={()=>void process(false)}>翻译当前页</button>
+            <button disabled={!!busy||page.ocrDone} onClick={()=>void scan()}>仅识别当前页图片文字</button>
+            {!hasResults&&<button disabled={!!busy} onClick={()=>void exportPdf()}>下载未翻译对照</button>}
+            <label><input type="checkbox" checked={ocr} disabled={!!busy} onChange={e=>setOcr(e.target.checked)} />翻译时识别图中英文（耗时较长）</label>
+            <small>首次图片识别需要下载识别资源。</small>
+          </div>
+        </details>
+      </div>
+      {reviewTotal>0&&<p className="lit-review-warning" role="status">{complete?'整篇已处理，仍有':'已有结果中有'} {reviewTotal} 处待核对。请核对后使用。</p>}
+      <div className="lit-reading-toolbar">
         <div className="lit-modes" role="group" aria-label="对照方式">
           <button type="button" aria-pressed={view==='layout'} onClick={()=>setView('layout')}>页面对照</button>
           <button type="button" aria-pressed={view==='text'} onClick={()=>setView('text')}>段落对照</button>
         </div>
-        <button disabled={!!busy||page.ocrDone} onClick={()=>void scan()}>仅识别本页图片文字</button>
-        <button className="lit-primary" disabled={!!busy||!auth?.apiKey} onClick={()=>void process(false)}>翻译当前页</button>
-        <button disabled={!!busy||!auth?.apiKey} onClick={()=>void process(true)}>翻译全文 / 继续</button>
-        <button disabled={!!busy} onClick={()=>void exportPdf()}>下载双语PDF</button>
+        <div className="lit-pages"><button disabled={!!busy||number<=1} onClick={()=>void change(number-1)}>上一页</button><span>第 {number} / {total} 页</span><button disabled={!!busy||number>=total} onClick={()=>void change(number+1)}>下一页</button></div>
       </div>
-      <p className="lit-caption">{page.blocks.length} 个文字区域 · 已翻译 {counts.translated} · 保留原文 {counts.retained} · 待核对 {counts.review}。
+      <p className="lit-caption">本页已译 {counts.translated} · 保留原文 {counts.retained} · {pageProcessed(number)?'待核对':'待译／核对'} {counts.review}。
         {view==='layout'&&!!preview?.sheets.length&&!!Object.keys(translated).length&&<> <a className="lit-link" href="#lit-continuation-1">查看续页（{preview.sheets.length}）</a>。</>}
-        {page.ocrDone?` 图片识别完成，${page.ocrLowConfidence||0} 处低可信结果未采用。`:' 图表保留原貌，图片文字尚未识别。'}
+        {page.ocrDone&&!!page.ocrLowConfidence&&` 图片识别有 ${page.ocrLowConfidence} 处低可信结果未采用。`}
         {!page.blocks.length&&' 本页没有提取到文字，请检查原页。'} 请核对医学内容与数字。</p>
       {view==='layout'?<>
         <div className="lit-spread">
@@ -179,7 +210,7 @@ export default function BrowserLiterature() {
             <div className="lit-paper" style={{aspectRatio:`${page.width}/${page.height}`}}>
               <img src={page.image} alt={`第${number}页${label}`} />
               {i===1&&<canvas ref={translatedCanvas} className="lit-layout-canvas" aria-hidden="true" />}
-              {i===1&&!Object.keys(translated).length&&<div className="lit-wait">点击「翻译当前页」生成译文</div>}
+              {i===1&&!Object.keys(translated).length&&<div className="lit-wait">开始翻译后，中文译页显示在这里</div>}
               {page.blocks.map(b=>{
                 const rect=i===0||preserveSource(b)?b:preview?.layout.placed.get(b.id) ?? preview?.layout.continuations.find(note=>note.id===b.id)?.anchor;
                 return rect&&<button key={b.id} type="button" className={`lit-hit ${selected===b.id?'selected':''}`}
@@ -205,5 +236,6 @@ export default function BrowserLiterature() {
         <p><small>第 {b.id+1} 段 · 英文原文</small>{b.text}</p><p><small>中文译文</small>{translationFor(b)}</p>
       </div>)}</div>}
     </>}
+    <p className="lit-session-note">文献和译文仅保留在当前页面，离开或刷新前请先下载。</p>
   </section>;
 }

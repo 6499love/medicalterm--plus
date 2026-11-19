@@ -137,7 +137,7 @@ export function literatureErrorMessage(error: unknown): string {
   if (message.includes('GLM_UPSTREAM_TIMEOUT')) return '智谱上游返回超时（504），不是网站的 50 秒计时器主动中止。';
   if (message.includes('FUNCTION_INVOCATION_TIMEOUT')) return 'Vercel 函数运行超过时限（504）。';
   const status = message.match(/API Error \((\d{3})\)/)?.[1];
-  if (status === '401') return '模型接口拒绝认证（401）。配置已保存，但 API Key 未被接受，请检查密钥及所属平台。';
+  if (status === '401') return '模型接口拒绝认证（401）。API Key 未被接受，请检查密钥及所属平台。';
   if (status === '403') return '模型接口拒绝访问（403）。请检查账号或模型使用权限。';
   if (status === '404') return '模型接口返回 404。请检查接口地址和模型名称。';
   if (status === '504') return '请求等待超时（504），可能来自网站转发服务或模型平台。不能据此判断密钥错误；请先用同一模型测试一句短文字。';

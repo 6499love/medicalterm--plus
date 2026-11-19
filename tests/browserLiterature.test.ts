@@ -1,9 +1,18 @@
 import { describe,it,expect,vi,afterEach } from 'vitest';
-import { browserConnectionError,checkBrowserConnection,literatureModelConfig,numbersMatch,overlapsNative,preserveSource,resultCounts } from '../services/browserLiterature';
+import { browserConnectionError,checkBrowserConnection,isBrowserPageProcessed,literatureModelConfig,numbersMatch,overlapsNative,preserveSource,resultCounts } from '../services/browserLiterature';
 import { getCompletion } from '../services/llm';
 import { translatePublicationLabel, type PdfBlock } from '../services/literature';
 afterEach(()=>{vi.unstubAllGlobals();vi.useRealTimers();});
 describe('browser literature safety',()=>{
+  it('reopens processing when OCR is enabled after translating only the native text',()=>{
+    const page={blocks:[{id:0,text:'Native text',x:0,y:0,width:100,height:20,fontSize:10}]};
+    const translated={0:'已翻译的正文'};
+    expect(isBrowserPageProcessed(page,translated,false)).toBe(true);
+    expect(isBrowserPageProcessed(page,translated,true)).toBe(false);
+    expect(isBrowserPageProcessed({...page,ocrDone:true},translated,true)).toBe(true);
+    expect(isBrowserPageProcessed({...page,ocrDone:true},{},true)).toBe(false);
+    expect(isBrowserPageProcessed(page,undefined,false)).toBe(false);
+  });
   it('does not count retained and review entries as translated',()=>{
     expect(resultCounts({0:'【有意保留原文】13',1:'【待核对：数字不符】text',2:'灰区'})).toEqual({translated:1,retained:1,review:1});
   });
