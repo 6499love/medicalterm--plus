@@ -19,3 +19,18 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+.lit-model-settings {
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  line-height: 1.7;
+}
+.lit-model-settings h3 { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+.lit-model-name { margin-top: 10px; overflow-wrap: anywhere; }
+.lit-model-settings fieldset { min-width: 0; }
+.lit-key-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.lit-key-row input { flex: 1; min-width: 180px; padding: 8px 10px; border: 1px solid #94a3b8; border-radius: 8px; }
+.lit-key-row input:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+.lit-remember { display: flex; align-items: center; gap: 8px; margin: 10px 0; }

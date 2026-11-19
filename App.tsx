@@ -405,7 +405,7 @@ export default function App() {
       {activePage === 'translate' && <Translator initialQuery={popupQuery} onQueryConsumed={handlePopupConsumed} />}
       {activePage === 'assistant' && <TranslationAssistant onNavigate={setActivePage} />}
       {activePage === 'batch' && <BatchTranslation />}
-      {activePage === 'literature' && <React.Suspense fallback={<p>正在打开文献阅读器…</p>}><LiteratureTranslation onNavigate={setActivePage} /></React.Suspense>}
+      {activePage === 'literature' && <React.Suspense fallback={<p>正在打开文献阅读器…</p>}><LiteratureTranslation /></React.Suspense>}
       {activePage === 'dictionary' && <UserDictionary />}
       {activePage === 'favorites' && <FavoritesPage onNavigate={setActivePage} />}
       {activePage === 'history' && <HistoryPage />}
