@@ -29,12 +29,12 @@ export class GlmRateLimitError extends Error {
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const isQuotaError = (error: any): boolean => {
+  const status = error?.status ?? error?.response?.status;
+  if (typeof status === 'number') return status === 429;
   const msg = error?.message || (typeof error === 'string' ? error : JSON.stringify(error));
   return (
-    error.status === 429 || 
     error.code === 429 ||
     error?.error?.code === 429 ||
-    error?.response?.status === 429 ||
     msg.includes('429') || 
     msg.includes('quota') || 
     msg.includes('RESOURCE_EXHAUSTED')

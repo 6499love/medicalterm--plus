@@ -21,6 +21,18 @@ describe('browser literature safety',()=>{
     expect(browserConnectionError(new Error('Failed to fetch'),config)).toContain('智谱转发接口');
     expect(browserConnectionError(new Error('Failed to fetch'),{...config,baseUrl:'https://example.test'})).toContain('网页直连失败');
   });
+  it.each([400,401,403,500])('does not turn a GLM HTTP %s failure into a quota error because of the proxy message',async status=>{
+    vi.useFakeTimers();
+    const request=vi.fn().mockImplementation(async()=>new Response(JSON.stringify({error:{message:'GLM rejected the request. Check credentials, model permissions or quota.'}}),{status}));
+    vi.stubGlobal('fetch',request);
+    const config={provider:'glm' as const,apiKey:'fake-only'};
+    const failure=checkBrowserConnection(config).catch(error=>error);
+    await vi.runAllTimersAsync();
+    const message=browserConnectionError(await failure,config);
+    expect(message).toContain(String(status));
+    expect(message).not.toContain('模型调用达到限制');
+    expect(request).toHaveBeenCalledTimes(1);
+  });
   it('uses the existing site route for the default GLM connection check and translation',async()=>{
     const request=vi.fn().mockResolvedValue({ok:true,json:async()=>({choices:[{message:{content:'ok'}}]})});
     vi.stubGlobal('fetch',request);
