@@ -1,0 +1,12 @@
+.api-provider{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;background:white;color:#475569;border:1px solid #cbd5e1;border-radius:9px;font-size:14px;font-weight:550;padding:6px 10px}
+.api-provider[aria-pressed=true]{background:#eff6ff;color:#1d4ed8;border-color:#93b6f9}
+.api-field-title{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:550;margin-bottom:6px}
+.api-field-title a{display:inline-flex;align-items:center;gap:5px;color:#245eb7;font-size:12px}
+.api-input{display:flex;align-items:center;gap:10px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:0 12px;color:#64748b}
+.api-input:focus-within{outline:2px solid #3775c4;outline-offset:1px}
+.api-input input{min-width:0;width:100%;padding:10px 0;border:0;outline:0;background:transparent;color:#172a42}
+.api-field small,.api-remember small{display:block;font-size:12px;line-height:1.5;color:#596b80;margin-top:4px}
+.api-remember{display:flex;align-items:center;gap:12px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;color:#35465d;font-size:14px;cursor:pointer}
+.api-remember input{width:17px;height:17px;accent-color:#2563eb}
+.api-save{display:flex;justify-content:center;align-items:center;gap:8px;width:100%;padding:11px;background:#2563eb;color:white;border-radius:10px;font-weight:600}
+.api-save:disabled{background:#94a3b8;cursor:not-allowed}

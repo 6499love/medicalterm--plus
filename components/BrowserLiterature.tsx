@@ -1,3 +1,4 @@
+import { BookOpen, FileUp, PanelLeft, Rows3 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { getDocument, readLiteraturePage, readLiteraturePageStructure, type PDFDocumentProxy } from '../services/literaturePdf';
@@ -37,7 +38,7 @@ export default function BrowserLiterature() {
   const [ocr,setOcr]=useState(true);
   const [modelOpen,setModelOpen]=useState(false);
   const primaryAction=useRef<HTMLButtonElement>(null);
-  const [view,setView]=useState<'layout'|'text'>('layout');
+  const [view,setView]=useState<'layout'|'text'>('text');
   const translatedCanvas=useRef<HTMLCanvasElement>(null);
   const [rendered,setRendered]=useState<{page:BrowserPage; translations:Record<number,string>; layout:TranslatedLayout; sheets:ContinuationSheet[]}|null>(null);
   const translated=results.current[number]||emptyTranslations;
@@ -163,17 +164,20 @@ export default function BrowserLiterature() {
   const pageProcessed=(n:number)=>isBrowserPageProcessed(metadata.current.get(n),results.current[n],ocr);
   const complete=total>0&&Array.from({length:total},(_,i)=>i+1).every(pageProcessed);
   const reviewTotal=Object.values(results.current).reduce((sum,values)=>sum+resultCounts(values).review,0);
-  const fileControl=<label className={page?'lit-file-change':`lit-upload${modelOpen?' lit-upload-secondary':''}`}>
+  const fileControl=<label onDragOver={event=>event.preventDefault()} onDrop={event=>{
+    event.preventDefault();
+    if (!busy) void open(event.dataTransfer.files[0]);
+  }} className={page?'lit-file-change':`lit-upload${modelOpen?' lit-upload-secondary':''}`}>
     <input className="lit-sr-only" type="file" aria-label="选择 PDF 文件" accept=".pdf,application/pdf" disabled={!!busy}
       onChange={e=>{void open(e.target.files?.[0]);e.target.value='';}} />
-    {page?'更换 PDF':<><strong>选择 PDF</strong><span>英文论文 · 最多 20 MB / 100 页</span></>}
+    {page?'更换 PDF':<><FileUp size={32} strokeWidth={1.5} /><b>拖入英文 PDF</b><span>最多 20 MB · 100 页</span><strong>选择文件</strong></>}
   </label>;
   return <section className="literature" data-revision={revision}>
-    <div className="lit-heading"><div><h2>文献翻译</h2><p>选择英文 PDF，生成可下载的双语对照。</p></div></div>
+    <div className="lit-heading"><div><h2><BookOpen size={25} /> 文献翻译</h2><p>英文原文与中文译文对照阅读</p></div></div>
     {page?<div className="lit-document"><div><strong>{name}</strong><span>{total} 页</span></div>{fileControl}</div>:fileControl}
     <LiteratureModelSettings disabled={!!busy} open={modelOpen} onOpenChange={setModelOpen} onSave={saveModel} />
     {error&&<p role="alert" className="lit-error">{error}</p>}
-    {busy&&<p role="status">{busy} <button onClick={()=>{stop.current=true;setBusy('正在停止，等待当前步骤结束…');}}>停止后续处理</button></p>}
+    {busy&&<p className="lit-busy" role="status">{busy} <button onClick={()=>{stop.current=true;setBusy('正在停止，等待当前步骤结束…');}}>停止后续处理</button></p>}
     {page&&<>
       <div className="lit-actions lit-main-actions">
         {!modelOpen&&(complete?
@@ -194,8 +198,8 @@ export default function BrowserLiterature() {
       {reviewTotal>0&&<p className="lit-review-warning" role="status">{complete?'整篇已处理，仍有':'已有结果中有'} {reviewTotal} 处待核对。请核对后使用。</p>}
       <div className="lit-reading-toolbar">
         <div className="lit-modes" role="group" aria-label="对照方式">
-          <button type="button" aria-pressed={view==='layout'} onClick={()=>setView('layout')}>页面对照</button>
-          <button type="button" aria-pressed={view==='text'} onClick={()=>setView('text')}>段落对照</button>
+          <button type="button" aria-pressed={view==='text'} onClick={()=>setView('text')}><Rows3 size={15} />段落对照</button>
+          <button type="button" aria-pressed={view==='layout'} onClick={()=>setView('layout')}><PanelLeft size={15} />原版对照</button>
         </div>
         <div className="lit-pages"><button disabled={!!busy||number<=1} onClick={()=>void change(number-1)}>上一页</button><span>第 {number} / {total} 页</span><button disabled={!!busy||number>=total} onClick={()=>void change(number+1)}>下一页</button></div>
       </div>
@@ -232,9 +236,14 @@ export default function BrowserLiterature() {
             <Continuation sheet={sheet} page={page} number={number} index={index} />
           </div></div>
         </div>)}
-      </>:<div className="lit-paragraphs">{page.blocks.map(b=><div key={b.id}>
-        <p><small>第 {b.id+1} 段 · 英文原文</small>{b.text}</p><p><small>中文译文</small>{translationFor(b)}</p>
-      </div>)}</div>}
+      </>:<div className="reader-pairs">
+        <div className="reader-columns" aria-hidden="true"><span>英文原文</span><span>中文译文</span></div>
+        {page.blocks.map(b=><div className="reader-pair" key={b.id}>
+          <p lang="en"><small>英文原文</small>{b.text}</p>
+          <p lang="zh-CN" className={translated[b.id]||preserveSource(b)?'':'reader-pending'}>
+            <small>中文译文</small>{translated[b.id]||preserveSource(b)?translationFor(b):'等待翻译'}</p>
+        </div>)}
+      </div>}
     </>}
     <p className="lit-session-note">文献和译文仅保留在当前页面，离开或刷新前请先下载。</p>
   </section>;

@@ -68,3 +68,33 @@
 .lit-reading-toolbar button { padding: 7px 10px; background: #fff; border: 1px solid #cbd5e1; border-radius: 7px; font-size: 12px; }
 .lit-session-note { color: #64748b; font-size: 12px; line-height: 1.8; margin-top: 16px; }
 .lit-review-warning { padding: 10px 12px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; color: #92400e; font-size: 12px; }
+
+.literature .lit-heading h2,.lit-key-summary h3,.lit-modes button{display:flex;align-items:center;gap:8px}
+.lit-heading h2 svg,.lit-key-summary h3 svg,.lit-upload svg{color:#3267aa}
+.lit-model-settings{padding:12px 16px;background:#fff;border-color:#d8e2eb}
+.lit-model-settings form{display:grid;gap:14px;max-width:42rem;border-top:1px solid #e2e8f0;padding-top:16px}
+.lit-model-settings legend{font-size:14px;font-weight:550;margin-bottom:6px}
+.lit-provider-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.lit-upload{min-height:230px;background:#f7faff;border:1.5px dashed #a0b8d4;gap:7px}
+.lit-upload b{font-size:20px;margin-top:4px}.lit-upload strong{margin-top:8px}
+.lit-busy{display:flex;align-items:center;justify-content:space-between;background:#edf5ff;color:#234d82;padding:10px 14px;border-radius:9px}
+.lit-reading-toolbar{padding:10px 12px;background:white;border:1px solid #d8e2eb;border-radius:12px;position:sticky;top:0;z-index:2}
+.lit-modes{gap:2px;background:#eff3f7;border-radius:8px;padding:3px}
+.lit-modes button{background:transparent;border-color:transparent}
+.lit-modes button[aria-pressed=true]{background:white;border-color:#d8e2eb;color:#174c88;box-shadow:0 1px 3px #1a38551a}
+.reader-pairs{border:1px solid #d8e2eb;border-radius:12px;overflow:hidden;background:white}
+.reader-columns,.reader-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.reader-columns{background:#eaf1f8;font-size:13px;color:#344e6d;font-weight:600}
+.reader-columns span,.reader-pair p{padding:12px 20px}
+.reader-pair{border-top:1px solid #e3e9ef}
+.reader-pair p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;margin:0}
+.reader-pair p+p{background:#f8fafc;border-left:1px solid #e3e9ef}
+.reader-pair:hover p{background:#eff6ff}
+.reader-pair small{display:none}
+.reader-pending{color:#697a8e}
+@media(max-width:700px){
+ .lit-reading-toolbar{gap:6px}.lit-modes{width:auto;margin:0}.lit-reading-toolbar button{padding:6px}
+ .reader-columns{display:none}.reader-pair{grid-template-columns:1fr}
+ .reader-pair p+p{border-left:0}.reader-pair small{display:block;color:#61768b;font-size:11px}
+ .reader-pair p{padding:10px 14px}
+}
