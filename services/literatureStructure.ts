@@ -8,15 +8,6 @@ const caption = /^(?:fig(?:ure)?\.?|table)\s*\d+\b/i;
 const bibliography = /^(?:references|bibliography|literature cited)\s*$/i;
 const publicationLabel = /^(?:open access|matters arising|e\s*d\s*i\s*t\s*o\s*r\s*i\s*a\s*l|research article|review article)$/i;
 const publicationNote = /^(?:©|\*?\s*correspondence\b|(?:received|accepted|published online)\s*:|publisher.s note\b|this comment refers to the article\b)/i;
-const pageNumber = /^page\s+\d+(?:\s*(?:of|\/)\s*\d+)?\.?$/i;
-const publicationIdentifier = /(?:\bdoi\b(?:\s|:)|https?:\/\/|\(\d{4}\)\s*\d+\s*:)/i;
-
-function isNameLine(text: string): boolean {
-  const words = text.replace(/[\d,*†‡]/g,' ').trim().split(/\s+/);
-  return words.length<=18 && words.every(word => /^\p{Lu}[\p{L}.'’‑-]*$/u.test(word) ||
-    /^(?:and|et|al\.|de|del|da|van|von)$/i.test(word));
-}
-
 function bounds(boxes: PdfBounds[]): PdfBounds {
   const x = Math.min(...boxes.map(b => b.x)), y = Math.min(...boxes.map(b => b.y));
   return {x, y, width: Math.max(...boxes.map(right)) - x, height: Math.max(...boxes.map(bottom)) - y};
@@ -82,7 +73,7 @@ function collectReferences(lines: Line[], zone: (line: Line) => NonNullable<Line
     references.push({...heading,kind:'reference'});
     for (const entry of entries) {
       entry.forEach(line => taken.add(line));
-      references.push({...entry[0],...bounds(entry),kind:'reference',retainSource:true,
+      references.push({...entry[0],...bounds(entry),kind:'reference',
         text:entry.map(line => line.text).join(' ')});
     }
   }
@@ -130,7 +121,6 @@ export function structureLiteraturePage(lines: Line[], width: number, height: nu
   const blocks = groupPdfLines(text.filter(l => !taken.has(l)));
   const title = blocks.find(b => b.fontSize>=17 && b.y<height*.37 && b.width>=width*.28);
   const correspondence = blocks.find(b => /^\*?\s*correspondence\b/i.test(b.text));
-  const runningCitations = blocks.filter(b => b.y<height*.062 && publicationIdentifier.test(b.text));
   const inAuthorRow = (block: Line) => !!title && block.y>=bottom(title)-2 &&
       block.y<=bottom(title)+18 && block.fontSize<=13;
   const inAffiliationRow = (block: Line) => !!correspondence && block.y>correspondence.y &&
@@ -147,22 +137,10 @@ export function structureLiteraturePage(lines: Line[], width: number, height: nu
   };
   const structured = [...blocks,...specific].map(block => {
     const kind = role(block);
-    const text = block.text.trim();
-    const isPublicationText = publicationLabel.test(text) || publicationNote.test(text) ||
-      pageNumber.test(text) || bibliography.test(text);
-    const runningIdentity = kind==='header' && (publicationIdentifier.test(text) ||
-      isNameLine(text) && runningCitations.some(b => Math.abs(b.y-block.y)<5));
-    const author = inAuthorRow(block) && (isNameLine(text) || /^[\d,*†‡\s]+$/.test(text));
-    const affiliation = inAffiliationRow(block) &&
-      (/^\d{1,2}(?:$|\s+\p{Lu})/u.test(text) || isNameLine(text));
-    const retainSource = block.retainSource || !isPublicationText &&
-      (runningIdentity || author || affiliation);
-    return {...block,kind,retainSource,readingZone:kind==='header' || block===title ? 'wide' as const : zone(block)};
+    return {...block,kind,readingZone:kind==='header' || block===title ? 'wide' as const : zone(block)};
   });
-  // The original figure remains the source of truth for native chart labels.
-  const artwork: Line[] = [...labelsByImage].map(([image,labels]) => ({
-    ...image,text:labels.map(l => l.text).join('\n'),fontSize:labels[0].fontSize,kind:'figure',
-    readingZone:'wide',retainSource:true,
+  const artwork: Line[] = [...labelsByImage.values()].flat().map(line => ({
+    ...line,kind:'figure',readingZone:'wide',
   }));
   const ordered = [...structured,...artwork];
   const breaks = ordered.filter(b => b.readingZone==='wide').map(b => b.y);

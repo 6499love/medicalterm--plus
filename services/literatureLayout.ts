@@ -48,10 +48,10 @@ function subtract(rect: LayoutRect, obstacle: LayoutRect): LayoutRect[] {
 }
 
 function blockType(block: PdfBlock, value?: string): LayoutNote['kind'] | 'flow' | 'retained' {
-  if (value?.startsWith('【待核对')) return 'review';
+  if (value?.startsWith('【待核对') || value?.startsWith('【待重译')) return 'review';
   if (value?.startsWith('【有意保留原文】') || preserveSource(block)) return 'retained';
   if (!value) return 'pending';
-  return block.imageText ? 'figure' : 'flow';
+  return block.imageText || block.kind === 'figure' ? 'figure' : 'flow';
 }
 
 function typography(block: PdfBlock, titleSize?: number) {
