@@ -112,5 +112,5 @@
 .lit-download select{border:1px solid #cbd5e1;background:white;border-radius:6px;padding:7px}
 .lit-download button{background:#225eb0;color:white;border-color:#225eb0;font-weight:600}
 .reader-pair p{padding:1em 1.15em;line-height:1.75}
-.lit-spread{grid-template-columns:repeat(2,minmax(0,calc((100% - 16px) / 2 * var(--sheet-zoom,1))))}
-@media(max-width:700px){.lit-spread{grid-template-columns:minmax(0,calc(100% * var(--sheet-zoom,1)))}}
+.lit-spread{grid-template-columns:repeat(2,calc((100% - 16px) / 2 * var(--sheet-zoom,1)))}
+@media(max-width:700px){.lit-spread{grid-template-columns:calc(100% * var(--sheet-zoom,1))}}
