@@ -94,7 +94,7 @@ export async function translateLiteratureBatches(
   isCurrent: () => boolean,
 ) {
   const result = { ...existing };
-  const batches = batchLiteratureBlocks(blocks.filter(block => !existing[block.id]));
+  const batches = batchLiteratureBlocks(blocks.filter(block => (!existing[block.id] || existing[block.id].startsWith('【待重译'))));
   for (let i = 0; i < batches.length; i++) {
     if (!isCurrent()) return;
     const started = performance.now();

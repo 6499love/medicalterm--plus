@@ -132,7 +132,7 @@ export default function BrowserLiterature() {
             if (results.current[n][Number(id)]===text) return [id,text];
             const source=sources.get(Number(id))!;
             const checked=reviewBrowserTranslation(source.text,text);
-            return [id,source.continuesOnNextPage && !checked.startsWith('【待核对') ? `${checked}（接下页）` : checked];
+            return [id,source.continuesOnNextPage && !checked.startsWith('【待') ? `${checked}（接下页）` : checked];
           }));
           setRevision(v=>v+1);setBusy(`第${n}/${total}页 · 已处理${Object.keys(result).length}/${value.blocks.length}段`);
         },current);
@@ -145,7 +145,7 @@ export default function BrowserLiterature() {
   async function scan(){if(!page||busy||page.ocrDone)return;stop.current=false;setError('');setBusy('准备图片文字识别…');try{const value=await recognizePage(page,message=>{if(current())setBusy(message);});if(current())save(number,value);}catch{if(alive.current)setError('图片识别失败，可能是识别资源下载失败或内存不足。原文和已有译文保留，可关闭图片识别后翻译正文。');}finally{if(alive.current)setBusy('');}}
   async function exportPdf(){if(busy||!pdf.current)return;stop.current=false;setBusy('准备PDF…');try{await exportBrowserPdf(name,total,read,results.current,setBusy,current);}catch{setError('导出失败，可能内存不足，请使用较小的PDF重试。');}finally{if(alive.current)setBusy('');}}
   const counts=resultCounts(translated,page?.blocks);
-  const translationFor=(block:PdfBlock)=>preserveSource(block)?'原文保留':translated[block.id]||'待核对：尚未翻译';
+  const translationFor=(block:PdfBlock)=>preserveSource(block)?block.text:translated[block.id]||'待核对：尚未翻译';
   const selectedBlock=page?.blocks.find(b=>b.id===selected);
   const selectedSheet=preview?.sheets.findIndex(sheet=>sheet.notes.some(note=>note.id===selected)) ?? -1;
   async function saveModel(config:AuthConfig,remember:boolean) {
@@ -199,7 +199,7 @@ export default function BrowserLiterature() {
         </div>
         <div className="lit-pages"><button disabled={!!busy||number<=1} onClick={()=>void change(number-1)}>上一页</button><span>第 {number} / {total} 页</span><button disabled={!!busy||number>=total} onClick={()=>void change(number+1)}>下一页</button></div>
       </div>
-      <p className="lit-caption">本页已译 {counts.translated} · 保留原文 {counts.retained} · {pageProcessed(number)?'待核对':'待译／核对'} {counts.review}。
+      <p className="lit-caption">本页已译 {counts.translated} {counts.retained>0 && <>· 数值／标识符 {counts.retained}</>} · {pageProcessed(number)?'待核对':'待译／核对'} {counts.review}。
         {view==='layout'&&!!preview?.sheets.length&&!!Object.keys(translated).length&&<> <a className="lit-link" href="#lit-continuation-1">查看续页（{preview.sheets.length}）</a>。</>}
         {page.ocrDone&&!!page.ocrLowConfidence&&` 图片识别有 ${page.ocrLowConfidence} 处低可信结果未采用。`}
         {!page.blocks.length&&' 本页没有提取到文字，请检查原页。'} 请核对医学内容与数字。</p>

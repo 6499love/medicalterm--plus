@@ -20,7 +20,7 @@ describe('translated literature pagination',()=>{
   });
 
   it('preserves reading order after an overflow and marks the first break',()=>{
-    const footer = {...body(3,40,140,12,'wide'),kind:'metadata' as const,width:460,retainSource:true};
+    const footer = {...body(3,40,140,12,'wide'),kind:'metadata' as const,width:460,text:'12'};
     const page = sheet([body(0,40,40,12),body(1,40,58,70),body(2,290,40,20,'right'),footer]);
     const layout = planLiteratureLayout(page,{0:'第一段',1:'较长的第二段'.repeat(60),2:'第三段'},measure);
     expect([...layout.placed.keys()]).toEqual([0]);
@@ -44,7 +44,7 @@ describe('translated literature pagination',()=>{
   });
 
   it('keeps a retained or unresolved block outside the translation layer and preserves Latin terms at wraps',()=>{
-    const reference = {...body(0,290,50,20,'right'),kind:'reference' as const,retainSource:true};
+    const reference = {...body(0,290,50,20,'right'),kind:'reference' as const,text:'10.1234/test'};
     const page = sheet([reference,body(1,40,50,20),{...body(2,40,90,20),imageText:true}]);
     const layout = planLiteratureLayout(page,{1:'【待核对：数字不符】 123'},measure);
     expect(layout.masks).toEqual([]);

@@ -37,10 +37,7 @@ describe('browser literature reading zones', () => {
       line('© The Author(s) 2023. This article is licensed under a Creative Commons license.',180,675,355,7),
       line('Received: 24 November 2023 Accepted: 28 November 2023',305,430,187,7.5),
     ],595.276,790.866,[]);
-    expect(blocks.filter(b=>b.retainSource).map(b=>b.text)).toEqual([
-      'Critical Care','Michard https://doi.org/10.1186/s13054-023-04765-3',
-      'Frederic Michard and Jean-Louis Teboul','1 MiCo, Vallamand, Switzerland',
-    ]);
+    expect(blocks.filter(b=>b.retainSource).map(b=>b.text)).toEqual([]);
     for (const start of ['MATTERS ARISING','Open Access','This comment','*Correspondence','© The Author(s)','Received:']) {
       expect(blocks.find(b=>b.text.startsWith(start))).toMatchObject({kind:'metadata'});
     }
@@ -61,8 +58,8 @@ describe('browser literature reading zones', () => {
       line('SVV',56.7,516,11,7.5),line('Stroke volume variation',80.4,516,71,7.5),
     ],595.276,790.866,[]);
     expect(blocks.filter(b=>b.kind==='reference').map(b=>[b.readingZone,b.text,b.retainSource===true])).toEqual([
-      ['right','References',false],['right','1. A First reference continuation of the first reference',true],
-      ['right','2. B Second reference',true],
+      ['right','References',false],['right','1. A First reference continuation of the first reference',false],
+      ['right','2. B Second reference',false],
     ]);
     expect(blocks.find(b=>b.text.startsWith('Abbreviations'))?.text)
       .toBe('Abbreviations\nPPV: Pulse pressure variation\nSVV: Stroke volume variation');
@@ -76,7 +73,7 @@ describe('browser literature reading zones', () => {
     expect(images).toHaveLength(1);
     expect(images[0].y+images[0].height).toBeLessThan(figureCaption.y);
     expect(structureLiteraturePage([label,figureCaption],595,794,images).map(b=>[b.kind,b.text,b.retainSource===true]))
-      .toEqual([['figure','STUDY ID',true],['caption',figureCaption.text,false]]);
+      .toEqual([['figure','STUDY ID',false],['caption',figureCaption.text,false]]);
     expect(borderedArtwork([figureCaption],paths.slice(0,3),595)).toEqual([]);
   });
 

@@ -30,7 +30,7 @@ export function browserConnectionError(error: unknown, config: LLMConfig): strin
 export function resultCounts(values: Record<number,string>, blocks?: PdfBlock[]) {
   const all=blocks?.map(block=>values[block.id] || (preserveSource(block) ? '【有意保留原文】' : '【待核对】')) || Object.values(values);
   const retained=all.filter(value=>value.startsWith('【有意保留原文】')).length;
-  const review=all.filter(value=>value.startsWith('【待核对')).length;
+  const review=all.filter(value=>(value.startsWith('【待核对') || value.startsWith('【待重译'))).length;
   return {translated:all.length-retained-review,retained,review};
 }
 
@@ -41,7 +41,7 @@ export interface BrowserPage extends LiteraturePage {
 
 export function isBrowserPageProcessed(page: Pick<BrowserPage,'blocks'|'ocrDone'> | undefined,
   values: Record<number,string> | undefined, withOcr: boolean): boolean {
-  return !!(page&&values&&(!withOcr||page.ocrDone)&&page.blocks.every(block=>!!values[block.id]));
+  return !!(page&&values&&(!withOcr||page.ocrDone)&&page.blocks.every(block=>!!values[block.id] && !values[block.id].startsWith('【待重译')));
 }
 
 export function overlapsNative(box: PdfBlock, native: PdfBlock[]): boolean {
@@ -56,8 +56,8 @@ export { preserveSource };
 
 export function reviewBrowserTranslation(source: string, translation: string): string {
   if (translation.startsWith('【有意保留原文】') || translation.startsWith('【待核对')) return translation;
-  if (!numbersMatch(source,translation)) return `【待核对：译文数字或单位不一致，保留原文】${source}`;
-  return /\p{Script=Han}/u.test(translation) ? translation : `【待核对：未返回中文译文，保留原文】${source}`;
+  if (!numbersMatch(source,translation)) return `【待核对：译文数字或单位与原文不一致】${translation}`;
+  return /\p{Script=Han}/u.test(translation) ? translation : `【待重译：模型未返回中文】`;
 }
 
 export function numbersMatch(source: string, translation: string): boolean {
