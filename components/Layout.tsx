@@ -65,7 +65,7 @@ export const Layout: React.FC<LayoutProps> = ({ activePage, onNavigate, children
   );
 
   return (
-    <div className="min-h-screen p-3 md:p-8 flex flex-col md:flex-row gap-4 md:gap-6 max-w-7xl mx-auto relative">
+    <div data-workspace={activePage} className="min-h-screen p-3 md:p-8 flex flex-col md:flex-row gap-4 md:gap-6 max-w-7xl mx-auto relative">
       <ToastContainer />
       
       {/* Mobile Nav */}

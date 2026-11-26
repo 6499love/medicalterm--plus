@@ -2,7 +2,7 @@ import { BookOpen, FileUp, PanelLeft, Rows3 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { getDocument, readLiteraturePage, readLiteraturePageStructure, type PDFDocumentProxy } from '../services/literaturePdf';
-import { browserConnectionError, checkBrowserConnection, drawTranslatedLayout, exportBrowserPdf, isBrowserPageProcessed, literatureModelConfig, preserveSource, recognizePage, resultCounts, reviewBrowserTranslation, type BrowserPage } from '../services/browserLiterature';
+import { browserConnectionError, checkBrowserConnection, drawTranslatedLayout, exportBrowserPdf, isBrowserPageProcessed, literatureModelConfig, preserveSource, recognizePage, resultCounts, reviewBrowserTranslation, type PdfExportMode, type BrowserPage } from '../services/browserLiterature';
 import { prepareLiteratureTranslationBlocks, translateLiteratureBatches, LiteratureBatchError } from '../services/literatureTranslation';
 import { translatePublicationLabel, type PdfBlock } from '../services/literature';
 import type { TranslatedLayout } from '../services/literatureLayout';
@@ -38,6 +38,9 @@ export default function BrowserLiterature() {
   const [ocr,setOcr]=useState(true);
   const [modelOpen,setModelOpen]=useState(false);
   const primaryAction=useRef<HTMLButtonElement>(null);
+  const [fontSize,setFontSize]=useState(20);
+  const [zoom,setZoom]=useState(100);
+  const [exportMode,setExportMode]=useState<PdfExportMode>('translated');
   const [view,setView]=useState<'layout'|'text'>('text');
   const translatedCanvas=useRef<HTMLCanvasElement>(null);
   const [rendered,setRendered]=useState<{page:BrowserPage; translations:Record<number,string>; layout:TranslatedLayout; sheets:ContinuationSheet[]}|null>(null);
@@ -144,7 +147,7 @@ export default function BrowserLiterature() {
   }
   async function change(n:number){if(busy)return;stop.current=false;setBusy('读取页面…');try{save(n,await read(n));}catch{setError('页面读取失败');}finally{if(alive.current)setBusy('');}}
   async function scan(){if(!page||busy||page.ocrDone)return;stop.current=false;setError('');setBusy('准备图片文字识别…');try{const value=await recognizePage(page,message=>{if(current())setBusy(message);});if(current())save(number,value);}catch{if(alive.current)setError('图片识别失败，可能是识别资源下载失败或内存不足。原文和已有译文保留，可关闭图片识别后翻译正文。');}finally{if(alive.current)setBusy('');}}
-  async function exportPdf(){if(busy||!pdf.current)return;stop.current=false;setBusy('准备PDF…');try{await exportBrowserPdf(name,total,read,results.current,setBusy,current);}catch{setError('导出失败，可能内存不足，请使用较小的PDF重试。');}finally{if(alive.current)setBusy('');}}
+  async function exportPdf(mode:PdfExportMode){if(busy||!pdf.current)return;stop.current=false;setBusy('准备PDF…');try{await exportBrowserPdf(name,total,read,results.current,setBusy,current,mode,hasResults&&!complete);}catch{setError('导出失败，可能内存不足，请使用较小的PDF重试。');}finally{if(alive.current)setBusy('');}}
   const counts=resultCounts(translated,page?.blocks);
   const translationFor=(block:PdfBlock)=>preserveSource(block)?block.text:translated[block.id]||'待核对：尚未翻译';
   const selectedBlock=page?.blocks.find(b=>b.id===selected);
@@ -160,7 +163,7 @@ export default function BrowserLiterature() {
     } catch(cause) {throw new Error(browserConnectionError(cause,config));}
     finally {if(alive.current)setBusy('');}
   }
-  const hasResults=Object.keys(results.current).length>0;
+  const hasResults=Object.values(results.current).some(values=>Object.keys(values).length>0);
   const pageProcessed=(n:number)=>isBrowserPageProcessed(metadata.current.get(n),results.current[n],ocr);
   const complete=total>0&&Array.from({length:total},(_,i)=>i+1).every(pageProcessed);
   const reviewTotal=Object.values(results.current).reduce((sum,values)=>sum+resultCounts(values).review,0);
@@ -180,16 +183,13 @@ export default function BrowserLiterature() {
     {busy&&<p className="lit-busy" role="status">{busy} <button onClick={()=>{stop.current=true;setBusy('正在停止，等待当前步骤结束…');}}>停止后续处理</button></p>}
     {page&&<>
       <div className="lit-actions lit-main-actions">
-        {!modelOpen&&(complete?
-          <button ref={primaryAction} className="lit-primary" disabled={!!busy} onClick={()=>void exportPdf()}>下载双语 PDF</button>:
-          <button ref={primaryAction} className="lit-primary" disabled={!!busy} onClick={()=>auth?.apiKey?void process(true):setModelOpen(true)}>{auth?.apiKey?(hasResults?'继续翻译整篇':'翻译整篇'):'配置文献 Key'}</button>)}
-        {hasResults&&(!complete||modelOpen)&&<button disabled={!!busy} onClick={()=>void exportPdf()}>下载当前结果</button>}
+        {!modelOpen&&!complete&&<button ref={primaryAction} className="lit-primary" disabled={!!busy} onClick={()=>auth?.apiKey?void process(true):setModelOpen(true)}>{auth?.apiKey?(hasResults?'继续翻译整篇':'翻译整篇'):'配置文献 Key'}</button>}
         <details className="lit-more">
           <summary>更多操作</summary>
           <div className="lit-more-panel">
             <button disabled={!!busy||!auth?.apiKey||modelOpen||pageProcessed(number)} onClick={()=>void process(false)}>翻译当前页</button>
             <button disabled={!!busy||page.ocrDone} onClick={()=>void scan()}>仅识别当前页图片文字</button>
-            {!hasResults&&<button disabled={!!busy} onClick={()=>void exportPdf()}>下载未翻译对照</button>}
+            {!hasResults&&<button disabled={!!busy} onClick={()=>void exportPdf('bilingual')}>下载未翻译对照</button>}
             <label><input type="checkbox" checked={ocr} disabled={!!busy} onChange={e=>setOcr(e.target.checked)} />翻译时识别图中英文（耗时较长）</label>
             <small>首次图片识别需要下载识别资源。</small>
           </div>
@@ -201,6 +201,22 @@ export default function BrowserLiterature() {
           <button type="button" aria-pressed={view==='text'} onClick={()=>setView('text')}><Rows3 size={15} />段落对照</button>
           <button type="button" aria-pressed={view==='layout'} onClick={()=>setView('layout')}><PanelLeft size={15} />原版对照</button>
         </div>
+        {view==='text'?<div className="lit-sizing" aria-label="正文字号" role="group">
+          <button aria-label="减小字号" disabled={fontSize<=16} onClick={()=>setFontSize(fontSize-2)}>A−</button>
+          <span>{fontSize} px</span>
+          <button aria-label="增大字号" disabled={fontSize>=32} onClick={()=>setFontSize(fontSize+2)}>A+</button>
+        </div>:<div className="lit-sizing" aria-label="原版缩放" role="group">
+          <button aria-label="缩小原版" disabled={zoom<=100} onClick={()=>setZoom(zoom-25)}>−</button>
+          <span>{zoom}%</span>
+          <button aria-label="放大原版" disabled={zoom>=250} onClick={()=>setZoom(zoom+25)}>＋</button>
+        </div>}
+        <div className="lit-download">
+          <select aria-label="下载格式" value={exportMode} onChange={e=>setExportMode(e.target.value as PdfExportMode)}>
+            <option value="translated">中文译文</option><option value="bilingual">双语对照</option>
+          </select>
+          <button disabled={!!busy||(!hasResults&&!complete)} onClick={()=>void exportPdf(exportMode)}>
+            {hasResults&&!complete?'下载部分译文 PDF':'下载 PDF'}</button>
+        </div>
         <div className="lit-pages"><button disabled={!!busy||number<=1} onClick={()=>void change(number-1)}>上一页</button><span>第 {number} / {total} 页</span><button disabled={!!busy||number>=total} onClick={()=>void change(number+1)}>下一页</button></div>
       </div>
       <p className="lit-caption">本页已译 {counts.translated} {counts.retained>0 && <>· 数值／标识符 {counts.retained}</>} · {pageProcessed(number)?'待核对':'待译／核对'} {counts.review}。
@@ -208,7 +224,7 @@ export default function BrowserLiterature() {
         {page.ocrDone&&!!page.ocrLowConfidence&&` 图片识别有 ${page.ocrLowConfidence} 处低可信结果未采用。`}
         {!page.blocks.length&&' 本页没有提取到文字，请检查原页。'} 请核对医学内容与数字。</p>
       {view==='layout'?<>
-        <div className="lit-spread">
+        <div className="lit-spread" style={{'--sheet-zoom':zoom/100} as React.CSSProperties}>
           {(['原文','中文译页'] as const).map((label,i)=><div key={label}>
             <h3>{label}</h3>
             <div className="lit-paper" style={{aspectRatio:`${page.width}/${page.height}`}}>
@@ -228,7 +244,7 @@ export default function BrowserLiterature() {
           <h3>第 {selectedBlock.id+1} 段 {selectedSheet>=0&&<a className="lit-link" href={`#lit-continuation-${selectedSheet+1}`}>在续页查看</a>}</h3>
           <div><p><small>英文原文</small>{selectedBlock.text}</p><p><small>中文译文</small>{translationFor(selectedBlock)}</p></div>
         </div>}
-        {!!Object.keys(translated).length&&preview?.sheets.map((sheet,index)=><div className="lit-spread lit-continuation" id={`lit-continuation-${index+1}`} key={index}>
+        {!!Object.keys(translated).length&&preview?.sheets.map((sheet,index)=><div className="lit-spread lit-continuation" style={{'--sheet-zoom':zoom/100} as React.CSSProperties} id={`lit-continuation-${index+1}`} key={index}>
           <div><h3>原文 · 第 {number} 页</h3><div className="lit-paper" style={{aspectRatio:`${page.width}/${page.height}`}}>
             <img src={page.image} alt={`原文第 ${number} 页（对照）`} loading="lazy" />
           </div></div>
@@ -236,7 +252,7 @@ export default function BrowserLiterature() {
             <Continuation sheet={sheet} page={page} number={number} index={index} />
           </div></div>
         </div>)}
-      </>:<div className="reader-pairs">
+      </>:<div className="reader-pairs" style={{fontSize}}>
         <div className="reader-columns" aria-hidden="true"><span>英文原文</span><span>中文译文</span></div>
         {page.blocks.map(b=><div className="reader-pair" key={b.id}>
           <p lang="en"><small>英文原文</small>{b.text}</p>

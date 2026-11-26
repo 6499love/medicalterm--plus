@@ -126,9 +126,11 @@ export function drawTranslatedLayout(canvas: HTMLCanvasElement, page: BrowserPag
   return { placed:plan.placed, continuations:plan.continuations };
 }
 
+export type PdfExportMode = 'translated' | 'bilingual';
+
 export async function exportBrowserPdf(name: string, count: number,
   read: (number:number)=>Promise<BrowserPage>, translations: Record<number,Record<number,string>>,
-  onProgress: (value:string)=>void, isCurrent:()=>boolean) {
+  onProgress: (value:string)=>void, isCurrent:()=>boolean, mode:PdfExportMode='bilingual', partial=false) {
   const { PDFDocument } = await import('pdf-lib');
   const output = await PDFDocument.create();
   for (let number=1; number<=count; number++) {
@@ -138,8 +140,8 @@ export async function exportBrowserPdf(name: string, count: number,
     const right=document.createElement('canvas');
     const layout=drawTranslatedLayout(right,data,image,translations[number] || {});
     const sheets=prepareLiteratureContinuations(layout.continuations,data.width,data.height);
-    const original=await output.embedPng(data.image);
-    const margin=18, gap=18, width=data.width*2+margin*2+gap, height=data.height+margin*2;
+    const original=mode==='bilingual' ? await output.embedPng(data.image) : undefined;
+    const margin=18, gap=18, width=data.width+margin*2+(original?data.width+gap:0), height=data.height+margin*2;
     const background=await output.embedPng(right.toDataURL('image/png'));
     for (let sheetIndex=-1;sheetIndex<sheets.length;sheetIndex++) {
       if (!isCurrent()) return;
@@ -147,14 +149,15 @@ export async function exportBrowserPdf(name: string, count: number,
       const translated=sheetIndex<0?background:await output.embedPng(right.toDataURL('image/png'));
       const sheet=output.addPage([width,height]);
       const fit={y:margin,width:data.width,height:data.height};
-      sheet.drawImage(original,{...fit,x:margin});
-      sheet.drawImage(translated,{...fit,x:margin+data.width+gap});
+      if(original) sheet.drawImage(original,{...fit,x:margin});
+      sheet.drawImage(translated,{...fit,x:original?margin+data.width+gap:margin});
     }
     right.width=right.height=0;
     await new Promise(resolve=>setTimeout(resolve,0));
   }
   if (!isCurrent()) return;
   const bytes=await output.save();
+  if (!isCurrent()) return;
   const url=URL.createObjectURL(new Blob([bytes as BlobPart],{type:'application/pdf'}));
-  const link=document.createElement('a');link.href=url;link.download=`${name.replace(/\.pdf$/i,'')}-双语对照.pdf`;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+  const link=document.createElement('a');link.href=url;link.download=`${name.replace(/\.pdf$/i,'')}-${mode==='translated'?'中文译文':'双语对照'}${partial?'-部分译文':''}.pdf`;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
