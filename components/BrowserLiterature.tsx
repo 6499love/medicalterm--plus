@@ -1,4 +1,4 @@
-import { BookOpen, FileUp, PanelLeft, Rows3 } from 'lucide-react';
+import { BookOpen, Maximize2, Minimize2, FileUp, PanelLeft, Rows3 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { getDocument, readLiteraturePage, readLiteraturePageStructure, type PDFDocumentProxy } from '../services/literaturePdf';
@@ -42,6 +42,39 @@ export default function BrowserLiterature() {
   const [zoom,setZoom]=useState(100);
   const [exportMode,setExportMode]=useState<PdfExportMode>('translated');
   const [view,setView]=useState<'layout'|'text'>('text');
+  const reader=useRef<HTMLDivElement>(null);
+  const fullscreenButton=useRef<HTMLButtonElement>(null);
+  const [fullscreen,setFullscreen]=useState(false);
+  const [windowMode,setWindowMode]=useState(false);
+  useEffect(()=>{
+    const sync=()=>{
+      setFullscreen(!!reader.current && document.fullscreenElement===reader.current);
+    };
+    document.addEventListener('fullscreenchange',sync);
+    return ()=>document.removeEventListener('fullscreenchange',sync);
+  },[]);
+  useEffect(()=>{
+    if (!windowMode) return;
+    const escape=(event:KeyboardEvent)=>{
+      if (event.key==='Escape') {
+        setWindowMode(false);
+        fullscreenButton.current?.focus({preventScroll:true});
+      }
+    };
+    document.addEventListener('keydown',escape);
+    return ()=>document.removeEventListener('keydown',escape);
+  },[windowMode]);
+  async function toggleFullscreen(){
+    if (windowMode) {setWindowMode(false);return;}
+    if (document.fullscreenElement===reader.current) {await document.exitFullscreen();return;}
+    try {
+      if (reader.current && document.fullscreenEnabled) {
+        await reader.current.requestFullscreen();
+        return;
+      }
+    } catch { /* Embedded readers can deny native fullscreen. */ }
+    setWindowMode(true);
+  }
   const translatedCanvas=useRef<HTMLCanvasElement>(null);
   const [rendered,setRendered]=useState<{page:BrowserPage; translations:Record<number,string>; layout:TranslatedLayout; sheets:ContinuationSheet[]}|null>(null);
   const translated=results.current[number]||emptyTranslations;
@@ -196,7 +229,11 @@ export default function BrowserLiterature() {
         </details>
       </div>
       {reviewTotal>0&&<p className="lit-review-warning" role="status">{complete?'整篇已处理，仍有':'已有结果中有'} {reviewTotal} 处待核对。请核对后使用。</p>}
+      <div ref={reader} className={'lit-reader-surface'+(windowMode?' lit-reader-window':'')}>
       <div className="lit-reading-toolbar">
+        <button type="button" ref={fullscreenButton} className="lit-expand" aria-pressed={fullscreen||windowMode}
+          onClick={()=>void toggleFullscreen()}>{fullscreen||windowMode?<Minimize2 size={16}/>:<Maximize2 size={16}/>}
+          {fullscreen||windowMode?'退出全屏':'全屏阅读'}</button>
         <div className="lit-modes" role="group" aria-label="对照方式">
           <button type="button" aria-pressed={view==='text'} onClick={()=>setView('text')}><Rows3 size={15} />段落对照</button>
           <button type="button" aria-pressed={view==='layout'} onClick={()=>setView('layout')}><PanelLeft size={15} />原版对照</button>
@@ -260,6 +297,7 @@ export default function BrowserLiterature() {
             <small>中文译文</small>{translated[b.id]||preserveSource(b)?translationFor(b):'等待翻译'}</p>
         </div>)}
       </div>}
+      </div>
     </>}
     <p className="lit-session-note">文献和译文仅保留在当前页面，离开或刷新前请先下载。</p>
   </section>;

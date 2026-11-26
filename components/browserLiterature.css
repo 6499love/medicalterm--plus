@@ -114,3 +114,13 @@
 .reader-pair p{padding:1em 1.15em;line-height:1.75}
 .lit-spread{grid-template-columns:repeat(2,calc((100% - 16px) / 2 * var(--sheet-zoom,1)))}
 @media(max-width:700px){.lit-spread{grid-template-columns:calc(100% * var(--sheet-zoom,1))}}
+
+.lit-expand{display:inline-flex;align-items:center;gap:6px;color:#174c88}
+.lit-reader-surface:fullscreen,.lit-reader-window{
+ box-sizing:border-box;width:100%;height:100%;overflow:auto;overscroll-behavior:contain;
+ padding:0 clamp(8px,2vw,36px) 24px;background:#f6f8fb;color:#1e293b;
+}
+.lit-reader-surface:fullscreen>.lit-reading-toolbar,.lit-reader-window>.lit-reading-toolbar{margin-top:0}
+.lit-reader-window{position:fixed;inset:0;z-index:100;height:100dvh}
+body:has(.lit-reader-window){overflow:hidden}
+[data-workspace=literature]:has(.lit-reader-window)>main>div{backdrop-filter:none;-webkit-backdrop-filter:none}
