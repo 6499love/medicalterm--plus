@@ -1,3 +1,4 @@
+import { reviewLiteratureBlock, type ExpertReview } from '../services/literatureExpert';
 import { BookOpen, Maximize2, Minimize2, FileUp, PanelLeft, Rows3 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
@@ -20,6 +21,8 @@ export default function BrowserLiterature() {
   const setLiteratureAuth = useStore(s=>s.setLiteratureAuth);
   const pdf = useRef<PDFDocumentProxy|null>(null), alive = useRef(true), stop = useRef(false);
   const metadata = useRef(new Map<number,Omit<BrowserPage,'image'>>());
+  const [expert,setExpert]=useState(false);
+  const reviews=useRef<Record<number,Record<number,ExpertReview>>>({});
   const results = useRef<Record<number,Record<number,string>>>({});
   const [page,setPage]=useState<BrowserPage|null>(null), [number,setNumber]=useState(1);
   const [name,setName]=useState(''), [total,setTotal]=useState(0), [busy,setBusy]=useState('');
@@ -115,7 +118,7 @@ export default function BrowserLiterature() {
   async function open(file?:File) {
     if(!file||busy)return;
     if(file.size>20*1024*1024||!file.name.toLowerCase().endsWith('.pdf')){setError('请选择20 MB以内的PDF');return;}
-    stop.current=false;setBusy('读取PDF…');setError('');setPage(null);setTotal(0);setExpanded({});setHover(null);metadata.current.clear();results.current={};
+    stop.current=false;setBusy('读取PDF…');setError('');setPage(null);setTotal(0);setExpanded({});setHover(null);metadata.current.clear();results.current={};reviews.current={};
     try{
       await pdf.current?.destroy();pdf.current=null;
       const task=getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false});
@@ -170,6 +173,20 @@ export default function BrowserLiterature() {
           }));
           setRevision(v=>v+1);setBusy(`第${n}/${total}页 · 已处理${Object.keys(result).length}/${value.blocks.length}段`);
         },current);
+        if (expert) {
+          const pageReviews=reviews.current[n]??={};
+          for (const block of prepared) {
+            if (!current()) return;
+            const text=results.current[n][block.id];
+            if (Object.hasOwn(local,block.id) || pageReviews[block.id]?.final || !text || text.startsWith('【待重译')) continue;
+            const draft=text.replace(/^【待核对[^】]*】/,'').replace(/（接下页）$/,'');
+            const final=await reviewLiteratureBlock(block,draft,modelConfig,glossary,pageReviews[block.id],
+              review=>{pageReviews[block.id]=review;setRevision(v=>v+1);},
+              stage=>setBusy(`第${n}/${total}页 · 第${block.id+1}段 · ${stage}`),current);
+            if (!current()) return;
+            if (final) results.current[n]={...results.current[n],[block.id]:final+(block.continuesOnNextPage&&!final.startsWith('【待')?'（接下页）':'')};
+          }
+        }
         setRevision(v=>v+1);
       }
     }catch(cause){if(alive.current)setError(cause instanceof Error&&cause.message==='PAGE_TOO_DENSE'?'本页文字过密，请拆分或先关闭图片识别。':`${browserConnectionError(cause instanceof LiteratureBatchError?cause.original:cause,auth)} 已有结果保留。`);}
@@ -193,7 +210,8 @@ export default function BrowserLiterature() {
     finally {if(alive.current)setBusy('');}
   }
   const hasResults=Object.values(results.current).some(values=>Object.keys(values).length>0);
-  const pageProcessed=(n:number)=>isBrowserPageProcessed(metadata.current.get(n),results.current[n],ocr);
+  const pageProcessed=(n:number)=>isBrowserPageProcessed(metadata.current.get(n),results.current[n],ocr) &&
+    (!expert || metadata.current.get(n)!.blocks.every(b=>preserveSource(b) || translatePublicationLabel(b) || reviews.current[n]?.[b.id]?.final));
   const complete=total>0&&Array.from({length:total},(_,i)=>i+1).every(pageProcessed);
   const reviewTotal=Object.values(results.current).reduce((sum,values)=>sum+resultCounts(values).review,0);
   const fileControl=<label onDragOver={event=>event.preventDefault()} onDrop={event=>{
@@ -208,11 +226,17 @@ export default function BrowserLiterature() {
     <div className="lit-heading"><div><h2><BookOpen size={25} /> 文献翻译</h2><p>英文原文与中文译文对照阅读</p></div></div>
     {page?<div className="lit-document"><div><strong>{name}</strong><span>{total} 页</span></div>{fileControl}</div>:fileControl}
     <LiteratureModelSettings disabled={!!busy} open={modelOpen} onOpenChange={setModelOpen} onSave={saveModel} />
+    <fieldset className="lit-expert-choice" disabled={!!busy}>
+      <legend>文献翻译模式</legend>
+      <button type="button" aria-pressed={!expert} onClick={()=>setExpert(false)}>极速翻译</button>
+      <button type="button" aria-pressed={expert} onClick={()=>setExpert(true)}>专家翻译</button>
+      {expert&&<small>逐段初译、AI 审校、修订定稿。已有译文直接用于审校，每段通常增加两次模型调用。</small>}
+    </fieldset>
     {error&&<p role="alert" className="lit-error">{error}</p>}
     {busy&&<p className="lit-busy" role="status">{busy} <button onClick={()=>{stop.current=true;setBusy('正在停止，等待当前步骤结束…');}}>停止后续处理</button></p>}
     {page&&<>
       <div className="lit-actions lit-main-actions">
-        {!modelOpen&&!complete&&<button ref={primaryAction} className="lit-primary" disabled={!!busy} onClick={()=>auth?.apiKey?void process(true):setModelOpen(true)}>{auth?.apiKey?(hasResults?'继续翻译整篇':'翻译整篇'):'配置文献 Key'}</button>}
+        {!modelOpen&&!complete&&<button ref={primaryAction} className="lit-primary" disabled={!!busy} onClick={()=>auth?.apiKey?void process(true):setModelOpen(true)}>{auth?.apiKey?(expert?(hasResults?'继续专家翻译':'专家翻译整篇'):hasResults?'继续翻译整篇':'翻译整篇'):'配置文献 Key'}</button>}
         <details className="lit-more">
           <summary>更多操作</summary>
           <div className="lit-more-panel">
@@ -296,6 +320,8 @@ export default function BrowserLiterature() {
           <p lang="en"><small>英文原文</small>{b.text}</p>
           <p lang="zh-CN" className={translated[b.id]||preserveSource(b)?'':'reader-pending'}>
             <small>中文译文</small>{translated[b.id]||preserveSource(b)?translationFor(b):'等待翻译'}</p>
+          {reviews.current[number]?.[b.id]?.notes&&<details className="lit-expert-notes"><summary>查看 AI 审校意见</summary>
+            <p>{reviews.current[number][b.id].notes}</p></details>}
         </div>)}
       </div>}
       </div>

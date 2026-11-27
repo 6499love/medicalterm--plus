@@ -28,7 +28,10 @@ export function protectPdfLinks(source:string) {
     links.push(link);
     return token+match.slice(link.length);
   });
-  return {text,restore(value:string):string|undefined {
+  return {text,maskKnown(value:string):string {
+    for (const [i,link] of links.entries()) value=value.replace(link,`⟦LINK_${i}⟧`);
+    return value;
+  },restore(value:string):string|undefined {
     if (!links.length) return value;
     if (links.some((_,i)=>value.split(`⟦LINK_${i}⟧`).length!==2)) return;
     return value.replace(/⟦LINK_(\d+)⟧/g,(token,i)=>links[Number(i)]??token);
