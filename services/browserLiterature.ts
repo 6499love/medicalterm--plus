@@ -55,7 +55,7 @@ export function overlapsNative(box: PdfBlock, native: PdfBlock[]): boolean {
 export { preserveSource };
 
 export function reviewBrowserTranslation(source: string, translation: string): string {
-  if (translation.startsWith('【有意保留原文】') || translation.startsWith('【待核对')) return translation;
+  if (translation.startsWith('【有意保留原文】') || translation.startsWith('【待核对') || translation.startsWith('【待重译')) return translation;
   if (!numbersMatch(source,translation)) return `【待核对：译文数字或单位与原文不一致】${translation}`;
   return /\p{Script=Han}/u.test(translation) ? translation : `【待重译：模型未返回中文】`;
 }

@@ -72,11 +72,17 @@ it('does not start another batch or deliver results after the reader is closed',
   expect(progress).not.toHaveBeenCalled();
   expect(getCompletion).toHaveBeenCalledTimes(1);
 });
-it('keeps partial results untouched when the next response has invalid IDs', async () => {
-  vi.mocked(getCompletion).mockImplementationOnce(respond).mockResolvedValueOnce('[]');
-  const progress = vi.fn();
-  await expect(translateLiteratureBatches(config, blocks, [], {}, progress, () => true)).rejects.toBeInstanceOf(LiteratureBatchError);
-  expect(progress).toHaveBeenCalledTimes(1);
+it('saves unambiguous IDs, retries only missing IDs and continues past a failed paragraph', async () => {
+  const request=vi.mocked(getCompletion).mockImplementation(respond)
+    .mockResolvedValueOnce('[{"id":1,"translation":"第二段"}]')
+    .mockResolvedValueOnce('[]');
+  let saved: Record<number,string>={};
+  await translateLiteratureBatches(config,blocks,[],{},result=>{saved=result;},()=>true);
+  expect(request.mock.calls.map(call=>JSON.parse(call[1]).blocks.map((b:PdfBlock)=>b.id)))
+    .toEqual([[0,1,2],[0],[2],[3,4,5],[6]]);
+  expect(saved[0]).toMatch(/^【待重译/);
+  expect(saved[1]).toBe('第二段');
+  expect(saved[6]).toBe('译文');
 });
 it('distinguishes the three timeout sources without leaking content', () => {
   expect(literatureErrorMessage(new Error('GLM_PROXY_TIMEOUT'))).toContain('主动中止');

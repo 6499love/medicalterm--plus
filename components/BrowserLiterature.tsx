@@ -75,6 +75,12 @@ export default function BrowserLiterature() {
     } catch { /* Embedded readers can deny native fullscreen. */ }
     setWindowMode(true);
   }
+  useEffect(()=>{
+    if (view!=='text' || selected===null) return;
+    const row=reader.current?.querySelector<HTMLElement>(`[data-paragraph="${selected}"]`);
+    row?.focus({preventScroll:true});
+    row?.scrollIntoView({block:'center'});
+  },[view,selected]);
   const translatedCanvas=useRef<HTMLCanvasElement>(null);
   const [rendered,setRendered]=useState<{page:BrowserPage; translations:Record<number,string>; layout:TranslatedLayout; sheets:ContinuationSheet[]}|null>(null);
   const translated=results.current[number]||emptyTranslations;
@@ -281,17 +287,14 @@ export default function BrowserLiterature() {
           <h3>第 {selectedBlock.id+1} 段 {selectedSheet>=0&&<a className="lit-link" href={`#lit-continuation-${selectedSheet+1}`}>在续页查看</a>}</h3>
           <div><p><small>英文原文</small>{selectedBlock.text}</p><p><small>中文译文</small>{translationFor(selectedBlock)}</p></div>
         </div>}
-        {!!Object.keys(translated).length&&preview?.sheets.map((sheet,index)=><div className="lit-spread lit-continuation" style={{'--sheet-zoom':zoom/100} as React.CSSProperties} id={`lit-continuation-${index+1}`} key={index}>
-          <div><h3>原文 · 第 {number} 页</h3><div className="lit-paper" style={{aspectRatio:`${page.width}/${page.height}`}}>
-            <img src={page.image} alt={`原文第 ${number} 页（对照）`} loading="lazy" />
-          </div></div>
-          <div><h3>中文译页 · 续页 {index+1}</h3><div className="lit-paper" style={{aspectRatio:`${page.width}/${page.height}`}}>
+        {!!Object.keys(translated).length&&preview?.sheets.map((sheet,index)=><section className="lit-continuation lit-extra-sheet" id={`lit-continuation-${index+1}`} key={index}>
+          <div><h3>原文第 {number} 页的补充内容 · 续页 {index+1}</h3><div className="lit-paper" style={{aspectRatio:`${page.width}/${page.height}`}}>
             <Continuation sheet={sheet} page={page} number={number} index={index} />
           </div></div>
-        </div>)}
+        </section>)}
       </>:<div className="reader-pairs" style={{fontSize}}>
         <div className="reader-columns" aria-hidden="true"><span>英文原文</span><span>中文译文</span></div>
-        {page.blocks.map(b=><div className="reader-pair" key={b.id}>
+        {page.blocks.map(b=><div className="reader-pair" key={b.id} data-paragraph={b.id} data-selected={selected===b.id} tabIndex={-1}>
           <p lang="en"><small>英文原文</small>{b.text}</p>
           <p lang="zh-CN" className={translated[b.id]||preserveSource(b)?'':'reader-pending'}>
             <small>中文译文</small>{translated[b.id]||preserveSource(b)?translationFor(b):'等待翻译'}</p>

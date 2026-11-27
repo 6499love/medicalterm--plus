@@ -136,17 +136,21 @@ export function literatureErrorMessage(error: unknown): string {
   return '翻译失败，暂未识别原因。请检查模型服务后重试；已有译文保留。';
 }
 
-export function parseLiteratureResponse(response: string, blocks: PdfBlock[]): Record<number, string> {
+export function parseLiteratureResponse(response: string, blocks: PdfBlock[], allowPartial=false): Record<number, string> {
   const clean = response.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   let value: unknown;
   try { value = JSON.parse(clean); }
   catch { throw new LiteratureResponseError('已收到模型回复，但译文不是有效的 JSON 格式，无法进行段落对照。请重试或更换模型。'); }
-  if (!Array.isArray(value) || value.length !== blocks.length) throw new LiteratureResponseError('已收到模型回复，但返回的段落数量与原文不一致。请重试当前页或更换模型。');
+  if (!Array.isArray(value) || (!allowPartial && value.length !== blocks.length)) throw new LiteratureResponseError('已收到模型回复，但返回的段落数量与原文不一致。请重试当前页或更换模型。');
   const result: Record<number, string> = {};
+  const seen=new Set<number>();
   for (const row of value) {
+    if (allowPartial && seen.has(row?.id)) { delete result[row.id]; continue; }
+    if (typeof row?.id === 'number') seen.add(row.id);
     if (!row || typeof row !== 'object' || typeof row.id !== 'number' ||
       typeof row.translation !== 'string' || !row.translation.trim() ||
       !blocks.some(block => block.id === row.id) || Object.hasOwn(result, row.id)) {
+      if (allowPartial) continue;
       throw new LiteratureResponseError('已收到模型回复，但段落编号或译文内容不完整，无法与原文对应。请重试当前页或更换模型。');
     }
     result[row.id] = row.translation.trim();
