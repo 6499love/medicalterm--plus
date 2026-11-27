@@ -89,3 +89,13 @@ it('distinguishes the three timeout sources without leaking content', () => {
   expect(literatureErrorMessage(new Error('GLM_UPSTREAM_TIMEOUT'))).toContain('上游返回');
   expect(literatureErrorMessage(new Error('FUNCTION_INVOCATION_TIMEOUT'))).toContain('Vercel');
 });
+
+it('restores the original DOI inside translated prose and retries a damaged placeholder',async()=>{
+  const block={...blocks[0],text:'Read https:// doi. org/ 10. 1186/ s13054 - 023 - 04706 - 0.'};
+  const completion=vi.mocked(getCompletion).mockResolvedValueOnce('[{"id":0,"translation":"见网页"}]')
+    .mockResolvedValueOnce('[{"id":0,"translation":"参见 ⟦LINK_0⟧。"}]');
+  let result:Record<number,string>={};
+  await translateLiteratureBatches(config,[block],[],{},values=>{result=values;},()=>true);
+  expect(JSON.parse(completion.mock.calls[0][1]).blocks[0].text).toBe('Read ⟦LINK_0⟧.');
+  expect(result[0]).toBe('参见 https://doi.org/10.1186/s13054-023-04706-0。');
+});

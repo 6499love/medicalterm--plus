@@ -5,8 +5,8 @@ import { getDocument, readLiteraturePage, readLiteraturePageStructure, type PDFD
 import { browserConnectionError, checkBrowserConnection, drawTranslatedLayout, exportBrowserPdf, isBrowserPageProcessed, literatureModelConfig, preserveSource, recognizePage, resultCounts, reviewBrowserTranslation, type PdfExportMode, type BrowserPage } from '../services/browserLiterature';
 import { prepareLiteratureTranslationBlocks, translateLiteratureBatches, LiteratureBatchError } from '../services/literatureTranslation';
 import { translatePublicationLabel, type PdfBlock } from '../services/literature';
-import type { TranslatedLayout } from '../services/literatureLayout';
-import { drawLiteratureContinuation, prepareLiteratureContinuations, type ContinuationSheet } from '../services/literatureContinuation';
+import type { FixedLayout } from '../services/fixedLiteratureLayout';
+
 import { fetchSystemTerms } from '../services/search';
 import LiteratureModelSettings from './LiteratureModelSettings';
 import type { AuthConfig } from '../types';
@@ -14,17 +14,6 @@ import './literature.css';
 import './browserLiterature.css';
 
 const emptyTranslations: Record<number,string> = {};
-
-function Continuation({sheet,page,number,index}: {sheet:ContinuationSheet; page:BrowserPage; number:number; index:number}) {
-  const canvas=useRef<HTMLCanvasElement>(null);
-  useEffect(()=>{
-    if(canvas.current) drawLiteratureContinuation(canvas.current,sheet,page.width,page.height,number,index);
-  },[sheet,page,number,index]);
-  return <>
-    <canvas ref={canvas} className="lit-layout-canvas" aria-hidden="true" />
-    <div className="lit-sr-only">{sheet.notes.map(({id,label,text})=><p key={id}>{label}：{text}</p>)}</div>
-  </>;
-}
 
 export default function BrowserLiterature() {
   const auth = useStore(s=>s.literatureAuth), terms = useStore(s=>s.userTerms);
@@ -82,7 +71,9 @@ export default function BrowserLiterature() {
     row?.scrollIntoView({block:'center'});
   },[view,selected]);
   const translatedCanvas=useRef<HTMLCanvasElement>(null);
-  const [rendered,setRendered]=useState<{page:BrowserPage; translations:Record<number,string>; layout:TranslatedLayout; sheets:ContinuationSheet[]}|null>(null);
+  const [expanded,setExpanded]=useState<Record<number,number[]>>({});
+  const [hover,setHover]=useState<{text:string;x:number;y:number}|null>(null);
+  const [rendered,setRendered]=useState<{page:BrowserPage; translations:Record<number,string>; layout:FixedLayout}|null>(null);
   const translated=results.current[number]||emptyTranslations;
   const preview=rendered?.page===page&&rendered.translations===translated?rendered:null;
   useEffect(()=>{
@@ -95,11 +86,11 @@ export default function BrowserLiterature() {
     image.src=page.image;
     void image.decode().then(()=>{
       if(!active)return;
-      const layout=drawTranslatedLayout(canvas,page,image,translated);
-      setRendered({page,translations:translated,layout,sheets:prepareLiteratureContinuations(layout.continuations,page.width,page.height)});
+      const layout=drawTranslatedLayout(canvas,page,image,translated,expanded[number]);
+      setRendered({page,translations:translated,layout});
     }).catch(()=>{if(active)setRendered(null);});
     return ()=>{active=false;};
-  },[page,translated,view]);
+  },[page,translated,view,expanded,number]);
   useEffect(()=>setError(''),[auth]);
   useEffect(()=>{if(auth&&!modelOpen)primaryAction.current?.focus();},[auth,modelOpen]);
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;stop.current=true;void pdf.current?.destroy();};},[]);
@@ -124,7 +115,7 @@ export default function BrowserLiterature() {
   async function open(file?:File) {
     if(!file||busy)return;
     if(file.size>20*1024*1024||!file.name.toLowerCase().endsWith('.pdf')){setError('请选择20 MB以内的PDF');return;}
-    stop.current=false;setBusy('读取PDF…');setError('');setPage(null);setTotal(0);metadata.current.clear();results.current={};
+    stop.current=false;setBusy('读取PDF…');setError('');setPage(null);setTotal(0);setExpanded({});setHover(null);metadata.current.clear();results.current={};
     try{
       await pdf.current?.destroy();pdf.current=null;
       const task=getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false});
@@ -186,11 +177,10 @@ export default function BrowserLiterature() {
   }
   async function change(n:number){if(busy)return;stop.current=false;setBusy('读取页面…');try{save(n,await read(n));}catch{setError('页面读取失败');}finally{if(alive.current)setBusy('');}}
   async function scan(){if(!page||busy||page.ocrDone)return;stop.current=false;setError('');setBusy('准备图片文字识别…');try{const value=await recognizePage(page,message=>{if(current())setBusy(message);});if(current())save(number,value);}catch{if(alive.current)setError('图片识别失败，可能是识别资源下载失败或内存不足。原文和已有译文保留，可关闭图片识别后翻译正文。');}finally{if(alive.current)setBusy('');}}
-  async function exportPdf(mode:PdfExportMode){if(busy||!pdf.current)return;stop.current=false;setBusy('准备PDF…');try{await exportBrowserPdf(name,total,read,results.current,setBusy,current,mode,hasResults&&!complete);}catch{setError('导出失败，可能内存不足，请使用较小的PDF重试。');}finally{if(alive.current)setBusy('');}}
+  async function exportPdf(mode:PdfExportMode){if(busy||!pdf.current)return;stop.current=false;setBusy('准备PDF…');try{await exportBrowserPdf(name,total,read,results.current,setBusy,current,mode,hasResults&&!complete,expanded);}catch{setError('导出失败，可能内存不足，请使用较小的PDF重试。');}finally{if(alive.current)setBusy('');}}
   const counts=resultCounts(translated,page?.blocks);
   const translationFor=(block:PdfBlock)=>preserveSource(block)?block.text:translated[block.id]||'待核对：尚未翻译';
   const selectedBlock=page?.blocks.find(b=>b.id===selected);
-  const selectedSheet=preview?.sheets.findIndex(sheet=>sheet.notes.some(note=>note.id===selected)) ?? -1;
   async function saveModel(config:AuthConfig,remember:boolean) {
     if(busy)return false;
     stop.current=false;setBusy('正在检查文献 Key…');setError('');
@@ -263,7 +253,6 @@ export default function BrowserLiterature() {
         <div className="lit-pages"><button disabled={!!busy||number<=1} onClick={()=>void change(number-1)}>上一页</button><span>第 {number} / {total} 页</span><button disabled={!!busy||number>=total} onClick={()=>void change(number+1)}>下一页</button></div>
       </div>
       <p className="lit-caption">本页已译 {counts.translated} {counts.retained>0 && <>· 数值／标识符 {counts.retained}</>} · {pageProcessed(number)?'待核对':'待译／核对'} {counts.review}。
-        {view==='layout'&&!!preview?.sheets.length&&!!Object.keys(translated).length&&<> <a className="lit-link" href="#lit-continuation-1">查看续页（{preview.sheets.length}）</a>。</>}
         {page.ocrDone&&!!page.ocrLowConfidence&&` 图片识别有 ${page.ocrLowConfidence} 处低可信结果未采用。`}
         {!page.blocks.length&&' 本页没有提取到文字，请检查原页。'} 请核对医学内容与数字。</p>
       {view==='layout'?<>
@@ -275,23 +264,32 @@ export default function BrowserLiterature() {
               {i===1&&<canvas ref={translatedCanvas} className="lit-layout-canvas" aria-hidden="true" />}
               {i===1&&!Object.keys(translated).length&&<div className="lit-wait">开始翻译后，中文译页显示在这里</div>}
               {page.blocks.map(b=>{
-                const rect=i===0||preserveSource(b)?b:preview?.layout.placed.get(b.id) ?? preview?.layout.continuations.find(note=>note.id===b.id)?.anchor;
+                const rect=i===0||preserveSource(b)?b:preview?.layout.placed.get(b.id);
                 return rect&&<button key={b.id} type="button" className={`lit-hit ${selected===b.id?'selected':''}`}
-                aria-label={`${label}第${b.id+1}段`} onClick={()=>setSelected(b.id)}
+                aria-label={`${label}第${b.id+1}段`} onClick={()=>{setSelected(b.id);setHover(null);}}
+                onPointerEnter={event=>{
+                  if(i!==1 || event.pointerType==='touch')return;
+                  setHover({text:translationFor(b),x:event.clientX,y:event.clientY});
+                }} onPointerLeave={()=>setHover(null)}
                 style={{left:`${rect.x/page.width*100}%`,top:`${rect.y/page.height*100}%`,width:`${rect.width/page.width*100}%`,height:`${rect.height/page.height*100}%`}} />;
               })}
             </div>
           </div>)}
         </div>
+        {hover&&<div className="lit-hover-text" role="tooltip" style={{
+          left:Math.max(8,Math.min(hover.x+12,window.innerWidth-378)),
+          top:hover.y>window.innerHeight/2?undefined:hover.y+16,
+          bottom:hover.y>window.innerHeight/2?window.innerHeight-hover.y+12:undefined
+        }}>{hover.text}</div>}
         {selectedBlock&&<div className="lit-detail lit-paragraphs" aria-live="polite">
-          <h3>第 {selectedBlock.id+1} 段 {selectedSheet>=0&&<a className="lit-link" href={`#lit-continuation-${selectedSheet+1}`}>在续页查看</a>}</h3>
+          <h3>第 {selectedBlock.id+1} 段</h3>
+          <button type="button" className="lit-field-size" disabled={!preview?.layout.canExpand.has(selectedBlock.id)}
+            onClick={()=>setExpanded(previous=>{
+              const ids=previous[number]||[],id=selectedBlock.id;
+              return {...previous,[number]:ids.includes(id)?ids.filter(value=>value!==id):[...ids,id]};
+            })}>{expanded[number]?.includes(selectedBlock.id)?'恢复自动缩放':preview?.layout.canExpand.has(selectedBlock.id)?'按原字号换行':'当前字号已适配，或下方空间不足'}</button>
           <div><p><small>英文原文</small>{selectedBlock.text}</p><p><small>中文译文</small>{translationFor(selectedBlock)}</p></div>
         </div>}
-        {!!Object.keys(translated).length&&preview?.sheets.map((sheet,index)=><section className="lit-continuation lit-extra-sheet" id={`lit-continuation-${index+1}`} key={index}>
-          <div><h3>原文第 {number} 页的补充内容 · 续页 {index+1}</h3><div className="lit-paper" style={{aspectRatio:`${page.width}/${page.height}`}}>
-            <Continuation sheet={sheet} page={page} number={number} index={index} />
-          </div></div>
-        </section>)}
       </>:<div className="reader-pairs" style={{fontSize}}>
         <div className="reader-columns" aria-hidden="true"><span>英文原文</span><span>中文译文</span></div>
         {page.blocks.map(b=><div className="reader-pair" key={b.id} data-paragraph={b.id} data-selected={selected===b.id} tabIndex={-1}>

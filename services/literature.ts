@@ -10,6 +10,7 @@ export interface PdfBlock {
   width: number;
   height: number;
   fontSize: number;
+  serif?: boolean;
   imageText?: boolean;
   kind?: 'header' | 'metadata' | 'body' | 'caption' | 'reference' | 'figure';
   retainSource?: boolean;

@@ -129,3 +129,5 @@ body:has(.lit-reader-window){overflow:hidden}
 .reader-pair[data-selected=true] p{background:#eaf3ff}
 .lit-extra-sheet{max-width:820px;margin:16px auto;padding:16px;background:#eaf0f6;border-radius:12px}
 .lit-extra-sheet h3{font-size:14px;font-weight:600;margin-bottom:8px}
+.lit-hover-text{position:fixed;z-index:12;width:min(360px,90vw);max-height:42vh;overflow:hidden;pointer-events:none;padding:12px 16px;border:1px solid #b9cce2;border-radius:8px;background:white;color:#152536;font-size:18px;line-height:1.65;box-shadow:0 4px 20px #15253626;overflow-wrap:anywhere}
+.lit-field-size{padding:6px 10px;background:#eff6ff;border-radius:6px;color:#174c88}

@@ -2,8 +2,7 @@ import type { PdfBlock } from './literature';
 import type { LiteraturePage } from './literaturePdf';
 import { getCompletion, type LLMConfig } from './llm';
 import { literatureErrorMessage, preserveSource } from './literature';
-import { planLiteratureLayout, sampleBannerBackdrop, type TranslatedLayout } from './literatureLayout';
-import { drawLiteratureContinuation, prepareLiteratureContinuations } from './literatureContinuation';
+import { drawFixedPage, type FixedLayout } from './fixedLiteratureLayout';
 
 export function literatureModelConfig(config: LLMConfig): LLMConfig {
   const baseUrl = config.baseUrl?.replace(/\/+$/, '');
@@ -93,44 +92,18 @@ export async function recognizePage(page: BrowserPage, onProgress: (message: str
 }
 
 export function drawTranslatedLayout(canvas: HTMLCanvasElement, page: BrowserPage, image: HTMLImageElement,
-  translations: Record<number, string>): TranslatedLayout {
-  canvas.width = image.naturalWidth;
-  canvas.height = image.naturalHeight;
-  const ctx = canvas.getContext('2d', {willReadFrequently:true})!;
-  ctx.drawImage(image, 0, 0);
-  const sx = canvas.width/page.width, sy = canvas.height/page.height;
-  let currentFont = '';
-  const plan = planLiteratureLayout(page, translations, (text,font)=>{
-    if (currentFont !== font) { ctx.font = font; currentFont = font; }
-    return ctx.measureText(text).width;
-  }, ({x,y,width,height})=>{
-    if (width<1 || height<1) return true;
-    const corners = [[x,y],[x+width-.6,y],[x,y+height-.6],[x+width-.6,y+height-.6]];
-    // Paper must be white at the edges; one isolated ink pixel at a crop edge is harmless.
-    return corners.filter(([px,py])=>{
-      const [r,g,b] = ctx.getImageData(Math.floor(px*sx),Math.floor(py*sy),1,1).data;
-      return Math.min(r,g,b)>=245;
-    }).length >= 3;
-  }, rect=>sampleBannerBackdrop(ctx,rect,sx,sy));
-  ctx.scale(sx, sy);
-  ctx.textBaseline = 'top';
-  for (const r of plan.masks) {
-    ctx.fillStyle = r.color || '#fff';
-    ctx.fillRect(r.x,r.y,r.width,r.height);
-  }
-  for (const {rect,lines,font,leading,marker} of plan.labels) {
-    ctx.font = font;
-    ctx.fillStyle = marker ? '#275a83' : '#172033';
-    lines.forEach((line,i)=>ctx.fillText(line,rect.x,rect.y+i*leading));
-  }
-  return { placed:plan.placed, continuations:plan.continuations };
+  translations: Record<number, string>, expanded:readonly number[]=[]): FixedLayout {
+  canvas.width=image.naturalWidth; canvas.height=image.naturalHeight;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true})!;
+  ctx.drawImage(image,0,0);
+  return drawFixedPage(ctx,page,translations,canvas.width/page.width,canvas.height/page.height,expanded);
 }
 
 export type PdfExportMode = 'translated' | 'bilingual';
 
 export async function exportBrowserPdf(name: string, count: number,
   read: (number:number)=>Promise<BrowserPage>, translations: Record<number,Record<number,string>>,
-  onProgress: (value:string)=>void, isCurrent:()=>boolean, mode:PdfExportMode='bilingual', partial=false) {
+  onProgress: (value:string)=>void, isCurrent:()=>boolean, mode:PdfExportMode='bilingual', partial=false, expanded:Record<number,number[]>={}) {
   const { PDFDocument } = await import('pdf-lib');
   const output = await PDFDocument.create();
   for (let number=1; number<=count; number++) {
@@ -138,20 +111,18 @@ export async function exportBrowserPdf(name: string, count: number,
     onProgress(`本机生成 PDF ${number}/${count}`);
     const data = await read(number); const image=new Image(); image.src=data.image; await image.decode();
     const right=document.createElement('canvas');
-    const layout=drawTranslatedLayout(right,data,image,translations[number] || {});
-    const sheets=prepareLiteratureContinuations(layout.continuations,data.width,data.height);
+    drawTranslatedLayout(right,data,image,translations[number] || {},expanded[number]);
     const original=mode==='bilingual' ? await output.embedPng(data.image) : undefined;
-    const margin=18, gap=18, width=data.width+margin*2+(original?data.width+gap:0), height=data.height+margin*2;
-    const background=await output.embedPng(right.toDataURL('image/png'));
-    for (let sheetIndex=-1;sheetIndex<sheets.length;sheetIndex++) {
-      if (!isCurrent()) return;
-      if (sheetIndex>=0) drawLiteratureContinuation(right,sheets[sheetIndex],data.width,data.height,number,sheetIndex);
-      const translated=sheetIndex<0?background:await output.embedPng(right.toDataURL('image/png'));
-      const sheet=output.addPage([width,height]);
-      const fit={y:margin,width:data.width,height:data.height};
-      if(original) sheet.drawImage(original,{...fit,x:margin});
-      sheet.drawImage(translated,{...fit,x:original?margin+data.width+gap:margin});
-    }
+    const translated=await output.embedPng(right.toDataURL('image/png'));
+    const landscape=!!original || data.width>data.height;
+    const width=landscape?841.89:595.28, height=landscape?595.28:841.89;
+    const sheet=output.addPage([width,height]);
+    const slot=original?width/2:width;
+    const scale=Math.min(slot/data.width,height/data.height);
+    const fit={width:data.width*scale,height:data.height*scale};
+    const x=(slot-fit.width)/2,y=(height-fit.height)/2;
+    if(original)sheet.drawImage(original,{...fit,x,y});
+    sheet.drawImage(translated,{...fit,x:x+(original?slot:0),y});
     right.width=right.height=0;
     await new Promise(resolve=>setTimeout(resolve,0));
   }

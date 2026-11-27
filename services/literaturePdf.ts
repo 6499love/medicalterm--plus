@@ -1,3 +1,4 @@
+import { normalizePdfLinks } from './literatureLinks';
 import { getDocument, GlobalWorkerOptions, OPS, Util } from 'pdfjs-dist';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -69,13 +70,15 @@ async function extractPageStructure(page: PdfPage): Promise<PageStructure> {
     if (Math.abs(transform[1]) > 0.1 || Math.abs(transform[2]) > 0.1) continue;
     const fontSize = Math.hypot(transform[2], transform[3]);
     pieces.push({ text: item.str, x: transform[4], y: transform[5] - fontSize,
-      width: item.width, height: fontSize * 1.15, fontSize, hasEOL: item.hasEOL });
+      serif:content.styles[item.fontName]?.fontFamily==='serif', width: item.width, height: fontSize * 1.15, fontSize, hasEOL: item.hasEOL });
   }
   const {images,paths} = await imageRegions(page, viewport.transform);
   const lines = joinPdfTextPieces(pieces);
   images.push(...borderedArtwork(lines,paths,viewport.width));
+  const urls:string[]=[...new Set<string>((await page.getAnnotations()).flatMap(annotation=>
+    typeof annotation.url==='string' && /^https?:/.test(annotation.url) ? [annotation.url] : []))];
   return { width: viewport.width, height: viewport.height, images,
-    blocks: structureLiteraturePage(lines,viewport.width,viewport.height,images) };
+    blocks: structureLiteraturePage(lines,viewport.width,viewport.height,images).map(b=>({...b,text:normalizePdfLinks(b.text,urls)})) };
 }
 
 export async function readLiteraturePageStructure(pdf: PDFDocumentProxy, number: number): Promise<PageStructure> {
