@@ -300,6 +300,6 @@ export default function BrowserLiterature() {
       </div>}
       </div>
     </>}
-    <p className="lit-session-note">文献和译文仅保留在当前页面，离开或刷新前请先下载。</p>
+    <p className="lit-session-note">切换词库、翻译或设置时，文献和进度会保留。刷新、关闭标签页或离开网站前，请先下载译文。</p>
   </section>;
 }

@@ -344,6 +344,11 @@ const SettingsPage = () => {
 
 export default function App() {
   const [activePage, setActivePage] = useState<PageRoute>('assistant');
+  const [literatureOpened,setLiteratureOpened]=useState(false);
+  const navigate=(page:PageRoute)=>{
+    if (page==='literature') setLiteratureOpened(true);
+    setActivePage(page);
+  };
   const [popupQuery, setPopupQuery] = useState<string | null>(null);
 
   const handleSelectionTranslate = (text: string) => {
@@ -356,13 +361,15 @@ export default function App() {
   };
 
   return (
-    <Layout activePage={activePage} onNavigate={setActivePage}>
+    <Layout activePage={activePage} onNavigate={navigate}>
       {activePage === 'translate' && <Translator initialQuery={popupQuery} onQueryConsumed={handlePopupConsumed} />}
-      {activePage === 'assistant' && <TranslationAssistant onNavigate={setActivePage} />}
+      {activePage === 'assistant' && <TranslationAssistant onNavigate={navigate} />}
       {activePage === 'batch' && <BatchTranslation />}
-      {activePage === 'literature' && <React.Suspense fallback={<p>正在打开文献阅读器…</p>}><LiteratureTranslation /></React.Suspense>}
+      {literatureOpened && <div hidden={activePage!=='literature'}>
+        <React.Suspense fallback={<p>正在打开文献阅读器…</p>}><LiteratureTranslation /></React.Suspense>
+      </div>}
       {activePage === 'dictionary' && <UserDictionary />}
-      {activePage === 'favorites' && <FavoritesPage onNavigate={setActivePage} />}
+      {activePage === 'favorites' && <FavoritesPage onNavigate={navigate} />}
       {activePage === 'history' && <HistoryPage />}
       {activePage === 'settings' && <SettingsPage />}
       
