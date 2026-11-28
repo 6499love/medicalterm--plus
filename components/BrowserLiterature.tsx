@@ -1,5 +1,5 @@
 import { reviewLiteratureBlock, type ExpertReview } from '../services/literatureExpert';
-import { BookOpen, Maximize2, Minimize2, FileUp, PanelLeft, Rows3 } from 'lucide-react';
+import { BookOpen, Maximize2, Minimize2, FileUp, Zap, GraduationCap, CircleHelp, PanelLeft, Rows3 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { getDocument, readLiteraturePage, readLiteraturePageStructure, type PDFDocumentProxy } from '../services/literaturePdf';
@@ -33,7 +33,7 @@ export default function BrowserLiterature() {
   const [fontSize,setFontSize]=useState(20);
   const [zoom,setZoom]=useState(100);
   const [exportMode,setExportMode]=useState<PdfExportMode>('translated');
-  const [view,setView]=useState<'layout'|'text'>('text');
+  const [view,setView]=useState<'layout'|'text'>('layout');
   const reader=useRef<HTMLDivElement>(null);
   const fullscreenButton=useRef<HTMLButtonElement>(null);
   const [fullscreen,setFullscreen]=useState(false);
@@ -127,7 +127,7 @@ export default function BrowserLiterature() {
       if(!current()){await document.destroy();return;}
       if(document.numPages>100){await document.destroy();throw new Error('请拆分为100页以内的PDF');}
       pdf.current=document;setName(file.name);setTotal(document.numPages);save(1,await read(1));
-      if(!auth?.apiKey)setModelOpen(true);
+      setView('layout');
     }catch{if(alive.current)setError('无法读取PDF，请检查文件是否损坏、加密或超过100页。');}
     finally{if(alive.current)setBusy('');}
   }
@@ -223,20 +223,22 @@ export default function BrowserLiterature() {
     {page?'更换 PDF':<><FileUp size={32} strokeWidth={1.5} /><b>拖入英文 PDF</b><span>最多 20 MB · 100 页</span><strong>选择文件</strong></>}
   </label>;
   return <section className="literature" data-revision={revision}>
-    <div className="lit-heading"><div><h2><BookOpen size={25} /> 文献翻译</h2><p>英文原文与中文译文对照阅读</p></div></div>
+    <div className="lit-heading"><div><h2><BookOpen size={25} /> 文献翻译</h2><p>英文原文与中文译文对照阅读</p></div>
+      <LiteratureModelSettings disabled={!!busy} open={modelOpen} onOpenChange={setModelOpen} onSave={saveModel} />
+    </div>
     {page?<div className="lit-document"><div><strong>{name}</strong><span>{total} 页</span></div>{fileControl}</div>:fileControl}
-    <LiteratureModelSettings disabled={!!busy} open={modelOpen} onOpenChange={setModelOpen} onSave={saveModel} />
-    <fieldset className="lit-expert-choice" disabled={!!busy}>
-      <legend>文献翻译模式</legend>
-      <button type="button" aria-pressed={!expert} onClick={()=>setExpert(false)}>极速翻译</button>
-      <button type="button" aria-pressed={expert} onClick={()=>setExpert(true)}>专家翻译</button>
-      {expert&&<small>逐段初译、AI 审校、修订定稿。已有译文直接用于审校，每段通常增加两次模型调用。</small>}
-    </fieldset>
     {error&&<p role="alert" className="lit-error">{error}</p>}
     {busy&&<p className="lit-busy" role="status">{busy} <button onClick={()=>{stop.current=true;setBusy('正在停止，等待当前步骤结束…');}}>停止后续处理</button></p>}
     {page&&<>
       <div className="lit-actions lit-main-actions">
-        {!modelOpen&&!complete&&<button ref={primaryAction} className="lit-primary" disabled={!!busy} onClick={()=>auth?.apiKey?void process(true):setModelOpen(true)}>{auth?.apiKey?(expert?(hasResults?'继续专家翻译':'专家翻译整篇'):hasResults?'继续翻译整篇':'翻译整篇'):'配置文献 Key'}</button>}
+        {!complete&&<button ref={primaryAction} className="lit-primary" disabled={!!busy} onClick={()=>auth?.apiKey?void process(true):setModelOpen(true)}>{hasResults?'继续翻译整篇':'翻译整篇'}</button>}
+        <div className="lit-mode-choice" role="group" aria-label="文献翻译模式">
+          <button type="button" disabled={!!busy} aria-pressed={!expert} onClick={()=>setExpert(false)}><Zap size={14}/>极速模式</button>
+          <button type="button" disabled={!!busy} aria-pressed={expert} onClick={()=>setExpert(true)}><GraduationCap size={14}/>专家模式</button>
+          <details className="lit-mode-help"><summary aria-label="翻译模式说明"><CircleHelp size={15}/></summary>
+            <p>极速模式直接翻译。专家模式会再审校和修订，每段通常多调用两次模型。已有译文可以直接进入审校。</p>
+          </details>
+        </div>
         <details className="lit-more">
           <summary>更多操作</summary>
           <div className="lit-more-panel">
@@ -255,8 +257,8 @@ export default function BrowserLiterature() {
           onClick={()=>void toggleFullscreen()}>{fullscreen||windowMode?<Minimize2 size={16}/>:<Maximize2 size={16}/>}
           {fullscreen||windowMode?'退出全屏':'全屏阅读'}</button>
         <div className="lit-modes" role="group" aria-label="对照方式">
-          <button type="button" aria-pressed={view==='text'} onClick={()=>setView('text')}><Rows3 size={15} />段落对照</button>
           <button type="button" aria-pressed={view==='layout'} onClick={()=>setView('layout')}><PanelLeft size={15} />原版对照</button>
+          <button type="button" aria-pressed={view==='text'} onClick={()=>setView('text')}><Rows3 size={15} />段落对照</button>
         </div>
         {view==='text'?<div className="lit-sizing" aria-label="正文字号" role="group">
           <button aria-label="减小字号" disabled={fontSize<=16} onClick={()=>setFontSize(fontSize-2)}>A−</button>

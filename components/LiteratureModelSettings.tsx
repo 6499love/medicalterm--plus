@@ -37,7 +37,19 @@ export default function LiteratureModelSettings({disabled,open,onOpenChange,onSa
   const [remember,setRemember] = useState(rememberKey);
   const [error,setError] = useState('');
   const input = useRef<HTMLInputElement>(null);
-  useEffect(()=>{if(open&&!disabled)input.current?.focus();},[open,disabled]);
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(()=>{
+    if (!open) {
+      dialog.current?.close();
+      setKey('');
+      return;
+    }
+    setPlatform(savedPlatform);
+    setRemember(rememberKey);
+    setError('');
+    dialog.current?.showModal();
+    input.current?.focus();
+  },[open,savedPlatform,rememberKey]);
 
   async function save(event:React.FormEvent) {
     event.preventDefault();
@@ -48,13 +60,14 @@ export default function LiteratureModelSettings({disabled,open,onOpenChange,onSa
     } catch(cause) {setError(cause instanceof Error?cause.message:'连接检查失败，请重试。');}
   }
 
-  return <section className="lit-model-settings" aria-labelledby="lit-model-title">
-    <div className="lit-key-summary">
-      <h3 id="lit-model-title"><KeyRound size={17} /> 文献 API 配置 <span className={auth?'lit-key-ready':'lit-key-missing'}>{auth ? models[savedPlatform].name + ' 已配置' : '未配置'}</span></h3>
-      <button type="button" disabled={disabled} aria-expanded={open} aria-controls="lit-key-form"
-        onClick={()=>{setPlatform(savedPlatform);setKey('');setRemember(rememberKey);setError('');onOpenChange(!open);}}>{open?'收起':auth?'修改':'配置 API'}</button>
-    </div>
-
+  return <>
+    <button type="button" className="lit-api-trigger" disabled={disabled} aria-haspopup="dialog"
+      aria-controls="lit-key-dialog" onClick={()=>onOpenChange(true)}>
+      <KeyRound size={15}/>{auth ? models[savedPlatform].name+' · 已配置' : '配置文献 API'}
+    </button>
+    <dialog ref={dialog} id="lit-key-dialog" className="lit-model-settings" aria-labelledby="lit-model-title"
+      onCancel={event=>{event.preventDefault();if(!disabled)onOpenChange(false);}}>
+      <h3 id="lit-model-title">文献翻译 API 配置</h3>
     <fieldset disabled={disabled}>
       {open&&<form id="lit-key-form" onSubmit={save}>
         <fieldset><legend>翻译模型</legend><div className="lit-provider-options">
@@ -81,5 +94,6 @@ export default function LiteratureModelSettings({disabled,open,onOpenChange,onSa
       <p>{selected.model}。费用以平台账单为准。<a className="lit-link" href={selected.pricing} target="_blank" rel="noreferrer">官方价格</a></p>
       <p>PDF 读取、识图和导出在浏览器完成。{selected === models.deepseek ? '浏览器将待译文字直接发送给 DeepSeek。' : '待译文字通过本站发送给智谱。'}Key 默认只用于当前页面会话，勾选记住后才本地保存。</p>
     </details>}
-  </section>;
+    </dialog>
+  </>;
 }
